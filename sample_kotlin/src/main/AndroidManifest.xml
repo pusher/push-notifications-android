@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.pusher.sample">
+    package="com.pusher.pushnotifications.sample">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <permission android:name="${applicationId}.permission.C2D_MESSAGE" android:protectionLevel="signature"/>
+    <uses-permission android:name="${applicationId}.permission.C2D_MESSAGE"/>
+
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE"/>
 
     <application
         android:allowBackup="true"
@@ -9,6 +18,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+
         <activity android:name="com.pusher.pushnotifications.sample.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -17,5 +27,4 @@
             </intent-filter>
         </activity>
     </application>
-
 </manifest>
