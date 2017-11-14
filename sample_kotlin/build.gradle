@@ -7,7 +7,7 @@ apply plugin: 'kotlin-android-extensions'
 android {
     compileSdkVersion 26
     defaultConfig {
-        applicationId "com.pusher.push_notifications_android"
+        applicationId "com.pusher.pushnotifications.sample"
         minSdkVersion 16
         targetSdkVersion 26
         versionCode 1
@@ -24,7 +24,7 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation"org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jre7:${versions.kotlin}"
     implementation 'com.android.support:appcompat-v7:26.1.0'
     implementation 'com.android.support.constraint:constraint-layout:1.0.2'
     testImplementation 'junit:junit:4.12'
@@ -32,5 +32,12 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
 
     implementation project(':pushnotifications')
-    implementation 'com.jakewharton.timber:timber:4.6.0'
+
+    implementation 'com.pusher:pusher-websocket-android:0.6.0'
+
+    implementation "com.google.android.gms:play-services-gcm:${versions.playServices}"
+    implementation "com.google.firebase:firebase-core:${versions.playServices}"
+    implementation "com.google.firebase:firebase-messaging:${versions.playServices}"
 }
+
+apply plugin: 'com.google.gms.google-services'
