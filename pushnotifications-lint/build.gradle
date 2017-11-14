@@ -1,0 +1,17 @@
+apply plugin: 'java-library'
+
+targetCompatibility = JavaVersion.VERSION_1_7
+sourceCompatibility = JavaVersion.VERSION_1_7
+
+dependencies {
+    compileOnly deps.lint.api
+    compileOnly deps.lint.checks
+    testImplementation deps.lint.core
+    testImplementation deps.lint.tests
+}
+
+jar {
+    manifest {
+        attributes('Lint-Registry-v2': 'com.pusher.pushnotifications.lint.IssueRegistry')
+    }
+}
