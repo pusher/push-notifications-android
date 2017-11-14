@@ -32,7 +32,6 @@ public final class WrongPushNotificationsUsageDetector extends Detector implemen
                     new Implementation(WrongPushNotificationsUsageDetector.class, Scope.JAVA_FILE_SCOPE)
             );
 
-
     @Override
     public List<String> getApplicableConstructorTypes() {
         return Collections.singletonList("com.pusher.pushnotifications.PushNotificationsInstance");
