@@ -2,10 +2,8 @@ package com.pusher.pushnotifications.sample
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-import android.util.Log
 import com.pusher.pushnotifications.PushNotifications
 import com.pusher.pushnotifications.PushNotificationsInstance
-import com.pusher.pushnotifications.api.OperationCallback
 
 class MainActivity : AppCompatActivity() {
   lateinit var pn: PushNotificationsInstance
@@ -17,15 +15,7 @@ class MainActivity : AppCompatActivity() {
 
     val pn1 = PushNotifications.start(applicationContext, instanceId)
 
-    pn1.subscribe("hello", object : OperationCallback {
-      override fun onSuccess() {
-        Log.i("MainActivity", "Done subscribing to 'hello'!")
-      }
-
-      override fun onFailure(t: Throwable) {
-        Log.w("MainActivity", "Failed to subscribe to 'hello'", t)
-      }
-    })
+    pn1.subscribe("hello")
     pn1.unsubscribe("donuts")
   }
 }
