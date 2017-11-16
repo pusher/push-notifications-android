@@ -2,6 +2,7 @@ package com.pusher.pushnotifications.sample
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import android.util.Log
 import com.pusher.pushnotifications.PushNotifications
 import com.pusher.pushnotifications.PushNotificationsInstance
 
@@ -17,5 +18,12 @@ class MainActivity : AppCompatActivity() {
 
     pn1.subscribe("hello")
     pn1.unsubscribe("donuts")
+
+
+    PushNotifications.subscribe("pizza")
+    Log.i("MainActivity", "Current subscriptions are:")
+    PushNotifications.getSubscriptions().forEach { interest ->
+      Log.i("MainActivity", "\t$interest")
+    }
   }
 }

@@ -45,4 +45,12 @@ public class PushNotifications {
 
         instance.setSubscriptions(interests);
     }
+
+    public static Set<String> getSubscriptions() {
+        if (instance == null) {
+            throw new IllegalStateException("PushNotifications.start must have been called before");
+        }
+
+        return instance.getSubscriptions();
+    }
 }
