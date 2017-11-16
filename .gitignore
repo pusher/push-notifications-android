@@ -11,6 +11,8 @@ build
 out
 lib
 
+google-services.json
+
 # Gradle
 .gradle
 jniLibs

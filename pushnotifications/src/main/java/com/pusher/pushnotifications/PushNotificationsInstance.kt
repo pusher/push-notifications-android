@@ -9,10 +9,15 @@ import com.pusher.pushnotifications.api.OperationCallback
 import com.pusher.pushnotifications.api.PushNotificationsAPI
 import com.pusher.pushnotifications.fcm.FCMInstanceIDService
 import com.pusher.pushnotifications.logging.Logger
+import com.pusher.pushnotifications.validation.Validations
 
 class PushNotificationsInstance(
   context: Context,
   instanceId: String) {
+  init {
+    Validations.validateApplicationIcon(context)
+  }
+
   private val preferencesDeviceIdKey = "deviceId"
   private val preferencesFcmTokenKey = "fcmToken"
   private val preferencesInterestsSetKey = "interests"
