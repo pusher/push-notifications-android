@@ -88,4 +88,10 @@ class PushNotificationsInstance(
   fun setSubscriptions(interests: Set<String>) {
     // TODO
   }
+
+  fun getSubscriptions(): Set<String> {
+    synchronized(localPreferences) {
+      return localPreferences.getStringSet(preferencesInterestsSetKey, mutableSetOf<String>())
+    }
+  }
 }
