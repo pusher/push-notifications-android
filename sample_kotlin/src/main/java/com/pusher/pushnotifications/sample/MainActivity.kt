@@ -13,9 +13,12 @@ class MainActivity : AppCompatActivity() {
     super.onCreate(savedInstanceState)
     setContentView(R.layout.activity_main)
 
-    val pn1 = PushNotifications.start(applicationContext, instanceId)
+    PushNotifications.start(applicationContext, instanceId)
 
-    pn1.subscribe("hello")
-    pn1.unsubscribe("donuts")
+    PushNotifications.subscribe("hello")
+    PushNotifications.unsubscribe("donuts")
+    val interests = HashSet<String>()
+    interests.add("donuts")
+    PushNotifications.setSubscriptions(interests)
   }
 }

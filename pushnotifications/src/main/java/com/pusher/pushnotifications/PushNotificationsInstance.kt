@@ -86,6 +86,13 @@ class PushNotificationsInstance(
   }
 
   fun setSubscriptions(interests: Set<String>) {
-    // TODO
+    synchronized(localPreferences) {
+      val localInterestsSet = localPreferences.getStringSet(preferencesInterestsSetKey, mutableSetOf<String>())
+      if (localInterestsSet.containsAll(interests) && interests.containsAll(localInterestsSet)) {
+        return // they are the same
+      }
+      localPreferences.edit().putStringSet(preferencesInterestsSetKey, interests).apply()
+    }
+    api.setSubscriptions(interests, OperationCallback.noop)
   }
 }

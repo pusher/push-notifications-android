@@ -32,7 +32,7 @@ interface PushNotificationService {
   ): Call<Void>
 
   @PUT("instances/{instanceId}/devices/fcm/{deviceId}/interests")
-  fun getSubscriptions(
+  fun setSubscriptions(
     @Path("instanceId") instanceId: String,
     @Path("deviceId") deviceId: String,
     @Body interests: SetSubscriptionsRequest
@@ -80,7 +80,7 @@ data class TokenValidationResponse(
 )
 
 data class SetSubscriptionsRequest(
-  val interests: List<String>
+  val interests: Set<String>
 )
 
 data class GetSubscriptionsResponse(

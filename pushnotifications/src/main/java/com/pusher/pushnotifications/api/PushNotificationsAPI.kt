@@ -144,4 +144,37 @@ class PushNotificationsAPI(private val instanceId: String) {
       }
     }
   }
+
+  fun setSubscriptions(interests: Set<String>, operationCallback: OperationCallback) {
+    val callback = object : RequestCallbackWithExpBackoff<Void>() {
+      override fun onResponse(call: Call<Void>?, response: Response<Void>?) {
+        if (response != null && response.code() >= 200 && response.code() < 300) {
+          log.d("Successfully updated the interest set")
+          operationCallback.onSuccess()
+          return
+        }
+
+        val responseErrorBody = response?.errorBody()
+        if (responseErrorBody != null) {
+          val error = gson.fromJson(responseErrorBody.string(), NOKResponse::class.java)
+          log.w("Failed to update the interest set: $error")
+          operationCallback.onFailure(error)
+        }
+      }
+    }
+
+    synchronized(jobQueue) {
+      deviceId?.let {
+        service.setSubscriptions(
+          instanceId = instanceId, deviceId = it, interests = SetSubscriptionsRequest(interests)
+        ).enqueue(callback)
+        return
+      }
+      jobQueue += {
+        service.setSubscriptions(
+          instanceId = instanceId, deviceId = it, interests = SetSubscriptionsRequest(interests)
+        ).enqueue(callback)
+      }
+    }
+  }
 }
