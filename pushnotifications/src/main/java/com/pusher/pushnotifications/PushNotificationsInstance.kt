@@ -15,6 +15,7 @@ class PushNotificationsInstance(
   instanceId: String) {
   private val preferencesDeviceIdKey = "deviceId"
   private val preferencesFcmTokenKey = "fcmToken"
+  private val preferencesInterestsSetKey = "interests"
 
   private val localPreferences = context.getSharedPreferences(this::class.java.name, MODE_PRIVATE)
   private val log = Logger.get(this::class)
@@ -54,10 +55,24 @@ class PushNotificationsInstance(
   }
 
   fun subscribe(interest: String) {
+    synchronized(localPreferences) {
+      val interestsSet = localPreferences.getStringSet(preferencesInterestsSetKey, mutableSetOf<String>())
+      if (!interestsSet.add(interest)) {
+        return // not a new interest
+      }
+      localPreferences.edit().putStringSet(preferencesInterestsSetKey, interestsSet).apply()
+    }
     api.subscribe(interest, OperationCallback.noop)
   }
 
   fun unsubscribe(interest: String) {
+    synchronized(localPreferences) {
+      val interestsSet = localPreferences.getStringSet(preferencesInterestsSetKey, mutableSetOf<String>())
+      if (!interestsSet.remove(interest)) {
+        return // interest wasn't present
+      }
+      localPreferences.edit().putStringSet(preferencesInterestsSetKey, interestsSet).apply()
+    }
     api.unsubscribe(interest, OperationCallback.noop)
   }
 
@@ -66,5 +81,6 @@ class PushNotificationsInstance(
   }
 
   fun setSubscriptions(interests: Set<String>) {
+    // TODO
   }
 }
