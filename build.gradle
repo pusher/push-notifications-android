@@ -2,11 +2,11 @@
 
 buildscript {
     ext.versions = [
-        kotlin: '1.1.51',
+        kotlin: '1.1.60',
 
         androidPlugin: '3.0.0',
         androidTools: '26.0.0',
-        playServices: '11.4.2',
+        playServices: '11.6.0',
     ]
 
     repositories {

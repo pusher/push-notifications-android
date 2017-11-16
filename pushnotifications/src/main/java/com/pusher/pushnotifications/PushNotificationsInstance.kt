@@ -2,6 +2,8 @@ package com.pusher.pushnotifications
 
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
+import android.os.Handler
+import android.os.Looper
 import com.google.firebase.iid.FirebaseInstanceId
 import com.pusher.pushnotifications.api.OperationCallback
 import com.pusher.pushnotifications.api.PushNotificationsAPI
@@ -13,14 +15,14 @@ class PushNotificationsInstance(
   instanceId: String) {
   private val preferencesDeviceIdKey = "deviceId"
   private val preferencesFcmTokenKey = "fcmToken"
+  private val preferencesInterestsSetKey = "interests"
 
   private val localPreferences = context.getSharedPreferences(this::class.java.name, MODE_PRIVATE)
   private val log = Logger.get(this::class)
 
   private val api = PushNotificationsAPI(instanceId)
 
-  @JvmOverloads
-  fun start(operationCallback: OperationCallback = OperationCallback.noop): PushNotificationsInstance {
+  fun start(): PushNotificationsInstance {
     localPreferences.getString(preferencesDeviceIdKey, null)?.let {
       api.deviceId = it
     }
@@ -37,11 +39,11 @@ class PushNotificationsInstance(
               .putString(preferencesDeviceIdKey, api.deviceId)
               .putString(preferencesFcmTokenKey, fcmToken)
               .apply()
-            operationCallback.onSuccess()
+            log.w("Successfully started PushNotifications")
           }
 
           override fun onFailure(t: Throwable) {
-            operationCallback.onFailure(t)
+            log.w("Failed to start PushNotifications", t)
           }
         }
       }())
@@ -52,22 +54,33 @@ class PushNotificationsInstance(
     return this
   }
 
-  @JvmOverloads
-  fun subscribe(interest: String, operationCallback: OperationCallback = OperationCallback.noop) {
-    api.subscribe(interest, operationCallback)
+  fun subscribe(interest: String) {
+    synchronized(localPreferences) {
+      val interestsSet = localPreferences.getStringSet(preferencesInterestsSetKey, mutableSetOf<String>())
+      if (!interestsSet.add(interest)) {
+        return // not a new interest
+      }
+      localPreferences.edit().putStringSet(preferencesInterestsSetKey, interestsSet).apply()
+    }
+    api.subscribe(interest, OperationCallback.noop)
   }
 
-  @JvmOverloads
-  fun unsubscribe(interest: String, operationCallback: OperationCallback = OperationCallback.noop) {
-    api.unsubscribe(interest, operationCallback)
+  fun unsubscribe(interest: String) {
+    synchronized(localPreferences) {
+      val interestsSet = localPreferences.getStringSet(preferencesInterestsSetKey, mutableSetOf<String>())
+      if (!interestsSet.remove(interest)) {
+        return // interest wasn't present
+      }
+      localPreferences.edit().putStringSet(preferencesInterestsSetKey, interestsSet).apply()
+    }
+    api.unsubscribe(interest, OperationCallback.noop)
   }
 
-  @JvmOverloads
-  fun unsubscribeAll(operationCallback: OperationCallback = OperationCallback.noop) {
-    setSubscriptions(emptySet(), operationCallback)
+  fun unsubscribeAll() {
+    setSubscriptions(emptySet())
   }
 
-  @JvmOverloads
-  fun setSubscriptions(interests: Set<String>, operationCallback: OperationCallback = OperationCallback.noop) {
+  fun setSubscriptions(interests: Set<String>) {
+    // TODO
   }
 }

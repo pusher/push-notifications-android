@@ -12,22 +12,19 @@ abstract class RequestCallbackWithExpBackoff<T> : Callback<T> {
   override fun onFailure(call: Call<T>, t: Throwable) {
     log.d(String.format("Failed to perform request (retry count: %d)", retryCount), t)
     retryCount++
-    if (retryCount > MaxRetries) {
-      onFailureAfterRetries(call, t)
-    } else {
-      val delay = Math.min(maxRetryDelayMs, baseRetryDelayMs * Math.pow(2.0, retryCount - 1.0))
-      Handler(Looper.getMainLooper()).postDelayed({ retry(call) }, delay.toLong())
-    }
+
+    val delay = computeExponentialBackoff(retryCount)
+    Handler(Looper.getMainLooper()).postDelayed({ retry(call) }, delay)
   }
 
-  abstract fun onFailureAfterRetries(call: Call<T>, t: Throwable)
+  private fun computeExponentialBackoff(retryCount: Int): Long =
+    Math.min(maxRetryDelayMs, baseRetryDelayMs * Math.pow(2.0, retryCount - 1.0)).toLong()
 
   private fun retry(call: Call<T>) {
     call.clone().enqueue(this)
   }
 
   companion object {
-    private val MaxRetries = 4
     private val log = Logger.get(this::class)
     private val baseRetryDelayMs = 200.0
     private val maxRetryDelayMs = 32000.0
