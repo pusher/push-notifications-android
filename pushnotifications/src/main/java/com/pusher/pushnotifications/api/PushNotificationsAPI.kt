@@ -34,10 +34,6 @@ class PushNotificationsAPI(private val instanceId: String) {
       if (fcmToken != null && fcmToken != token) {
         service.refreshToken(instanceId, dId, RefreshToken(token))
           .enqueue(object : RequestCallbackWithExpBackoff<Void>() {
-            override fun onFailureAfterRetries(call: Call<Void>, t: Throwable) {
-              operationCallback.onFailure(t)
-            }
-
             override fun onResponse(call: Call<Void>?, response: Response<Void>?) {
               if (response?.code() == 404) {
                 deviceId = null
@@ -59,10 +55,6 @@ class PushNotificationsAPI(private val instanceId: String) {
 
     val call = service.register(instanceId, RegisterRequest(token))
     call.enqueue(object : RequestCallbackWithExpBackoff<RegisterResponse>() {
-      override fun onFailureAfterRetries(call: Call<RegisterResponse>, t: Throwable) {
-        operationCallback.onFailure(t)
-      }
-
       override fun onResponse(call: Call<RegisterResponse>?, response: Response<RegisterResponse>?) {
         val responseBody = response?.body()
         if (responseBody != null) {
@@ -93,10 +85,6 @@ class PushNotificationsAPI(private val instanceId: String) {
 
   fun subscribe(interest: String, operationCallback: OperationCallback) {
     val callback = object : RequestCallbackWithExpBackoff<Void>() {
-      override fun onFailureAfterRetries(call: Call<Void>, t: Throwable) {
-        operationCallback.onFailure(t)
-      }
-
       override fun onResponse(call: Call<Void>?, response: Response<Void>?) {
         if (response != null && response.code() >= 200 && response.code() < 300) {
           log.d("Successfully subscribed to interest '$interest'")
@@ -128,10 +116,6 @@ class PushNotificationsAPI(private val instanceId: String) {
 
   fun unsubscribe(interest: String, operationCallback: OperationCallback) {
     val callback = object : RequestCallbackWithExpBackoff<Void>() {
-      override fun onFailureAfterRetries(call: Call<Void>, t: Throwable) {
-        operationCallback.onFailure(t)
-      }
-
       override fun onResponse(call: Call<Void>?, response: Response<Void>?) {
         if (response != null && response.code() >= 200 && response.code() < 300) {
           log.d("Successfully unsubscribed to interest '$interest'")
