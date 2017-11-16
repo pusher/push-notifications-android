@@ -20,7 +20,6 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-
 }
 
 dependencies {
@@ -39,6 +38,8 @@ dependencies {
     provided "com.google.android.gms:play-services-gcm:${versions.playServices}"
     provided "com.google.firebase:firebase-core:${versions.playServices}"
     provided "com.google.firebase:firebase-messaging:${versions.playServices}"
+
+    lintChecks project(':pushnotifications-lint')
 }
 
 repositories {
