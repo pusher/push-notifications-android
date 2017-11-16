@@ -95,4 +95,10 @@ class PushNotificationsInstance(
     }
     api.setSubscriptions(interests, OperationCallback.noop)
   }
+
+  fun getSubscriptions(): Set<String> {
+    synchronized(localPreferences) {
+      return localPreferences.getStringSet(preferencesInterestsSetKey, mutableSetOf<String>())
+    }
+  }
 }

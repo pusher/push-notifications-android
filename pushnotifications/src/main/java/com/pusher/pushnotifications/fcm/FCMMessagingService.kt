@@ -15,7 +15,7 @@ class FCMMessagingService : FirebaseMessagingService() {
   }
 
   override fun onMessageReceived(remoteMessage: RemoteMessage) {
-    if (remoteMessage.data.getOrDefault("pusherTokenValidation", "false") == "true") {
+    if (remoteMessage.data["pusherTokenValidation"] == "true") {
       log.d("Received blank message from Pusher to perform token validation")
     } else {
       log.d("Received from FCM: " + remoteMessage)
