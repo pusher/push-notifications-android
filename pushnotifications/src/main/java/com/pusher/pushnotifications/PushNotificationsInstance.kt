@@ -2,17 +2,20 @@ package com.pusher.pushnotifications
 
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
-import android.os.Handler
-import android.os.Looper
 import com.google.firebase.iid.FirebaseInstanceId
 import com.pusher.pushnotifications.api.OperationCallback
 import com.pusher.pushnotifications.api.PushNotificationsAPI
 import com.pusher.pushnotifications.fcm.FCMInstanceIDService
 import com.pusher.pushnotifications.logging.Logger
+import com.pusher.pushnotifications.validation.Validations
 
 class PushNotificationsInstance(
   context: Context,
   instanceId: String) {
+  init {
+    Validations.validateApplicationIcon(context)
+  }
+
   private val preferencesDeviceIdKey = "deviceId"
   private val preferencesFcmTokenKey = "fcmToken"
   private val preferencesInterestsSetKey = "interests"
