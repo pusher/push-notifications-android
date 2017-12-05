@@ -10,9 +10,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.*
 
 class PushNotificationsAPI(private val instanceId: String) {
-  private val baseUrl = "https://errol-staging.herokuapp.com/device_api/v1/"
-//    private val baseUrl = "https://$instanceId.pushnotifications.staging.pusher.com/device_api/v1/"
-//    private val baseUrl = "http://10.0.2.2:8111/device_api/v1/"
+  private val baseUrl = "https://$instanceId.pushnotifications.pusher.com/device_api/v1/"
 
   private val log = Logger.get(this::class)
 
