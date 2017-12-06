@@ -34,7 +34,7 @@ public class PushNotifications {
             throw new IllegalStateException("PushNotifications.start must have been called before");
         }
 
-        instance.unsubscribe(interest);
+        instance.unsubscribeAll();
     }
 
     public static void setSubscriptions(Set<String> interests) {
