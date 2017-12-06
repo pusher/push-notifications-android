@@ -9,6 +9,12 @@ class FCMMessagingService : FirebaseMessagingService() {
     private var listener: FCMPushNotificationReceivedListener? = null
     private val log = Logger.get(this::class)
 
+    /**
+     * Configures the listener that handles a remote message when the app is in the foreground.
+     *
+     * @param messageReceivedListener the listener that handles a remote message
+     */
+    @JvmStatic
     fun setOnMessageReceivedListener(messageReceivedListener: FCMPushNotificationReceivedListener) {
       listener = messageReceivedListener
     }
