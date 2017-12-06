@@ -11,6 +11,12 @@ import com.pusher.pushnotifications.fcm.FCMInstanceIDService
 import com.pusher.pushnotifications.logging.Logger
 import com.pusher.pushnotifications.validation.Validations
 
+/**
+ * Interacts with the Pusher service to subscribe and unsubscribe from interests.
+ *
+ * @param context the application context
+ * @param instanceId the id of the instance
+ */
 class PushNotificationsInstance(
   context: Context,
   instanceId: String) {
@@ -27,6 +33,10 @@ class PushNotificationsInstance(
 
   private val api = PushNotificationsAPI(instanceId)
 
+  /**
+   * Starts the PushNotification client and synchronizes the FCM device token with
+   * the Pusher services.
+   */
   fun start(): PushNotificationsInstance {
     localPreferences.getString(preferencesDeviceIdKey, null)?.let {
       api.deviceId = it
@@ -59,6 +69,11 @@ class PushNotificationsInstance(
     return this
   }
 
+  /**
+   * Subscribes the device to an interest. For example:
+   * <pre>{@code pushNotifications.subscribe("hello");}</pre>
+   * @param interest the name of the interest
+   */
   fun subscribe(interest: String) {
     synchronized(localPreferences) {
       val interestsSet = localPreferences.getStringSet(preferencesInterestsSetKey, mutableSetOf<String>())
@@ -70,6 +85,11 @@ class PushNotificationsInstance(
     api.subscribe(interest, OperationCallback.noop)
   }
 
+  /**
+   * Unsubscribes the device from an interest. For example:
+   * <pre>{@code pushNotifications.unsubscribe("hello");}</pre>
+   * @param interest the name of the interest
+   */
   fun unsubscribe(interest: String) {
     synchronized(localPreferences) {
       val interestsSet = localPreferences.getStringSet(preferencesInterestsSetKey, mutableSetOf<String>())
@@ -81,10 +101,22 @@ class PushNotificationsInstance(
     api.unsubscribe(interest, OperationCallback.noop)
   }
 
+  /**
+   * Unsubscribes the device from all the interests. For example:
+   * <pre>{@code pushNotifications.unsubscribeAll();}</pre>
+   */
   fun unsubscribeAll() {
     setSubscriptions(emptySet())
   }
 
+  /**
+   * Sets the subscriptions state for the device. Any interests not in the set will be
+   * unsubscribed from, so this will replace the interest set by the one provided.
+   * <br>
+   * For example:
+   * <pre>{@code pushNotifications.setSubscriptions(Arrays.asList("hello", "donuts").toSet());}</pre>
+   * @param interests the new set of interests
+   */
   fun setSubscriptions(interests: Set<String>) {
     synchronized(localPreferences) {
       val localInterestsSet = localPreferences.getStringSet(preferencesInterestsSetKey, mutableSetOf<String>())
@@ -96,6 +128,9 @@ class PushNotificationsInstance(
     api.setSubscriptions(interests, OperationCallback.noop)
   }
 
+  /**
+   * @return the set of subscriptions that the device is currently subscribed to
+   */
   fun getSubscriptions(): Set<String> {
     synchronized(localPreferences) {
       return localPreferences.getStringSet(preferencesInterestsSetKey, mutableSetOf<String>())
