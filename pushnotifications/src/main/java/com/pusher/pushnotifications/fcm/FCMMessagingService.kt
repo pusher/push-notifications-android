@@ -2,11 +2,12 @@ package com.pusher.pushnotifications.fcm
 
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import com.pusher.pushnotifications.PushNotificationReceivedListener
 import com.pusher.pushnotifications.logging.Logger
 
 class FCMMessagingService : FirebaseMessagingService() {
   companion object {
-    private var listener: FCMPushNotificationReceivedListener? = null
+    private var listener: PushNotificationReceivedListener? = null
     private val log = Logger.get(this::class)
 
     /**
@@ -15,7 +16,7 @@ class FCMMessagingService : FirebaseMessagingService() {
      * @param messageReceivedListener the listener that handles a remote message
      */
     @JvmStatic
-    fun setOnMessageReceivedListener(messageReceivedListener: FCMPushNotificationReceivedListener) {
+    fun setOnMessageReceivedListener(messageReceivedListener: PushNotificationReceivedListener) {
       listener = messageReceivedListener
     }
   }
