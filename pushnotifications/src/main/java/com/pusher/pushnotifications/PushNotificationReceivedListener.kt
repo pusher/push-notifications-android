@@ -1,11 +1,11 @@
-package com.pusher.pushnotifications.fcm
+package com.pusher.pushnotifications
 
 import com.google.firebase.messaging.RemoteMessage
 
 /**
  * The listener interface for when a remote message when the app is in the foreground.
  */
-interface FCMPushNotificationReceivedListener {
+interface PushNotificationReceivedListener {
 
   /**
    * Will be called when a new message is received.

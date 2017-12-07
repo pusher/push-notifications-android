@@ -2,6 +2,8 @@ package com.pusher.pushnotifications;
 
 import android.content.Context;
 
+import com.pusher.pushnotifications.fcm.FCMMessagingService;
+
 import java.util.Set;
 
 public class PushNotifications {
@@ -84,5 +86,14 @@ public class PushNotifications {
         }
 
         return instance.getSubscriptions();
+    }
+
+    /**
+     * Configures the listener that handles a remote message when the app is in the foreground.
+     *
+     * @param messageReceivedListener the listener that handles a remote message
+     */
+    public static void setOnMessageReceivedListener(PushNotificationReceivedListener messageReceivedListener) {
+        FCMMessagingService.setOnMessageReceivedListener(messageReceivedListener);
     }
 }
