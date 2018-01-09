@@ -1,9 +1,8 @@
 package com.pusher.pushnotifications
 
+import java.util.regex.Pattern
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
-import android.os.Handler
-import android.os.Looper
 import com.google.firebase.iid.FirebaseInstanceId
 import com.pusher.pushnotifications.api.OperationCallback
 import com.pusher.pushnotifications.api.PushNotificationsAPI
@@ -23,6 +22,8 @@ class PushNotificationsInstance(
   init {
     Validations.validateApplicationIcon(context)
   }
+
+  private val validInterestRegex = Pattern.compile("^[a-zA-Z0-9_=@,.;]{1,164}\$").toRegex()
 
   private val preferencesDeviceIdKey = "deviceId"
   private val preferencesFcmTokenKey = "fcmToken"
@@ -75,6 +76,12 @@ class PushNotificationsInstance(
    * @param interest the name of the interest
    */
   fun subscribe(interest: String) {
+    if (!interest.matches(validInterestRegex)) {
+      throw IllegalArgumentException(
+        "Interest `$interest` is not valid. It can only contain up to 164 characters " +
+          "and can only be ASCII upper/lower-case letters, numbers and one of _=@,.:")
+    }
+
     synchronized(localPreferences) {
       val interestsSet = localPreferences.getStringSet(preferencesInterestsSetKey, mutableSetOf<String>())
       if (!interestsSet.add(interest)) {
@@ -118,6 +125,14 @@ class PushNotificationsInstance(
    * @param interests the new set of interests
    */
   fun setSubscriptions(interests: Set<String>) {
+    interests.find {
+      !it.matches(validInterestRegex)
+    }?.let {
+      throw IllegalArgumentException(
+        "Interest `$it` is not valid. It can only contain up to 164 characters " +
+          "and can only be ASCII upper/lower-case letters, numbers and one of _=@,.:")
+    }
+
     synchronized(localPreferences) {
       val localInterestsSet = localPreferences.getStringSet(preferencesInterestsSetKey, mutableSetOf<String>())
       if (localInterestsSet.containsAll(interests) && interests.containsAll(localInterestsSet)) {
