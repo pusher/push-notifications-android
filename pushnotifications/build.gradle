@@ -43,6 +43,8 @@ dependencies {
     provided "com.google.firebase:firebase-core:${versions.playServices}"
     provided "com.google.firebase:firebase-messaging:${versions.playServices}"
 
+    compile 'com.firebase:firebase-jobdispatcher:0.8.5'
+
     lintChecks project(':pushnotifications-lint')
 }
 
