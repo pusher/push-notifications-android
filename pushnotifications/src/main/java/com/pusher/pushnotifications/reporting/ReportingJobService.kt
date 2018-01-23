@@ -4,7 +4,6 @@ import android.os.Bundle
 import com.firebase.jobdispatcher.JobParameters
 import com.firebase.jobdispatcher.JobService
 import com.pusher.pushnotifications.logging.Logger
-import android.os.AsyncTask
 import com.pusher.pushnotifications.PushNotificationsInstance
 import com.pusher.pushnotifications.api.OperationCallback
 import com.pusher.pushnotifications.reporting.api.ReportEvent
@@ -23,7 +22,7 @@ class ReportingJobService: JobService() {
       val b = Bundle()
       b.putString(BUNDLE_EVENT_TYPE_KEY, reportEvent.eventType.toString())
       b.putString(BUNDLE_PUBLISH_ID_KEY, reportEvent.publishId)
-      b.putLong(BUNDLE_TIMESTAMP_KEY, reportEvent.timestamp)
+      b.putLong(BUNDLE_TIMESTAMP_KEY, reportEvent.timestampMs)
 
       return b
     }
@@ -32,7 +31,7 @@ class ReportingJobService: JobService() {
       return ReportEvent(
         eventType =  ReportEventType.valueOf(bundle.getString(BUNDLE_EVENT_TYPE_KEY)),
         publishId = bundle.getString(BUNDLE_PUBLISH_ID_KEY),
-        timestamp = bundle.getLong(BUNDLE_TIMESTAMP_KEY)
+        timestampMs = bundle.getLong(BUNDLE_TIMESTAMP_KEY)
       )
     }
   }

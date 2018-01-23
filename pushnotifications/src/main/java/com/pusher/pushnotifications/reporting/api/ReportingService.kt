@@ -24,5 +24,5 @@ enum class ReportEventType {
 data class ReportEvent(
   val eventType: ReportEventType,
   val publishId: String,
-  val timestamp: Long
+  val timestampMs: Long
 )

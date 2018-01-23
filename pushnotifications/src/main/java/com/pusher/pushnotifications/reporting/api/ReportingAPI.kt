@@ -43,7 +43,7 @@ class ReportingAPI(private val instanceId: String) {
       eventType = reportEvent.eventType.toString(),
       registerRequest = ReportingMetadata(
         publishId = reportEvent.publishId,
-        timestamp = reportEvent.timestamp
+        timestamp = reportEvent.timestampMs
       )
     ).enqueue(callback)
   }
