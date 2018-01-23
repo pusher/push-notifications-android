@@ -7,6 +7,8 @@ import android.util.Log
 import com.firebase.jobdispatcher.*
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
+import com.pusher.pushnotifications.featureflags.FeatureFlag
+import com.pusher.pushnotifications.featureflags.FeatureFlagManager
 import com.pusher.pushnotifications.logging.Logger
 import com.pusher.pushnotifications.reporting.api.ReportEvent
 import com.pusher.pushnotifications.reporting.api.ReportEventType
@@ -21,7 +23,10 @@ class FCMMessageReceiver : WakefulBroadcastReceiver() {
   private val log = Logger.get(this::class)
 
   override fun onReceive(context: Context?, intent: Intent?) {
-    Log.i("FCMMessageReceiver", intent.toString())
+    if (!FeatureFlagManager.isEnabled(FeatureFlag.DELIVERY_TRACKING)) {
+      log.i("Delivery tracking flag is disabled. Skipping.")
+      return
+    }
 
     intent?.getStringExtra("pusher")?.let { pusherDataJson ->
       try {
