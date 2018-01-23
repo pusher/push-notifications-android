@@ -23,10 +23,8 @@ class FCMMessageReceiver : WakefulBroadcastReceiver() {
   private val log = Logger.get(this::class)
 
   override fun onReceive(context: Context?, intent: Intent?) {
-    Log.i("FCMMessageReceiver", intent.toString())
-
     if (!FeatureFlagManager.isEnabled(FeatureFlag.DELIVERY_TRACKING)) {
-      Log.i("FCMMessageReceiver", "Delivery tracking flag is disabled. Skipping.")
+      log.i("Delivery tracking flag is disabled. Skipping.")
       return
     }
 
