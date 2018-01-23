@@ -19,20 +19,29 @@ import com.pusher.pushnotifications.validation.Validations
 class PushNotificationsInstance(
   context: Context,
   instanceId: String) {
-  init {
-    Validations.validateApplicationIcon(context)
-  }
-
-  private val validInterestRegex = Pattern.compile("^[a-zA-Z0-9_=@,.;]{1,164}\$").toRegex()
-
-  private val preferencesDeviceIdKey = "deviceId"
-  private val preferencesFcmTokenKey = "fcmToken"
-  private val preferencesInterestsSetKey = "interests"
-
   private val localPreferences = context.getSharedPreferences(this::class.java.name, MODE_PRIVATE)
   private val log = Logger.get(this::class)
 
   private val api = PushNotificationsAPI(instanceId)
+
+  init {
+    Validations.validateApplicationIcon(context)
+    localPreferences.edit().putString(preferencesInstanceIdKey, instanceId).apply()
+  }
+
+  companion object {
+    private val validInterestRegex = Pattern.compile("^[a-zA-Z0-9_=@,.;]{1,164}\$").toRegex()
+
+    private val preferencesDeviceIdKey = "deviceId"
+    private val preferencesFcmTokenKey = "fcmToken"
+    private val preferencesInterestsSetKey = "interests"
+    private val preferencesInstanceIdKey = "instanceId"
+
+    fun getInstanceId(context: Context): String? {
+      val localPreferences = context.getSharedPreferences(PushNotificationsInstance::class.java.name, MODE_PRIVATE)
+      return localPreferences.getString(preferencesInstanceIdKey, null)
+    }
+  }
 
   /**
    * Starts the PushNotification client and synchronizes the FCM device token with
