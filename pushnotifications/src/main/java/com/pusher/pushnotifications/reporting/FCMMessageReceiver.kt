@@ -37,7 +37,7 @@ class FCMMessageReceiver : WakefulBroadcastReceiver() {
         val dispatcher = FirebaseJobDispatcher(GooglePlayDriver(context))
         val job = dispatcher.newJobBuilder()
           .setService(ReportingJobService::class.java)
-          .setTag("pusherData.publishId="+pusherData.publishId)
+          .setTag("pusherData.publishId=${pusherData.publishId}")
           .setConstraints(Constraint.ON_ANY_NETWORK)
           .setRetryStrategy(RetryStrategy.DEFAULT_EXPONENTIAL)
           .setLifetime(Lifetime.UNTIL_NEXT_BOOT)

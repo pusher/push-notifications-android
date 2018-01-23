@@ -37,33 +37,6 @@ class ReportingJobService: JobService() {
     }
   }
 
-  private class ReportEventAsyncTask(
-    val reportingAPI: ReportingAPI,
-    val finishedFunc: (shouldRetry: Boolean) -> Unit
-  ) : AsyncTask<ReportEvent, Unit, Unit>() {
-    private val log = Logger.get(this::class)
-
-    override fun doInBackground(vararg reportEvent: ReportEvent) {
-      reportingAPI.submit(
-        reportEvent = reportEvent[0],
-        operationCallback = object: OperationCallback {
-          override fun onSuccess() {
-            log.v("Successfully submitted report.")
-            finishedFunc(false)
-          }
-
-          override fun onFailure(t: Throwable) {
-            log.w("Failed submitted report.", t)
-            val shouldRetry = t !is UnrecoverableRuntimeException
-
-            finishedFunc(shouldRetry)
-          }
-        }
-      )
-      return
-    }
-  }
-
   private val log = Logger.get(this::class)
 
   override fun onStartJob(params: JobParameters?): Boolean {
@@ -74,11 +47,22 @@ class ReportingJobService: JobService() {
 
         val instanceId = PushNotificationsInstance.getInstanceId(this.applicationContext)
         if (instanceId != null) {
-          val api = ReportingAPI(instanceId)
+          ReportingAPI(instanceId).submit(
+            reportEvent = reportEvent,
+            operationCallback = object: OperationCallback {
+              override fun onSuccess() {
+                log.v("Successfully submitted report.")
+                jobFinished(params, false)
+              }
 
-          ReportEventAsyncTask(api, { shouldRetry ->
-            jobFinished(params, shouldRetry)
-          }).execute(reportEvent)
+              override fun onFailure(t: Throwable) {
+                log.w("Failed submitted report.", t)
+                val shouldRetry = t !is UnrecoverableRuntimeException
+
+                jobFinished(params, shouldRetry)
+              }
+            }
+          )
         } else {
           log.w("Incorrect start of service: instance id is missing.")
           return false
