@@ -9,7 +9,6 @@ enum class FeatureFlag {
 }
 
 object FeatureFlagManager {
-
     private val flags: Map<FeatureFlag, Boolean> = mapOf(
         FeatureFlag.DELIVERY_TRACKING to false
     )
