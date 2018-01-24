@@ -35,5 +35,12 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT"/>
             </intent-filter>
         </service>
+
+        <activity android:name="com.pusher.pushnotifications.reporting.OpenNotificationActivity">
+            <intent-filter>
+                <action android:name="com.pusher.pushnotifications.OPEN_TRACKING" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
     </application>
 </manifest>
