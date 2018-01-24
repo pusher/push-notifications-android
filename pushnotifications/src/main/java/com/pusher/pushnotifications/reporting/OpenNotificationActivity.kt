@@ -72,8 +72,8 @@ class OpenNotificationActivity: Activity() {
             } catch (_: JsonSyntaxException) {
                 // TODO: Add client-side reporting
 
-                // Since this means we messed up, just starting the main activity seems like
-                // a decent best-effort response.
+                // This means that something went horribly wrong. Just starting the main
+                // activity seems like a decent best-effort response.
                 startIntent()
             }
             return
