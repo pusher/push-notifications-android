@@ -10,6 +10,8 @@ import com.pusher.pushnotifications.fcm.FCMInstanceIDService
 import com.pusher.pushnotifications.logging.Logger
 import com.pusher.pushnotifications.validation.Validations
 
+class PusherAlreadyRegisteredException(message: String): RuntimeException(message) {}
+
 /**
  * Interacts with the Pusher service to subscribe and unsubscribe from interests.
  *
@@ -26,6 +28,14 @@ class PushNotificationsInstance(
 
   init {
     Validations.validateApplicationIcon(context)
+    PushNotificationsInstance.getInstanceId(context)?.let{
+      val isNewInstanceId = it != instanceId
+      if (isNewInstanceId) {
+        throw PusherAlreadyRegisteredException("This device has already been registered to a Pusher " +
+                "Push Notifications application with instance ID: $it. " +
+                "If you would like to register this device to $instanceId please reinstall the application.")
+      }
+    }
     localPreferences.edit().putString(preferencesInstanceIdKey, instanceId).apply()
   }
 
