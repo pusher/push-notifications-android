@@ -14,7 +14,7 @@ import com.pusher.pushnotifications.validation.Validations
  * Thrown when the device is reregistered to a different instance id. If you wish to register a
  * device to a different instance you will need to reinstall the application.
  *
- * @param string Error message to be shown
+ * @param message Error message to be shown
  */
 class PusherAlreadyRegisteredException(message: String): RuntimeException(message) {}
 
