@@ -50,6 +50,7 @@ class PushNotificationsInstance(
   fun start(): PushNotificationsInstance {
     localPreferences.getString(preferencesDeviceIdKey, null)?.let {
       api.deviceId = it
+      log.i("PushNotifications device id: $it")
     }
 
     localPreferences.getString(preferencesFcmTokenKey, null)?.let {
@@ -64,7 +65,8 @@ class PushNotificationsInstance(
               .putString(preferencesDeviceIdKey, api.deviceId)
               .putString(preferencesFcmTokenKey, fcmToken)
               .apply()
-            log.w("Successfully started PushNotifications")
+
+            log.i("Successfully started PushNotifications")
           }
 
           override fun onFailure(t: Throwable) {
