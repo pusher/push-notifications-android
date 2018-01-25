@@ -57,7 +57,6 @@ class PushNotificationsAPI(private val instanceId: String) {
         val responseBody = response?.body()
         if (responseBody != null) {
           deviceId = responseBody.id
-          log.i("Successfully registered device (id: $deviceId)")
 
           operationCallback.onSuccess()
 
