@@ -11,6 +11,14 @@ import com.pusher.pushnotifications.logging.Logger
 import com.pusher.pushnotifications.validation.Validations
 
 /**
+ * Thrown when the device is reregistered to a different instance id. If you wish to register a
+ * device to a different instance you will need to reinstall the application.
+ *
+ * @param string Error message to be shown
+ */
+class PusherAlreadyRegisteredException(message: String): RuntimeException(message) {}
+
+/**
  * Interacts with the Pusher service to subscribe and unsubscribe from interests.
  *
  * @param context the application context
@@ -26,6 +34,14 @@ class PushNotificationsInstance(
 
   init {
     Validations.validateApplicationIcon(context)
+    PushNotificationsInstance.getInstanceId(context)?.let{
+      val isNewInstanceId = it != instanceId
+      if (isNewInstanceId) {
+        throw PusherAlreadyRegisteredException("This device has already been registered to a Pusher " +
+                "Push Notifications application with instance ID: $it. " +
+                "If you would like to register this device to $instanceId please reinstall the application.")
+      }
+    }
     localPreferences.edit().putString(preferencesInstanceIdKey, instanceId).apply()
   }
 
