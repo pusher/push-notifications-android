@@ -11,6 +11,10 @@ import com.pusher.pushnotifications.reporting.api.ReportEventType
 import com.pusher.pushnotifications.reporting.api.ReportingAPI
 import com.pusher.pushnotifications.reporting.api.UnrecoverableRuntimeException
 
+data class PusherMetadata(
+        val publishId: String,
+        val clickAction: String?
+)
 
 class ReportingJobService: JobService() {
   companion object {
