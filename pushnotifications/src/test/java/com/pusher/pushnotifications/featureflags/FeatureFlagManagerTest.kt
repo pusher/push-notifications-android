@@ -2,7 +2,7 @@ package com.pusher.pushnotifications.featureflags
 
 import org.junit.Test
 
-class ExampleUnitTest {
+class FeatureFlagManagerTest {
 
   @Test
   fun isEnabled_NeverThrowsExceptions() {
