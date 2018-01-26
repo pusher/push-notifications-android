@@ -17,7 +17,6 @@ import com.pusher.pushnotifications.reporting.api.ReportEventType
  * intercepted.
  */
 class OpenNotificationActivity: Activity() {
-    private val gson = Gson()
     private val log = Logger.get(this::class)
 
     private fun startIntent(clickAction: String? = null) {
@@ -47,6 +46,7 @@ class OpenNotificationActivity: Activity() {
 
         intent?.getStringExtra("pusher")?.let { pusherDataJson ->
             try {
+                val gson = Gson()
                 val pusherData = gson.fromJson(pusherDataJson, PusherMetadata::class.java)
                 log.i("Got a valid pusher message.")
 
