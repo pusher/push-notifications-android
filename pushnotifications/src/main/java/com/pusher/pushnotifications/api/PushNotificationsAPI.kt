@@ -1,6 +1,7 @@
 package com.pusher.pushnotifications.api
 
 import com.google.gson.Gson
+import com.pusher.pushnotifications.BuildConfig
 import com.pusher.pushnotifications.api.retrofit2.RequestCallbackWithExpBackoff
 import com.pusher.pushnotifications.logging.Logger
 import retrofit2.Call
@@ -51,7 +52,7 @@ class PushNotificationsAPI(private val instanceId: String) {
       return
     }
 
-    val call = service.register(instanceId, RegisterRequest(token))
+    val call = service.register(instanceId, RegisterRequest(token, BuildConfig.VERSION_NAME))
     call.enqueue(object : RequestCallbackWithExpBackoff<RegisterResponse>() {
       override fun onResponse(call: Call<RegisterResponse>?, response: Response<RegisterResponse>?) {
         val responseBody = response?.body()

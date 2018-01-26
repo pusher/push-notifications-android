@@ -52,7 +52,8 @@ data class RefreshToken(
 )
 
 data class RegisterRequest(
-  val token: String
+  val token: String,
+  val sdkVersion: String
 )
 
 data class RegisterResponse(
