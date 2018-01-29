@@ -7,6 +7,7 @@ import com.google.firebase.iid.FirebaseInstanceId
 import com.pusher.pushnotifications.api.OperationCallback
 import com.pusher.pushnotifications.api.PushNotificationsAPI
 import com.pusher.pushnotifications.fcm.FCMInstanceIDService
+import com.pusher.pushnotifications.internal.DeviceStateStore
 import com.pusher.pushnotifications.logging.Logger
 import com.pusher.pushnotifications.validation.Validations
 
@@ -14,7 +15,7 @@ import com.pusher.pushnotifications.validation.Validations
  * Thrown when the device is reregistered to a different instance id. If you wish to register a
  * device to a different instance you will need to reinstall the application.
  *
- * @param string Error message to be shown
+ * @param message Error message to be shown
  */
 class PusherAlreadyRegisteredException(message: String): RuntimeException(message) {}
 
@@ -27,10 +28,10 @@ class PusherAlreadyRegisteredException(message: String): RuntimeException(messag
 class PushNotificationsInstance(
   context: Context,
   instanceId: String) {
-  private val localPreferences = context.getSharedPreferences(this::class.java.name, MODE_PRIVATE)
   private val log = Logger.get(this::class)
 
   private val api = PushNotificationsAPI(instanceId)
+  private val deviceStateStore = DeviceStateStore(context)
 
   init {
     Validations.validateApplicationIcon(context)
@@ -42,20 +43,14 @@ class PushNotificationsInstance(
                 "If you would like to register this device to $instanceId please reinstall the application.")
       }
     }
-    localPreferences.edit().putString(preferencesInstanceIdKey, instanceId).apply()
+    deviceStateStore.setInstanceId(instanceId)
   }
 
   companion object {
     private val validInterestRegex = Pattern.compile("^[a-zA-Z0-9_=@,.;]{1,164}\$").toRegex()
 
-    private val preferencesDeviceIdKey = "deviceId"
-    private val preferencesFcmTokenKey = "fcmToken"
-    private val preferencesInterestsSetKey = "interests"
-    private val preferencesInstanceIdKey = "instanceId"
-
     fun getInstanceId(context: Context): String? {
-      val localPreferences = context.getSharedPreferences(PushNotificationsInstance::class.java.name, MODE_PRIVATE)
-      return localPreferences.getString(preferencesInstanceIdKey, null)
+      return DeviceStateStore(context).getInstanceId()
     }
   }
 
@@ -64,12 +59,12 @@ class PushNotificationsInstance(
    * the Pusher services.
    */
   fun start(): PushNotificationsInstance {
-    localPreferences.getString(preferencesDeviceIdKey, null)?.let {
+    deviceStateStore.getDeviceId()?.let {
       api.deviceId = it
       log.i("PushNotifications device id: $it")
     }
 
-    localPreferences.getString(preferencesFcmTokenKey, null)?.let {
+    deviceStateStore.getFCMTokenKey()?.let {
       api.fcmToken = it
     }
 
@@ -77,10 +72,8 @@ class PushNotificationsInstance(
       api.registerOrRefreshFCM(fcmToken, {
         object : OperationCallback {
           override fun onSuccess() {
-            localPreferences.edit()
-              .putString(preferencesDeviceIdKey, api.deviceId)
-              .putString(preferencesFcmTokenKey, fcmToken)
-              .apply()
+            deviceStateStore.setDeviceId(api.deviceId)
+            deviceStateStore.setFCMTokenKey(fcmToken)
 
             log.i("Successfully started PushNotifications")
           }
@@ -109,12 +102,12 @@ class PushNotificationsInstance(
           "and can only be ASCII upper/lower-case letters, numbers and one of _=@,.:")
     }
 
-    synchronized(localPreferences) {
-      val interestsSet = localPreferences.getStringSet(preferencesInterestsSetKey, mutableSetOf<String>())
+    synchronized(deviceStateStore) {
+      val interestsSet = deviceStateStore.getInterestSet()
       if (!interestsSet.add(interest)) {
         return // not a new interest
       }
-      localPreferences.edit().putStringSet(preferencesInterestsSetKey, interestsSet).apply()
+      deviceStateStore.setInterestsSet(interestsSet)
     }
     api.subscribe(interest, OperationCallback.noop)
   }
@@ -125,12 +118,12 @@ class PushNotificationsInstance(
    * @param interest the name of the interest
    */
   fun unsubscribe(interest: String) {
-    synchronized(localPreferences) {
-      val interestsSet = localPreferences.getStringSet(preferencesInterestsSetKey, mutableSetOf<String>())
+    synchronized(deviceStateStore) {
+      val interestsSet = deviceStateStore.getInterestSet()
       if (!interestsSet.remove(interest)) {
         return // interest wasn't present
       }
-      localPreferences.edit().putStringSet(preferencesInterestsSetKey, interestsSet).apply()
+      deviceStateStore.setInterestsSet(interestsSet)
     }
     api.unsubscribe(interest, OperationCallback.noop)
   }
@@ -160,12 +153,12 @@ class PushNotificationsInstance(
           "and can only be ASCII upper/lower-case letters, numbers and one of _=@,.:")
     }
 
-    synchronized(localPreferences) {
-      val localInterestsSet = localPreferences.getStringSet(preferencesInterestsSetKey, mutableSetOf<String>())
+    synchronized(deviceStateStore) {
+      val localInterestsSet = deviceStateStore.getInterestSet()
       if (localInterestsSet.containsAll(interests) && interests.containsAll(localInterestsSet)) {
         return // they are the same
       }
-      localPreferences.edit().putStringSet(preferencesInterestsSetKey, interests).apply()
+      deviceStateStore.setInterestsSet(interests)
     }
     api.setSubscriptions(interests, OperationCallback.noop)
   }
@@ -174,8 +167,8 @@ class PushNotificationsInstance(
    * @return the set of subscriptions that the device is currently subscribed to
    */
   fun getSubscriptions(): Set<String> {
-    synchronized(localPreferences) {
-      return localPreferences.getStringSet(preferencesInterestsSetKey, mutableSetOf<String>())
+    synchronized(deviceStateStore) {
+      return deviceStateStore.getInterestSet()
     }
   }
 }
