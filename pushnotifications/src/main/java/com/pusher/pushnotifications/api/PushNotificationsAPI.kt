@@ -18,7 +18,7 @@ class PushNotificationsAPI(private val instanceId: String) {
   private val gson = Gson()
   private val client =
     OkHttpClient.Builder()
-      .addInterceptor(DeviceHeadersInterceptor())
+      .addInterceptor(PusherLibraryHeaderInterceptor())
       .build()
 
   private val service =

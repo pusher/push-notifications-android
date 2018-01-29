@@ -1,7 +1,7 @@
 package com.pusher.pushnotifications.reporting.api
 
 import com.google.gson.Gson
-import com.pusher.pushnotifications.api.DeviceHeadersInterceptor
+import com.pusher.pushnotifications.api.PusherLibraryHeaderInterceptor
 import com.pusher.pushnotifications.api.OperationCallback
 import okhttp3.OkHttpClient
 import retrofit2.Call
@@ -17,7 +17,7 @@ class ReportingAPI(private val instanceId: String) {
 
   private val client =
     OkHttpClient.Builder()
-      .addInterceptor(DeviceHeadersInterceptor())
+      .addInterceptor(PusherLibraryHeaderInterceptor())
       .build()
 
   private val service =
