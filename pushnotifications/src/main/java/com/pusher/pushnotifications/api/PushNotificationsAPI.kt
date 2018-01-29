@@ -3,6 +3,7 @@ package com.pusher.pushnotifications.api
 import com.google.gson.Gson
 import com.pusher.pushnotifications.api.retrofit2.RequestCallbackWithExpBackoff
 import com.pusher.pushnotifications.logging.Logger
+import okhttp3.OkHttpClient
 import retrofit2.Call
 import retrofit2.Response
 import retrofit2.Retrofit
@@ -15,10 +16,16 @@ class PushNotificationsAPI(private val instanceId: String) {
   private val log = Logger.get(this::class)
 
   private val gson = Gson()
+  private val client =
+    OkHttpClient.Builder()
+      .addInterceptor(PusherLibraryHeaderInterceptor())
+      .build()
+
   private val service =
     Retrofit.Builder()
       .baseUrl(baseUrl)
       .addConverterFactory(GsonConverterFactory.create(gson))
+      .client(client)
       .build()
       .create(PushNotificationService::class.java)
 
