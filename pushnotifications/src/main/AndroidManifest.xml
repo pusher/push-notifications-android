@@ -40,6 +40,13 @@
             android:authorities="${applicationId}.pushnotificationsinitprovider"
             android:name="com.pusher.pushnotifications.internal.PushNotificationsInitProvider"
             android:exported="false"
-            android:initOrder="100" />
+            android:initOrder="99" />
+
+        <activity android:name="com.pusher.pushnotifications.reporting.OpenNotificationActivity">
+            <intent-filter>
+                <action android:name="com.pusher.pushnotifications.OPEN_TRACKING" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
     </application>
 </manifest>

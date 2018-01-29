@@ -1,7 +1,7 @@
 package com.pusher.pushnotifications.featureflags
 
 enum class FeatureFlag {
-    DELIVERY_TRACKING
+  DELIVERY_TRACKING
 }
 
 /*
@@ -9,11 +9,11 @@ enum class FeatureFlag {
  * information from the server.
  */
 object FeatureFlagManager {
-    private val flags: Map<FeatureFlag, Boolean> = mapOf(
-        FeatureFlag.DELIVERY_TRACKING to false
-    )
+  private val flags: Map<FeatureFlag, Boolean> = mapOf(
+    FeatureFlag.DELIVERY_TRACKING to false
+  )
 
-    fun isEnabled(flag: FeatureFlag): Boolean {
-        return flags[flag]!!
-    }
+  fun isEnabled(flag: FeatureFlag): Boolean {
+    return flags[flag]!!
+  }
 }
