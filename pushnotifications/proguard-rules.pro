@@ -27,3 +27,8 @@
 -keep class android.support.v4.app.NotificationCompat$* { *; }
 
 -keep class android.support.v4.app.NotificationManagerCompat { *; }
+
+## Overzealous rule, but future proof
+-keep class com.pusher.pushnotifications.** {
+  *;
+}
