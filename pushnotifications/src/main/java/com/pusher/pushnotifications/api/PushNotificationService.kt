@@ -52,7 +52,13 @@ data class RefreshToken(
 )
 
 data class RegisterRequest(
-  val token: String
+  val token: String,
+  val metadata: DeviceMetadata
+)
+
+data class DeviceMetadata (
+  val sdkVersion: String,
+  val androidVersion: String
 )
 
 data class RegisterResponse(
