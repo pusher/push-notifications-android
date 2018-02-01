@@ -4,16 +4,17 @@ import retrofit2.Call
 import retrofit2.http.*
 
 interface ReportingService {
-  @POST("instances/{instanceId}/event-type/{eventType}")
+  @POST("instances/{instanceId}/events")
   fun submit(
     @Path("instanceId") instanceId: String,
-    @Path("eventType") eventType: String,
-    @Body registerRequest: ReportingMetadata
+    @Body reportingRequest: ReportingRequest
   ): Call<Void>
 }
 
-data class ReportingMetadata(
+data class ReportingRequest(
+  val eventType: String,
   val publishId: String,
+  val deviceId: String,
   val timestamp: Long
 )
 
@@ -23,6 +24,7 @@ enum class ReportEventType {
 
 data class ReportEvent(
   val eventType: ReportEventType,
+  val deviceId: String,
   val publishId: String,
   val timestampMs: Long
 )
