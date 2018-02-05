@@ -10,7 +10,7 @@ interface PushNotificationService {
     @Body registerRequest: RegisterRequest
   ): Call<RegisterResponse>
 
-  @PUT("/instances/{instanceId}/devices/fcm/{deviceId}/token")
+  @PUT("instances/{instanceId}/devices/fcm/{deviceId}/token")
   fun refreshToken(
     @Path("instanceId") instanceId: String,
     @Path("deviceId") deviceId: String,
