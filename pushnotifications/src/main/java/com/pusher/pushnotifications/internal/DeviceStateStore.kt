@@ -11,35 +11,19 @@ class DeviceStateStore(context: Context) {
   private val preferences = context.getSharedPreferences(
     "com.pusher.pushnotifications.PushNotificationsInstance", Context.MODE_PRIVATE)
 
-  fun setInstanceId(instanceId: String) {
-    preferences.edit().putString(preferencesInstanceIdKey, instanceId).apply()
-  }
+  var instanceId: String?
+    get() = preferences.getString(preferencesInstanceIdKey, null)
+    set(instanceId) = preferences.edit().putString(preferencesInstanceIdKey, instanceId).apply()
 
-  fun getInstanceId(): String? {
-    return preferences.getString(preferencesInstanceIdKey, null)
-  }
+  var deviceId: String?
+    get() = preferences.getString(preferencesDeviceIdKey, null)
+    set(deviceId) = preferences.edit().putString(preferencesDeviceIdKey, deviceId).apply()
 
-  fun setDeviceId(deviceId: String?) {
-    preferences.edit().putString(preferencesDeviceIdKey, deviceId).apply()
-  }
+  var FCMToken: String?
+    get() = preferences.getString(preferencesFCMTokenKey, null)
+    set(FCMToken) = preferences.edit().putString(preferencesFCMTokenKey, FCMToken).apply()
 
-  fun getDeviceId(): String? {
-    return preferences.getString(preferencesDeviceIdKey, null)
-  }
-
-  fun setFCMTokenKey(fcmTokenKey: String) {
-    preferences.edit().putString(preferencesFCMTokenKey, fcmTokenKey).apply()
-  }
-
-  fun getFCMTokenKey(): String? {
-    return preferences.getString(preferencesFCMTokenKey, null)
-  }
-
-  fun setInterestsSet(interestsSet: Set<String>) {
-    preferences.edit().putStringSet(preferencesInterestsSetKey, interestsSet).apply()
-  }
-
-  fun getInterestSet(): MutableSet<String> {
-    return preferences.getStringSet(preferencesInterestsSetKey, mutableSetOf<String>())
-  }
+  var interestsSet: MutableSet<String>
+    get() = preferences.getStringSet(preferencesInterestsSetKey, mutableSetOf<String>())
+    set(interestsSet) = preferences.edit().putStringSet(preferencesInterestsSetKey, interestsSet).apply()
 }

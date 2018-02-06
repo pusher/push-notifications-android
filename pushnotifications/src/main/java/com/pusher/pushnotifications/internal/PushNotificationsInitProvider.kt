@@ -11,11 +11,11 @@ class PushNotificationsInitProvider: ContentProvider() {
   override fun onCreate(): Boolean {
     val deviceStateStore = DeviceStateStore(context)
 
-    deviceStateStore.getInstanceId()?.let {
+    deviceStateStore.instanceId?.let {
       val api = PushNotificationsAPI(it)
 
-      api.deviceId = deviceStateStore.getDeviceId()
-      api.setSubscriptions(deviceStateStore.getInterestSet(), OperationCallback.noop)
+      api.deviceId = deviceStateStore.deviceId
+      api.setSubscriptions(deviceStateStore.interestsSet, OperationCallback.noop)
     }
 
     return false

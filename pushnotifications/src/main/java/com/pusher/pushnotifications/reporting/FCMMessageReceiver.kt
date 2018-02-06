@@ -34,7 +34,7 @@ class FCMMessageReceiver : WakefulBroadcastReceiver() {
           return
         }
 
-        val deviceId = DeviceStateStore(context).getDeviceId()
+        val deviceId = DeviceStateStore(context).deviceId
         if (deviceId == null) {
           log.w("Failed to get device ID (device ID not stored) - Skipping delivery tracking.")
           return

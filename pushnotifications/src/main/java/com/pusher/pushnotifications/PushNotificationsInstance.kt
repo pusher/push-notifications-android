@@ -43,14 +43,14 @@ class PushNotificationsInstance(
                 "If you would like to register this device to $instanceId please reinstall the application.")
       }
     }
-    deviceStateStore.setInstanceId(instanceId)
+    deviceStateStore.instanceId = instanceId
   }
 
   companion object {
     private val validInterestRegex = Pattern.compile("^[a-zA-Z0-9_=@,.;]{1,164}\$").toRegex()
 
     fun getInstanceId(context: Context): String? {
-      return DeviceStateStore(context).getInstanceId()
+      return DeviceStateStore(context).instanceId
     }
   }
 
@@ -59,12 +59,12 @@ class PushNotificationsInstance(
    * the Pusher services.
    */
   fun start(): PushNotificationsInstance {
-    deviceStateStore.getDeviceId()?.let {
+    deviceStateStore.deviceId?.let {
       api.deviceId = it
       log.i("PushNotifications device id: $it")
     }
 
-    deviceStateStore.getFCMTokenKey()?.let {
+    deviceStateStore.FCMToken?.let {
       api.fcmToken = it
     }
 
@@ -72,8 +72,8 @@ class PushNotificationsInstance(
       api.registerOrRefreshFCM(fcmToken, {
         object : OperationCallback {
           override fun onSuccess() {
-            deviceStateStore.setDeviceId(api.deviceId)
-            deviceStateStore.setFCMTokenKey(fcmToken)
+            deviceStateStore.deviceId = api.deviceId
+            deviceStateStore.FCMToken = fcmToken
 
             log.i("Successfully started PushNotifications")
           }
@@ -103,11 +103,11 @@ class PushNotificationsInstance(
     }
 
     synchronized(deviceStateStore) {
-      val interestsSet = deviceStateStore.getInterestSet()
+      val interestsSet = deviceStateStore.interestsSet
       if (!interestsSet.add(interest)) {
         return // not a new interest
       }
-      deviceStateStore.setInterestsSet(interestsSet)
+      deviceStateStore.interestsSet = interestsSet
     }
     api.subscribe(interest, OperationCallback.noop)
   }
@@ -119,11 +119,11 @@ class PushNotificationsInstance(
    */
   fun unsubscribe(interest: String) {
     synchronized(deviceStateStore) {
-      val interestsSet = deviceStateStore.getInterestSet()
+      val interestsSet = deviceStateStore.interestsSet
       if (!interestsSet.remove(interest)) {
         return // interest wasn't present
       }
-      deviceStateStore.setInterestsSet(interestsSet)
+      deviceStateStore.interestsSet = interestsSet
     }
     api.unsubscribe(interest, OperationCallback.noop)
   }
@@ -154,11 +154,11 @@ class PushNotificationsInstance(
     }
 
     synchronized(deviceStateStore) {
-      val localInterestsSet = deviceStateStore.getInterestSet()
+      val localInterestsSet = deviceStateStore.interestsSet
       if (localInterestsSet.containsAll(interests) && interests.containsAll(localInterestsSet)) {
         return // they are the same
       }
-      deviceStateStore.setInterestsSet(interests)
+      deviceStateStore.interestsSet = localInterestsSet
     }
     api.setSubscriptions(interests, OperationCallback.noop)
   }
@@ -168,7 +168,7 @@ class PushNotificationsInstance(
    */
   fun getSubscriptions(): Set<String> {
     synchronized(deviceStateStore) {
-      return deviceStateStore.getInterestSet()
+      return deviceStateStore.interestsSet
     }
   }
 }
