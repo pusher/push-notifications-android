@@ -30,13 +30,13 @@ class FCMMessageReceiver : WakefulBroadcastReceiver() {
         log.i("Got a valid pusher message.")
 
         if (context == null) {
-          log.e("Failed to get device ID (no context) - Skipping delivery tracking.")
+          log.w("Failed to get device ID (no context) - Skipping delivery tracking.")
           return
         }
 
         val deviceId = DeviceStateStore(context).getDeviceId()
         if (deviceId == null) {
-          log.e("Failed to get device ID (device ID not stored) - Skipping delivery tracking.")
+          log.w("Failed to get device ID (device ID not stored) - Skipping delivery tracking.")
           return
         }
 
