@@ -49,9 +49,10 @@ class ReportingAPI(private val instanceId: String) {
 
     service.submit(
       instanceId = instanceId,
-      eventType = reportEvent.eventType.toString(),
-      registerRequest = ReportingMetadata(
+      reportingRequest = ReportingRequest(
+        eventType = reportEvent.eventType.toString().toUpperCase(),
         publishId = reportEvent.publishId,
+        deviceId = reportEvent.deviceId,
         timestamp = reportEvent.timestampMs
       )
     ).enqueue(callback)

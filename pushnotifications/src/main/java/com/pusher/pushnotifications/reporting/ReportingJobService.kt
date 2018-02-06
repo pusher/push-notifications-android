@@ -19,12 +19,14 @@ data class PusherMetadata(
 class ReportingJobService: JobService() {
   companion object {
     private val BUNDLE_EVENT_TYPE_KEY = "ReportEventType"
+    private val BUNDLE_DEVICE_ID_KEY = "DeviceId"
     private val BUNDLE_PUBLISH_ID_KEY = "PublishId"
     private val BUNDLE_TIMESTAMP_KEY = "Timestamp"
 
     fun toBundle(reportEvent: ReportEvent): Bundle {
       val b = Bundle()
       b.putString(BUNDLE_EVENT_TYPE_KEY, reportEvent.eventType.toString())
+      b.putString(BUNDLE_DEVICE_ID_KEY, reportEvent.deviceId)
       b.putString(BUNDLE_PUBLISH_ID_KEY, reportEvent.publishId)
       b.putLong(BUNDLE_TIMESTAMP_KEY, reportEvent.timestampMs)
 
@@ -34,6 +36,7 @@ class ReportingJobService: JobService() {
     fun fromBundle(bundle: Bundle): ReportEvent {
       return ReportEvent(
         eventType =  ReportEventType.valueOf(bundle.getString(BUNDLE_EVENT_TYPE_KEY)),
+        deviceId = bundle.getString(BUNDLE_DEVICE_ID_KEY),
         publishId = bundle.getString(BUNDLE_PUBLISH_ID_KEY),
         timestampMs = bundle.getLong(BUNDLE_TIMESTAMP_KEY)
       )

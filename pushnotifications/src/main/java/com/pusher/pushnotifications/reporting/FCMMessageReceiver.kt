@@ -8,6 +8,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.pusher.pushnotifications.featureflags.FeatureFlag
 import com.pusher.pushnotifications.featureflags.FeatureFlagManager
+import com.pusher.pushnotifications.internal.DeviceStateStore
 import com.pusher.pushnotifications.logging.Logger
 import com.pusher.pushnotifications.reporting.api.ReportEvent
 import com.pusher.pushnotifications.reporting.api.ReportEventType
@@ -28,9 +29,21 @@ class FCMMessageReceiver : WakefulBroadcastReceiver() {
         val pusherData = gson.fromJson(pusherDataJson, PusherMetadata::class.java)
         log.i("Got a valid pusher message.")
 
+        if (context == null) {
+          log.w("Failed to get device ID (no context) - Skipping delivery tracking.")
+          return
+        }
+
+        val deviceId = DeviceStateStore(context).getDeviceId()
+        if (deviceId == null) {
+          log.w("Failed to get device ID (device ID not stored) - Skipping delivery tracking.")
+          return
+        }
+
         val reportEvent = ReportEvent(
           eventType = ReportEventType.Delivery,
           publishId = pusherData.publishId,
+          deviceId =   deviceId,
           timestampMs = System.currentTimeMillis()
         )
 
