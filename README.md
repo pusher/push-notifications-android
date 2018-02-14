@@ -32,7 +32,7 @@ dependencies {
 
     // Add these lines
     implementation 'com.google.firebase:firebase-messaging:11.6.2'
-    implementation 'com.pusher:push-notifications-android:0.9.8'
+    implementation 'com.pusher:push-notifications-android:0.9.9'
 }
 
 // Add this line to the end of the file
