@@ -62,7 +62,7 @@ class OpenNotificationActivity: Activity() {
                         eventType = ReportEventType.Open,
                         publishId = pusherData.publishId,
                         deviceId = deviceId,
-                        timestampMs = System.currentTimeMillis()
+                        timestampSecs = System.currentTimeMillis() / 1000
                 )
 
                 val dispatcher = FirebaseJobDispatcher(GooglePlayDriver(applicationContext))

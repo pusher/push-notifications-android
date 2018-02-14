@@ -53,7 +53,7 @@ class ReportingAPI(private val instanceId: String) {
         eventType = reportEvent.eventType.toString().toUpperCase(),
         publishId = reportEvent.publishId,
         deviceId = reportEvent.deviceId,
-        timestamp = reportEvent.timestampMs
+        timestampSecs = reportEvent.timestampSecs
       )
     ).enqueue(callback)
   }
