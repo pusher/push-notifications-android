@@ -10,7 +10,7 @@ enum class FeatureFlag {
  */
 object FeatureFlagManager {
   private val flags: Map<FeatureFlag, Boolean> = mapOf(
-    FeatureFlag.DELIVERY_TRACKING to false
+    FeatureFlag.DELIVERY_TRACKING to true
   )
 
   fun isEnabled(flag: FeatureFlag): Boolean {

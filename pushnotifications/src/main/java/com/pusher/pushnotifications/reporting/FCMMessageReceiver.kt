@@ -44,7 +44,7 @@ class FCMMessageReceiver : WakefulBroadcastReceiver() {
           eventType = ReportEventType.Delivery,
           publishId = pusherData.publishId,
           deviceId =   deviceId,
-          timestampMs = System.currentTimeMillis()
+          timestampSecs = System.currentTimeMillis()
         )
 
         val dispatcher = FirebaseJobDispatcher(GooglePlayDriver(context))

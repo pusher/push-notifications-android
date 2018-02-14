@@ -28,7 +28,7 @@ class ReportingJobService: JobService() {
       b.putString(BUNDLE_EVENT_TYPE_KEY, reportEvent.eventType.toString())
       b.putString(BUNDLE_DEVICE_ID_KEY, reportEvent.deviceId)
       b.putString(BUNDLE_PUBLISH_ID_KEY, reportEvent.publishId)
-      b.putLong(BUNDLE_TIMESTAMP_KEY, reportEvent.timestampMs)
+      b.putLong(BUNDLE_TIMESTAMP_KEY, reportEvent.timestampSecs)
 
       return b
     }
@@ -38,7 +38,7 @@ class ReportingJobService: JobService() {
         eventType =  ReportEventType.valueOf(bundle.getString(BUNDLE_EVENT_TYPE_KEY)),
         deviceId = bundle.getString(BUNDLE_DEVICE_ID_KEY),
         publishId = bundle.getString(BUNDLE_PUBLISH_ID_KEY),
-        timestampMs = bundle.getLong(BUNDLE_TIMESTAMP_KEY)
+        timestampSecs = bundle.getLong(BUNDLE_TIMESTAMP_KEY)
       )
     }
   }
