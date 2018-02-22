@@ -88,12 +88,3 @@ data class TokenValidationResponse(
 data class SetSubscriptionsRequest(
   val interests: Set<String>
 )
-
-data class GetSubscriptionsResponse(
-  val interests: List<String>,
-  val responseMetadata: GetSubscriptionsResponseMetadata?
-)
-
-data class GetSubscriptionsResponseMetadata(
-  val nextCursor: String
-)
