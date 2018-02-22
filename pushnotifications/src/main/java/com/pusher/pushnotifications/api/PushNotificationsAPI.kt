@@ -3,6 +3,7 @@ package com.pusher.pushnotifications.api
 import com.google.gson.Gson
 import com.pusher.pushnotifications.BuildConfig
 import com.pusher.pushnotifications.api.retrofit2.RequestCallbackWithExpBackoff
+import com.pusher.pushnotifications.internal.DeviceStateStore
 import com.pusher.pushnotifications.logging.Logger
 import okhttp3.OkHttpClient
 import retrofit2.Call
@@ -184,6 +185,39 @@ class PushNotificationsAPI(private val instanceId: String) {
       jobQueue += {
         service.setSubscriptions(
           instanceId = instanceId, deviceId = it, interests = SetSubscriptionsRequest(interests)
+        ).enqueue(callback)
+      }
+    }
+  }
+
+  fun setMetadata(metadata: DeviceMetadata, operationCallback: OperationCallback) {
+    val callback = object : RequestCallbackWithExpBackoff<Void>() {
+      override fun onResponse(call: Call<Void>?, response: Response<Void>?) {
+        if (response != null && response.code() >= 200 && response.code() < 300) {
+          log.d("Successfully set metadata")
+          operationCallback.onSuccess()
+          return
+        }
+
+        val responseErrorBody = response?.errorBody()
+        if (responseErrorBody != null) {
+          val error = gson.fromJson(responseErrorBody.string(), NOKResponse::class.java)
+          log.w("Failed to set metadata: $error")
+          operationCallback.onFailure(error)
+        }
+      }
+    }
+
+    synchronized(jobQueue) {
+      deviceId?.let {
+        service.setMetadata(
+          instanceId = instanceId, deviceId = it, metadata = metadata
+        ).enqueue(callback)
+        return
+      }
+      jobQueue += {
+        service.setMetadata(
+          instanceId = instanceId, deviceId = it, metadata = metadata
         ).enqueue(callback)
       }
     }
