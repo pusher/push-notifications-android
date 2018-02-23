@@ -9,8 +9,11 @@ import com.pusher.pushnotifications.BuildConfig
 import com.pusher.pushnotifications.api.DeviceMetadata
 import com.pusher.pushnotifications.api.OperationCallback
 import com.pusher.pushnotifications.api.PushNotificationsAPI
+import com.pusher.pushnotifications.logging.Logger
 
 class PushNotificationsInitProvider: ContentProvider() {
+  private val log = Logger.get(this::class)
+
   override fun onCreate(): Boolean {
     val deviceStateStore = DeviceStateStore(context)
 
@@ -23,9 +26,16 @@ class PushNotificationsInitProvider: ContentProvider() {
       if (deviceStateStore.sdkVersion != BuildConfig.VERSION_NAME
           || deviceStateStore.osVersion != Build.VERSION.RELEASE) {
         val metadata = DeviceMetadata(BuildConfig.VERSION_NAME, Build.VERSION.RELEASE)
-        api.setMetadata(metadata, OperationCallback.noop)
-        deviceStateStore.sdkVersion = BuildConfig.VERSION_NAME
-        deviceStateStore.osVersion = Build.VERSION.RELEASE
+        api.setMetadata(metadata, operationCallback = object: OperationCallback {
+          override fun onSuccess() {
+            deviceStateStore.sdkVersion = BuildConfig.VERSION_NAME
+            deviceStateStore.osVersion = Build.VERSION.RELEASE
+          }
+
+          override fun onFailure(t: Throwable) {
+            log.w("Failed to persist metadata.", t)
+          }
+        })
       }
     }
 
