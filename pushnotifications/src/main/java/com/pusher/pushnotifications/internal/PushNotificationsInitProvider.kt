@@ -4,10 +4,16 @@ import android.content.ContentProvider
 import android.content.ContentValues
 import android.database.Cursor
 import android.net.Uri
+import android.os.Build
+import com.pusher.pushnotifications.BuildConfig
+import com.pusher.pushnotifications.api.DeviceMetadata
 import com.pusher.pushnotifications.api.OperationCallback
 import com.pusher.pushnotifications.api.PushNotificationsAPI
+import com.pusher.pushnotifications.logging.Logger
 
 class PushNotificationsInitProvider: ContentProvider() {
+  private val log = Logger.get(this::class)
+
   override fun onCreate(): Boolean {
     val deviceStateStore = DeviceStateStore(context)
 
@@ -16,6 +22,21 @@ class PushNotificationsInitProvider: ContentProvider() {
 
       api.deviceId = deviceStateStore.deviceId
       api.setSubscriptions(deviceStateStore.interestsSet, OperationCallback.noop)
+
+      if (deviceStateStore.sdkVersion != BuildConfig.VERSION_NAME
+          || deviceStateStore.osVersion != Build.VERSION.RELEASE) {
+        val metadata = DeviceMetadata(BuildConfig.VERSION_NAME, Build.VERSION.RELEASE)
+        api.setMetadata(metadata, operationCallback = object: OperationCallback {
+          override fun onSuccess() {
+            deviceStateStore.sdkVersion = BuildConfig.VERSION_NAME
+            deviceStateStore.osVersion = Build.VERSION.RELEASE
+          }
+
+          override fun onFailure(t: Throwable) {
+            log.w("Failed to persist metadata.", t)
+          }
+        })
+      }
     }
 
     return false

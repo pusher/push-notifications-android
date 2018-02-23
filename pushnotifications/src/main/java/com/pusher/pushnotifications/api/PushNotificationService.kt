@@ -37,6 +37,13 @@ interface PushNotificationService {
     @Path("deviceId") deviceId: String,
     @Body interests: SetSubscriptionsRequest
   ): Call<Void>
+
+  @PUT("instances/{instanceId}/devices/fcm/{deviceId}/metadata")
+  fun setMetadata(
+    @Path("instanceId") instanceId: String,
+    @Path("deviceId") deviceId: String,
+    @Body metadata: DeviceMetadata
+  ): Call<Void>
 }
 
 data class NOKResponse(
@@ -87,13 +94,4 @@ data class TokenValidationResponse(
 
 data class SetSubscriptionsRequest(
   val interests: Set<String>
-)
-
-data class GetSubscriptionsResponse(
-  val interests: List<String>,
-  val responseMetadata: GetSubscriptionsResponseMetadata?
-)
-
-data class GetSubscriptionsResponseMetadata(
-  val nextCursor: String
 )
