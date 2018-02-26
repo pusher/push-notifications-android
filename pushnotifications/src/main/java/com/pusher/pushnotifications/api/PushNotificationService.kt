@@ -54,6 +54,8 @@ data class NOKResponse(
     get() = this.toString()
 }
 
+val unknownNOKResponse = NOKResponse("Unknown Service Error", "Something went wrong")
+
 data class RefreshToken(
   val token: String
 )

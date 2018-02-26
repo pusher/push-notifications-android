@@ -1,9 +1,9 @@
 package com.pusher.pushnotifications.api
 
 import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
 import com.pusher.pushnotifications.BuildConfig
 import com.pusher.pushnotifications.api.retrofit2.RequestCallbackWithExpBackoff
-import com.pusher.pushnotifications.internal.DeviceStateStore
 import com.pusher.pushnotifications.logging.Logger
 import okhttp3.OkHttpClient
 import retrofit2.Call
@@ -36,6 +36,16 @@ class PushNotificationsAPI(private val instanceId: String) {
   var deviceId: String? = null
   var fcmToken: String? = null
 
+  // Handles the JsonSyntaxException properly
+  private fun safeExtractJsonError(possiblyJson: String): NOKResponse {
+    return try {
+      gson.fromJson(possiblyJson, NOKResponse::class.java)
+    } catch (jsonException: JsonSyntaxException) {
+      log.w("Failed to parse json `$possiblyJson`", jsonException)
+      unknownNOKResponse
+    }
+  }
+
   fun registerOrRefreshFCM(token: String, operationCallback: OperationCallback) {
     deviceId?.let { dId ->
       if (fcmToken != null && fcmToken != token) {
@@ -48,7 +58,7 @@ class PushNotificationsAPI(private val instanceId: String) {
                 return
               }
               response?.errorBody()?.let { responseErrorBody ->
-                val error = gson.fromJson(responseErrorBody.string(), NOKResponse::class.java)
+                val error = safeExtractJsonError(responseErrorBody.string())
                 log.w("Failed to register device: $error")
                 operationCallback.onFailure(error)
                 return
@@ -87,7 +97,14 @@ class PushNotificationsAPI(private val instanceId: String) {
 
         val responseErrorBody = response?.errorBody()
         if (responseErrorBody != null) {
-          val error = gson.fromJson(responseErrorBody.string(), RegisterResponseError::class.java)
+          val error =
+              try {
+                gson.fromJson(responseErrorBody.string(), RegisterResponseError::class.java)
+              } catch (jsonException: JsonSyntaxException) {
+                log.w("Failed to parse json `${responseErrorBody.string()}`", jsonException)
+                unknownNOKResponse
+              }
+
           log.w("Failed to register device: $error")
           operationCallback.onFailure(error)
         }
@@ -106,7 +123,7 @@ class PushNotificationsAPI(private val instanceId: String) {
 
         val responseErrorBody = response?.errorBody()
         if (responseErrorBody != null) {
-          val error = gson.fromJson(responseErrorBody.string(), NOKResponse::class.java)
+          val error = safeExtractJsonError(responseErrorBody.string())
           log.w("Failed to subscribe to interest: $error")
           operationCallback.onFailure(error)
         }
@@ -137,7 +154,7 @@ class PushNotificationsAPI(private val instanceId: String) {
 
         val responseErrorBody = response?.errorBody()
         if (responseErrorBody != null) {
-          val error = gson.fromJson(responseErrorBody.string(), NOKResponse::class.java)
+          val error = safeExtractJsonError(responseErrorBody.string())
           log.w("Failed to unsubscribe to interest: $error")
           operationCallback.onFailure(error)
         }
@@ -168,7 +185,7 @@ class PushNotificationsAPI(private val instanceId: String) {
 
         val responseErrorBody = response?.errorBody()
         if (responseErrorBody != null) {
-          val error = gson.fromJson(responseErrorBody.string(), NOKResponse::class.java)
+          val error = safeExtractJsonError(responseErrorBody.string())
           log.w("Failed to update the interest set: $error")
           operationCallback.onFailure(error)
         }
@@ -201,7 +218,7 @@ class PushNotificationsAPI(private val instanceId: String) {
 
         val responseErrorBody = response?.errorBody()
         if (responseErrorBody != null) {
-          val error = gson.fromJson(responseErrorBody.string(), NOKResponse::class.java)
+          val error = safeExtractJsonError(responseErrorBody.string())
           log.w("Failed to set metadata: $error")
           operationCallback.onFailure(error)
         }
