@@ -41,6 +41,7 @@ class PushNotificationsAPI(private val instanceId: String) {
     return try {
       gson.fromJson(possiblyJson, NOKResponse::class.java)
     } catch (jsonException: JsonSyntaxException) {
+      log.w("Failed to parse json `$possiblyJson`", jsonException)
       unknownNOKResponse
     }
   }
@@ -100,6 +101,7 @@ class PushNotificationsAPI(private val instanceId: String) {
               try {
                 gson.fromJson(responseErrorBody.string(), RegisterResponseError::class.java)
               } catch (jsonException: JsonSyntaxException) {
+                log.w("Failed to parse json `${responseErrorBody.string()}`", jsonException)
                 unknownNOKResponse
               }
 
