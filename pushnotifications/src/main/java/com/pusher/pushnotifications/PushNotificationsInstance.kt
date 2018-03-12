@@ -47,7 +47,7 @@ class PushNotificationsInstance(
   }
 
   companion object {
-    private val validInterestRegex = Pattern.compile("^[a-zA-Z0-9_=@,.;]{1,164}\$").toRegex()
+    private val validInterestRegex = Pattern.compile("^[a-zA-Z0-9_\\-=@,.;]{1,164}$").toRegex()
 
     fun getInstanceId(context: Context): String? {
       return DeviceStateStore(context).instanceId
@@ -99,7 +99,7 @@ class PushNotificationsInstance(
     if (!interest.matches(validInterestRegex)) {
       throw IllegalArgumentException(
         "Interest `$interest` is not valid. It can only contain up to 164 characters " +
-          "and can only be ASCII upper/lower-case letters, numbers and one of _=@,.:")
+          "and can only be ASCII upper/lower-case letters, numbers and one of _-=@,.:")
     }
 
     synchronized(deviceStateStore) {
