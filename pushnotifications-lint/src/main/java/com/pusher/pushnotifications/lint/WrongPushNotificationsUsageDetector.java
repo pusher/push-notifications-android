@@ -47,8 +47,8 @@ public final class WrongPushNotificationsUsageDetector extends Detector implemen
                     new Implementation(WrongPushNotificationsUsageDetector.class, Scope.JAVA_FILE_SCOPE)
             );
 
-    private static final String VALID_INTEREST_NAME_REGEX = "^[a-zA-Z0-9_=@,.;]+$";
-    private static final String INCORRECT_INTEREST_NAME = "This interest name contains invalid characters. It can only be ASCII upper/lower-case letters, numbers and one of _=@,.:";
+    private static final String VALID_INTEREST_NAME_REGEX = "^[a-zA-Z0-9_\\-=@,.;]+$";
+    private static final String INCORRECT_INTEREST_NAME = "This interest name contains invalid characters. It can only be ASCII upper/lower-case letters, numbers and one of _-=@,.:";
     private static final int ISSUE_INCORRECT_INTEREST_NAME_PRIORITY = 10;
     private static final Issue ISSUE_INCORRECT_INTEREST_NAME =
             Issue.create(

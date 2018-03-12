@@ -18,6 +18,7 @@ class MainActivity : AppCompatActivity() {
 
     PushNotifications.subscribe("hello")
     PushNotifications.subscribe("donuts")
+    PushNotifications.subscribe("hello-donuts")
 
     Log.i("MainActivity", "Current subscriptions are:")
     PushNotifications.getSubscriptions().forEach { interest ->
