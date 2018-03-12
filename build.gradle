@@ -2,11 +2,12 @@
 
 buildscript {
     ext.versions = [
-        kotlin: '1.2.21',
+        kotlin: '1.2.30',
 
         androidPlugin: '3.0.0',
-        androidTools: '26.0.0',
-        playServices: '11.6.0',
+        androidTools: '27.0.2',
+        androidLintTools: '26.0.0',
+        playServices: '11.8.0',
     ]
 
     repositories {
@@ -27,10 +28,10 @@ buildscript {
         androidPlugin: "com.android.tools.build:gradle:${versions.androidPlugin}",
 
         lint: [
-            'core': "com.android.tools.lint:lint:${versions.androidTools}",
-            'api': "com.android.tools.lint:lint-api:${versions.androidTools}",
-            'checks': "com.android.tools.lint:lint-checks:${versions.androidTools}",
-            'tests': "com.android.tools.lint:lint-tests:${versions.androidTools}",
+            'core': "com.android.tools.lint:lint:${versions.androidLintTools}",
+            'api': "com.android.tools.lint:lint-api:${versions.androidLintTools}",
+            'checks': "com.android.tools.lint:lint-checks:${versions.androidLintTools}",
+            'tests': "com.android.tools.lint:lint-tests:${versions.androidLintTools}",
         ],
     ]
 }
