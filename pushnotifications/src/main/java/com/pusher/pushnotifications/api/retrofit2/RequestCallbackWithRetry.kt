@@ -26,7 +26,7 @@ abstract class RequestCallbackWithExpBackoff<T> : Callback<T> {
 
   companion object {
     private val log = Logger.get(this::class)
-    private val baseRetryDelayMs = 200.0
-    private val maxRetryDelayMs = 32000.0
+    private const val baseRetryDelayMs = 200.0
+    private const val maxRetryDelayMs = 32000.0
   }
 }

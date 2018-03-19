@@ -8,7 +8,8 @@ import com.pusher.pushnotifications.logging.Logger
 
 object Validations {
   private val log = Logger.get(this::class)
-  private val META_DATA_FIREBASE_NOTIFICATION_IMAGE = "com.google.firebase.messaging.default_notification_icon"
+  private const val META_DATA_FIREBASE_NOTIFICATION_IMAGE =
+      "com.google.firebase.messaging.default_notification_icon"
 
   private fun hasDefaultFCMIconInMetadata(context: Context): Boolean {
     try {

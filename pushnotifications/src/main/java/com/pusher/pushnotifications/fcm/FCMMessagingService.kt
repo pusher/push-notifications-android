@@ -25,7 +25,7 @@ class FCMMessagingService : FirebaseMessagingService() {
     if (remoteMessage.data["pusherTokenValidation"] == "true") {
       log.d("Received blank message from Pusher to perform token validation")
     } else {
-      log.d("Received from FCM: " + remoteMessage)
+      log.d("Received from FCM: $remoteMessage")
       log.d("Received from FCM TITLE: " + remoteMessage.notification?.title)
       log.d("Received from FCM BODY: " + remoteMessage.notification?.body)
 
