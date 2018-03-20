@@ -18,10 +18,10 @@ data class PusherMetadata(
 
 class ReportingJobService: JobService() {
   companion object {
-    private val BUNDLE_EVENT_TYPE_KEY = "ReportEventType"
-    private val BUNDLE_DEVICE_ID_KEY = "DeviceId"
-    private val BUNDLE_PUBLISH_ID_KEY = "PublishId"
-    private val BUNDLE_TIMESTAMP_KEY = "Timestamp"
+    private const val BUNDLE_EVENT_TYPE_KEY = "ReportEventType"
+    private const val BUNDLE_DEVICE_ID_KEY = "DeviceId"
+    private const val BUNDLE_PUBLISH_ID_KEY = "PublishId"
+    private const val BUNDLE_TIMESTAMP_KEY = "Timestamp"
 
     fun toBundle(reportEvent: ReportEvent): Bundle {
       val b = Bundle()

@@ -13,7 +13,6 @@ import com.pusher.pushnotifications.logging.Logger
 import com.pusher.pushnotifications.reporting.api.ReportEvent
 import com.pusher.pushnotifications.reporting.api.ReportEventType
 
-
 class FCMMessageReceiver : WakefulBroadcastReceiver() {
   private val gson = Gson()
   private val log = Logger.get(this::class)

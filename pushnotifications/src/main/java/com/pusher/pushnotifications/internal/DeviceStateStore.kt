@@ -5,10 +5,10 @@ import android.content.Context
 class DeviceStateStore(context: Context) {
   private val preferencesDeviceIdKey = "deviceId"
   private val preferencesFCMTokenKey = "fcmToken"
-  private val preferencesInterestsSetKey = "interests"
   private val preferencesInstanceIdKey = "instanceId"
-  private val osVersionKey = "osVersion"
-  private val sdkVersionKey = "sdkVersion"
+  private val preferencesOSVersionKey = "osVersion"
+  private val preferencesSDKVersionKey = "sdkVersion"
+  private val preferencesInterestsSetKey = "interests"
 
   private val preferences = context.getSharedPreferences(
     "com.pusher.pushnotifications.PushNotificationsInstance", Context.MODE_PRIVATE)
@@ -26,15 +26,14 @@ class DeviceStateStore(context: Context) {
     set(value) = preferences.edit().putString(preferencesFCMTokenKey, value).apply()
 
   var osVersion: String?
-    get() = preferences.getString(osVersionKey, null)
-    set(value) = preferences.edit().putString(osVersionKey, value).apply()
+    get() = preferences.getString(preferencesOSVersionKey, null)
+    set(value) = preferences.edit().putString(preferencesOSVersionKey, value).apply()
 
   var sdkVersion: String?
-    get() = preferences.getString(sdkVersionKey, null)
-    set(value) = preferences.edit().putString(sdkVersionKey, value).apply()
+    get() = preferences.getString(preferencesSDKVersionKey, null)
+    set(value) = preferences.edit().putString(preferencesSDKVersionKey, value).apply()
 
   var interestsSet: MutableSet<String>
     get() = preferences.getStringSet(preferencesInterestsSetKey, mutableSetOf<String>())
     set(value) = preferences.edit().putStringSet(preferencesInterestsSetKey, value).apply()
-
 }

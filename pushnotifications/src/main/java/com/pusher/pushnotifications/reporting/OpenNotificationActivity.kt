@@ -20,7 +20,7 @@ import com.pusher.pushnotifications.reporting.api.ReportEventType
 class OpenNotificationActivity: Activity() {
     private val log = Logger.get(this::class)
 
-    private fun startIntent(clickAction: String? = null) {
+    private fun startIntent(bundle: Bundle, clickAction: String? = null) {
         val i: Intent
         if (clickAction != null) {
             i = Intent()
@@ -28,6 +28,8 @@ class OpenNotificationActivity: Activity() {
         } else {
             i = packageManager.getLaunchIntentForPackage(packageName)
         }
+
+        i.replaceExtras(bundle)
 
         // We need to clear the activity stack so that this activity doesn't show up when customers
         // are debugging.
@@ -54,7 +56,7 @@ class OpenNotificationActivity: Activity() {
                 val deviceId = DeviceStateStore(applicationContext).deviceId
                 if (deviceId == null) {
                     log.e("Failed to get device ID (device ID not stored) - Skipping open tracking.")
-                    startIntent()
+                    startIntent(intent.extras)
                     return
                 }
 
@@ -77,19 +79,19 @@ class OpenNotificationActivity: Activity() {
 
                 dispatcher.mustSchedule(job)
 
-                startIntent(pusherData.clickAction)
+                startIntent(intent.extras, pusherData.clickAction)
             } catch (_: JsonSyntaxException) {
                 // TODO: Add client-side reporting
 
                 // This means that something went horribly wrong. Just starting the main
                 // activity seems like a decent best-effort response.
-                startIntent()
+                startIntent(intent.extras)
             }
             return
         }
 
         // Somehow this activity was started without a pusher payload. We should start the main
         // activity as a best-effort response.
-        startIntent()
+        startIntent(intent.extras)
     }
 }

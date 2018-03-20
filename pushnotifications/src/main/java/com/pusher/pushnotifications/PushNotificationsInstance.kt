@@ -2,7 +2,6 @@ package com.pusher.pushnotifications
 
 import java.util.regex.Pattern
 import android.content.Context
-import android.content.Context.MODE_PRIVATE
 import com.google.firebase.iid.FirebaseInstanceId
 import com.pusher.pushnotifications.api.OperationCallback
 import com.pusher.pushnotifications.api.PushNotificationsAPI
@@ -12,7 +11,7 @@ import com.pusher.pushnotifications.logging.Logger
 import com.pusher.pushnotifications.validation.Validations
 
 /**
- * Thrown when the device is reregistered to a different instance id. If you wish to register a
+ * Thrown when the device is re-registered to a different instance id. If you wish to register a
  * device to a different instance you will need to reinstall the application.
  *
  * @param message Error message to be shown
@@ -150,7 +149,7 @@ class PushNotificationsInstance(
     }?.let {
       throw IllegalArgumentException(
         "Interest `$it` is not valid. It can only contain up to 164 characters " +
-          "and can only be ASCII upper/lower-case letters, numbers and one of _=@,.:")
+          "and can only be ASCII upper/lower-case letters, numbers and one of _-=@,.:")
     }
 
     synchronized(deviceStateStore) {
