@@ -12,19 +12,35 @@ interface ReportingService {
 }
 
 data class ReportingRequest(
-  val eventType: String,
+  val event: String,
   val publishId: String,
   val deviceId: String,
-  val timestampSecs: Long
+  val timestampSecs: Long,
+  val appInBackground: Boolean?,
+  val hasDisplayableContent: Boolean?,
+  val hasData: Boolean?
 )
 
 enum class ReportEventType {
   Delivery, Open,
 }
 
-data class ReportEvent(
-  val eventType: ReportEventType,
-  val deviceId: String,
-  val publishId: String,
-  val timestampSecs: Long
-)
+sealed class ReportEvent {
+
+  data class OpenEvent (
+    val event: ReportEventType,
+    val deviceId: String,
+    val publishId: String,
+    val timestampSecs: Long
+  ): ReportEvent()
+
+  data class DeliveryEvent (
+    val event: ReportEventType,
+    val deviceId: String,
+    val publishId: String,
+    val timestampSecs: Long,
+    val appInBackground: Boolean,
+    val hasDisplayableContent: Boolean,
+    val hasData: Boolean
+  ): ReportEvent()
+}

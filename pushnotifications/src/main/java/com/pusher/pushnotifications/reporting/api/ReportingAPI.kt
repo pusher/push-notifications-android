@@ -3,6 +3,7 @@ package com.pusher.pushnotifications.reporting.api
 import com.google.gson.Gson
 import com.pusher.pushnotifications.api.PusherLibraryHeaderInterceptor
 import com.pusher.pushnotifications.api.OperationCallback
+import com.pusher.pushnotifications.reporting.ReportingJobService
 import okhttp3.OkHttpClient
 import retrofit2.Call
 import retrofit2.Callback
@@ -47,14 +48,37 @@ class ReportingAPI(private val instanceId: String) {
       }
     }
 
+    var reportRequestBody: ReportingRequest
+
+    when (reportEvent) {
+      is ReportEvent.DeliveryEvent -> {
+        reportRequestBody = ReportingRequest(
+          event = reportEvent.event.toString().toUpperCase(),
+          publishId = reportEvent.publishId,
+          deviceId = reportEvent.deviceId,
+          timestampSecs = reportEvent.timestampSecs,
+          appInBackground = reportEvent.appInBackground,
+          hasDisplayableContent = reportEvent.hasDisplayableContent,
+          hasData = reportEvent.hasData
+        )
+      }
+
+      is ReportEvent.OpenEvent -> {
+        reportRequestBody = ReportingRequest(
+          event = reportEvent.event.toString().toUpperCase(),
+          publishId = reportEvent.publishId,
+          deviceId = reportEvent.deviceId,
+          timestampSecs = reportEvent.timestampSecs,
+          appInBackground = null,
+          hasDisplayableContent = null,
+          hasData = null
+        )
+      }
+    }
+
     service.submit(
       instanceId = instanceId,
-      reportingRequest = ReportingRequest(
-        eventType = reportEvent.eventType.toString().toUpperCase(),
-        publishId = reportEvent.publishId,
-        deviceId = reportEvent.deviceId,
-        timestampSecs = reportEvent.timestampSecs
-      )
+      reportingRequest = reportRequestBody
     ).enqueue(callback)
   }
 }
