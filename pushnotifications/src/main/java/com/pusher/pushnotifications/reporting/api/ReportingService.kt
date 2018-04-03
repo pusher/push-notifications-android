@@ -26,7 +26,7 @@ enum class ReportEventType {
 }
 
 sealed class ReportEvent {
-
+  
   data class OpenEvent (
     val event: ReportEventType,
     val deviceId: String,

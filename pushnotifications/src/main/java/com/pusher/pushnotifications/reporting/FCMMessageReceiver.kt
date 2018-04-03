@@ -25,7 +25,6 @@ class FCMMessageReceiver : WakefulBroadcastReceiver() {
     }
 
     intent?.getStringExtra("pusher")?.let { pusherDataJson ->
-
       try {
         val pusherData = gson.fromJson(pusherDataJson, PusherMetadata::class.java)
         log.i("Got a valid pusher message.")
