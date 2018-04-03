@@ -7,26 +7,16 @@ interface ReportingService {
   @POST("instances/{instanceId}/events")
   fun submit(
     @Path("instanceId") instanceId: String,
-    @Body reportingRequest: ReportingRequest
+    @Body reportingRequest: ReportEvent
   ): Call<Void>
 }
-
-data class ReportingRequest(
-  val event: String,
-  val publishId: String,
-  val deviceId: String,
-  val timestampSecs: Long,
-  val appInBackground: Boolean?,
-  val hasDisplayableContent: Boolean?,
-  val hasData: Boolean?
-)
 
 enum class ReportEventType {
   Delivery, Open,
 }
 
 sealed class ReportEvent {
-  
+
   data class OpenEvent (
     val event: ReportEventType,
     val deviceId: String,

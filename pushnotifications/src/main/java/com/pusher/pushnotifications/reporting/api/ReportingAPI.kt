@@ -48,37 +48,9 @@ class ReportingAPI(private val instanceId: String) {
       }
     }
 
-    var reportRequestBody: ReportingRequest
-
-    when (reportEvent) {
-      is ReportEvent.DeliveryEvent -> {
-        reportRequestBody = ReportingRequest(
-          event = reportEvent.event.toString().toUpperCase(),
-          publishId = reportEvent.publishId,
-          deviceId = reportEvent.deviceId,
-          timestampSecs = reportEvent.timestampSecs,
-          appInBackground = reportEvent.appInBackground,
-          hasDisplayableContent = reportEvent.hasDisplayableContent,
-          hasData = reportEvent.hasData
-        )
-      }
-
-      is ReportEvent.OpenEvent -> {
-        reportRequestBody = ReportingRequest(
-          event = reportEvent.event.toString().toUpperCase(),
-          publishId = reportEvent.publishId,
-          deviceId = reportEvent.deviceId,
-          timestampSecs = reportEvent.timestampSecs,
-          appInBackground = null,
-          hasDisplayableContent = null,
-          hasData = null
-        )
-      }
-    }
-
     service.submit(
       instanceId = instanceId,
-      reportingRequest = reportRequestBody
+      reportingRequest = reportEvent
     ).enqueue(callback)
   }
 }

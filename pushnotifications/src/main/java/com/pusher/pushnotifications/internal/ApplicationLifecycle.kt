@@ -20,9 +20,7 @@ class AppActivityLifecycleCallbacks: Application.ActivityLifecycleCallbacks {
   companion object {
     var startedCount = 0
     var stoppedCount = 0
-    fun appInBackground(): Boolean {
-      return startedCount <= stoppedCount
-    }
+    fun appInBackground(): Boolean = startedCount <= stoppedCount
   }
 
   override fun onActivityPaused(activity: Activity?) {
@@ -33,7 +31,6 @@ class AppActivityLifecycleCallbacks: Application.ActivityLifecycleCallbacks {
 
   override fun onActivityStarted(activity: Activity?) {
     Companion.startedCount += 1
-    Log.i("yo", "started count: " + Companion.startedCount)
   }
 
   override fun onActivityDestroyed(activity: Activity?) = Unit
@@ -43,8 +40,6 @@ class AppActivityLifecycleCallbacks: Application.ActivityLifecycleCallbacks {
 
   override fun onActivityStopped(activity: Activity?) {
     Companion.stoppedCount +=1
-    Log.i("yo", "stopped count: " + Companion.stoppedCount)
-
   }
 
   override fun onActivityCreated(activity: Activity?, savedInstanceState: Bundle?) {

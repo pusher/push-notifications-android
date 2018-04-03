@@ -19,21 +19,11 @@ data class PusherMetadata(
   @SerializedName("hasData") private val _hasData: Boolean?
 ) {
   val hasDisplayableContent: Boolean
-    get() {
-      if (_hasDisplayableContent == null) {
-        return false
-      } else {
-        return _hasDisplayableContent
-      }
-    }
+    get() = _hasDisplayableContent ?: false
+
   val hasData: Boolean
-    get() {
-      if (_hasData == null) {
-        return false
-      } else {
-        return _hasData
-      }
-    }
+    get() = _hasData ?: false
+
 }
 
 class ReportingJobService: JobService() {
