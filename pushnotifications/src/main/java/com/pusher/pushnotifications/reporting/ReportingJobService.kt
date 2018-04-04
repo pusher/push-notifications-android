@@ -7,10 +7,7 @@ import com.google.gson.annotations.SerializedName
 import com.pusher.pushnotifications.logging.Logger
 import com.pusher.pushnotifications.PushNotificationsInstance
 import com.pusher.pushnotifications.api.OperationCallback
-import com.pusher.pushnotifications.reporting.api.ReportEvent
-import com.pusher.pushnotifications.reporting.api.ReportEventType
-import com.pusher.pushnotifications.reporting.api.ReportingAPI
-import com.pusher.pushnotifications.reporting.api.UnrecoverableRuntimeException
+import com.pusher.pushnotifications.reporting.api.*
 
 data class PusherMetadata(
   val publishId: String,
@@ -39,17 +36,17 @@ class ReportingJobService: JobService() {
     fun toBundle(reportEvent: ReportEvent): Bundle {
       val b = Bundle()
       when (reportEvent) {
-        is ReportEvent.DeliveryEvent -> {
+        is DeliveryEvent -> {
           b.putString(BUNDLE_EVENT_TYPE_KEY, reportEvent.event.toString())
           b.putString(BUNDLE_DEVICE_ID_KEY, reportEvent.deviceId)
           b.putString(BUNDLE_PUBLISH_ID_KEY, reportEvent.publishId)
           b.putLong(BUNDLE_TIMESTAMP_KEY, reportEvent.timestampSecs)
-          b.putBoolean(BUNDLE_APP_IN_BACKGROUND_KEY, reportEvent.appInBackground)
-          b.putBoolean(BUNDLE_HAS_DISPLAYABLE_CONTENT_KEY, reportEvent.hasDisplayableContent)
-          b.putBoolean(BUNDLE_HAS_DATA_KEY, reportEvent.hasData)
+          b.putBoolean(BUNDLE_APP_IN_BACKGROUND_KEY, reportEvent.appInBackground!!)
+          b.putBoolean(BUNDLE_HAS_DISPLAYABLE_CONTENT_KEY, reportEvent.hasDisplayableContent!!)
+          b.putBoolean(BUNDLE_HAS_DATA_KEY, reportEvent.hasData!!)
         }
 
-        is ReportEvent.OpenEvent -> {
+        is OpenEvent -> {
           b.putString(BUNDLE_EVENT_TYPE_KEY, reportEvent.event.toString())
           b.putString(BUNDLE_DEVICE_ID_KEY, reportEvent.deviceId)
           b.putString(BUNDLE_PUBLISH_ID_KEY, reportEvent.publishId)
@@ -64,8 +61,7 @@ class ReportingJobService: JobService() {
       val event = ReportEventType.valueOf(bundle.getString(BUNDLE_EVENT_TYPE_KEY))
       when (event) {
         ReportEventType.Delivery -> {
-          return ReportEvent.DeliveryEvent(
-            event = event,
+          return DeliveryEvent(
             deviceId = bundle.getString(BUNDLE_DEVICE_ID_KEY),
             publishId = bundle.getString(BUNDLE_PUBLISH_ID_KEY),
             timestampSecs = bundle.getLong(BUNDLE_TIMESTAMP_KEY),
@@ -75,8 +71,7 @@ class ReportingJobService: JobService() {
           )
         }
         ReportEventType.Open -> {
-          return ReportEvent.OpenEvent(
-            event = event,
+          return OpenEvent(
             deviceId = bundle.getString(BUNDLE_DEVICE_ID_KEY),
             publishId = bundle.getString(BUNDLE_PUBLISH_ID_KEY),
             timestampSecs = bundle.getLong(BUNDLE_TIMESTAMP_KEY)

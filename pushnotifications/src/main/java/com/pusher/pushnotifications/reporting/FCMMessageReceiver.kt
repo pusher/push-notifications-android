@@ -11,6 +11,7 @@ import com.pusher.pushnotifications.featureflags.FeatureFlagManager
 import com.pusher.pushnotifications.internal.AppActivityLifecycleCallbacks
 import com.pusher.pushnotifications.internal.DeviceStateStore
 import com.pusher.pushnotifications.logging.Logger
+import com.pusher.pushnotifications.reporting.api.DeliveryEvent
 import com.pusher.pushnotifications.reporting.api.ReportEvent
 import com.pusher.pushnotifications.reporting.api.ReportEventType
 
@@ -40,8 +41,7 @@ class FCMMessageReceiver : WakefulBroadcastReceiver() {
           return
         }
 
-        val reportEvent = ReportEvent.DeliveryEvent(
-          event = ReportEventType.Delivery,
+        val reportEvent = DeliveryEvent(
           publishId = pusherData.publishId,
           deviceId =   deviceId,
           timestampSecs = Math.round(System.currentTimeMillis() / 1000.0),
