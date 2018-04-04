@@ -75,8 +75,11 @@ class PushNotificationsInitProvider: ContentProvider() {
       }
     }
 
-    (context.applicationContext as Application?)?.let {
-      it.registerActivityLifecycleCallbacks(AppActivityLifecycleCallbacks())
+    (context.applicationContext as? Application).apply {
+      when(this) {
+        is Application -> registerActivityLifecycleCallbacks(AppActivityLifecycleCallbacks())
+        else -> log.w("Failed to register activity lifecycle callbacks. Notification delivery events might be incorrect.")
+      }
     }
 
     return false
