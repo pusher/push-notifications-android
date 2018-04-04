@@ -8,6 +8,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.pusher.pushnotifications.internal.DeviceStateStore
 import com.pusher.pushnotifications.logging.Logger
+import com.pusher.pushnotifications.reporting.api.OpenEvent
 import com.pusher.pushnotifications.reporting.api.ReportEvent
 import com.pusher.pushnotifications.reporting.api.ReportEventType
 
@@ -60,11 +61,10 @@ class OpenNotificationActivity: Activity() {
                     return
                 }
 
-                val reportEvent = ReportEvent(
-                        eventType = ReportEventType.Open,
-                        publishId = pusherData.publishId,
-                        deviceId = deviceId,
-                        timestampSecs = System.currentTimeMillis() / 1000
+                val reportEvent = OpenEvent(
+                   publishId = pusherData.publishId,
+                   deviceId = deviceId,
+                   timestampSecs = System.currentTimeMillis() / 1000
                 )
 
                 val dispatcher = FirebaseJobDispatcher(GooglePlayDriver(applicationContext))

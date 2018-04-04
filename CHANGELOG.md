@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+ - Add more properties to the DELIVERY event
+
 ## [0.9.12] - 2018-03-20
 ### Fixed
  - Send delivery time in seconds rather than milliseconds when tracking delivery

@@ -1,15 +1,51 @@
 package com.pusher.pushnotifications.internal
 
+import android.app.Activity
+import android.app.Application
 import android.content.ContentProvider
 import android.content.ContentValues
 import android.database.Cursor
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
+import android.util.Log
 import com.pusher.pushnotifications.BuildConfig
 import com.pusher.pushnotifications.api.DeviceMetadata
 import com.pusher.pushnotifications.api.OperationCallback
 import com.pusher.pushnotifications.api.PushNotificationsAPI
 import com.pusher.pushnotifications.logging.Logger
+
+class AppActivityLifecycleCallbacks: Application.ActivityLifecycleCallbacks {
+
+  companion object {
+    var startedCount = 0
+    var stoppedCount = 0
+    fun appInBackground(): Boolean = startedCount <= stoppedCount
+  }
+
+  override fun onActivityPaused(activity: Activity?) {
+  }
+
+  override fun onActivityResumed(activity: Activity?) {
+  }
+
+  override fun onActivityStarted(activity: Activity?) {
+    Companion.startedCount += 1
+  }
+
+  override fun onActivityDestroyed(activity: Activity?) = Unit
+
+  override fun onActivitySaveInstanceState(activity: Activity?, outState: Bundle?) {
+  }
+
+  override fun onActivityStopped(activity: Activity?) {
+    Companion.stoppedCount +=1
+  }
+
+  override fun onActivityCreated(activity: Activity?, savedInstanceState: Bundle?) {
+  }
+
+}
 
 class PushNotificationsInitProvider: ContentProvider() {
   private val log = Logger.get(this::class)
@@ -36,6 +72,13 @@ class PushNotificationsInitProvider: ContentProvider() {
             log.w("Failed to persist metadata.", t)
           }
         })
+      }
+    }
+
+    (context.applicationContext as? Application).apply {
+      when(this) {
+        is Application -> registerActivityLifecycleCallbacks(AppActivityLifecycleCallbacks())
+        else -> log.w("Failed to register activity lifecycle callbacks. Notification delivery events might be incorrect.")
       }
     }
 

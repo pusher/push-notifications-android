@@ -3,6 +3,7 @@ package com.pusher.pushnotifications.reporting.api
 import com.google.gson.Gson
 import com.pusher.pushnotifications.api.PusherLibraryHeaderInterceptor
 import com.pusher.pushnotifications.api.OperationCallback
+import com.pusher.pushnotifications.reporting.ReportingJobService
 import okhttp3.OkHttpClient
 import retrofit2.Call
 import retrofit2.Callback
@@ -11,7 +12,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 class ReportingAPI(private val instanceId: String) {
-  private val baseUrl = "https://$instanceId.pushnotifications.pusher.com/reporting_api/v1/"
+  private val baseUrl = "https://$instanceId.pushnotifications.pusher.com/reporting_api/v2/"
 
   private val gson = Gson()
 
@@ -49,12 +50,7 @@ class ReportingAPI(private val instanceId: String) {
 
     service.submit(
       instanceId = instanceId,
-      reportingRequest = ReportingRequest(
-        eventType = reportEvent.eventType.toString().toUpperCase(),
-        publishId = reportEvent.publishId,
-        deviceId = reportEvent.deviceId,
-        timestampSecs = reportEvent.timestampSecs
-      )
+      reportingRequest = reportEvent
     ).enqueue(callback)
   }
 }
