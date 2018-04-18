@@ -34,6 +34,8 @@ class DeviceStateStore(context: Context) {
     set(value) = preferences.edit().putString(preferencesSDKVersionKey, value).apply()
 
   var interestsSet: MutableSet<String>
-    get() = preferences.getStringSet(preferencesInterestsSetKey, mutableSetOf<String>())
+    // We need to clone the set we get from shared preferences because mutating it is not permitted
+    // by the Android SDK
+    get() = preferences.getStringSet(preferencesInterestsSetKey, mutableSetOf<String>()).toMutableSet()
     set(value) = preferences.edit().putStringSet(preferencesInterestsSetKey, value).apply()
 }
