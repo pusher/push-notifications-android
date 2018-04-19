@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.9.14] - 2018-04-19
+
 ### Fixed
  - Bug which caused the SDK to "forget" interest subscriptions on app restart
 
