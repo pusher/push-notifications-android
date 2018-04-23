@@ -25,12 +25,7 @@ class AppActivityLifecycleCallbacks: Application.ActivityLifecycleCallbacks {
     var currentActivity: WeakReference<Activity>? = null
   }
 
-  override fun onActivityPaused(activity: Activity) {
-    Companion.stoppedCount +=1
-    currentActivity = null
-  }
-
-  override fun onActivityResumed(activity: Activity) {
+  override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
     currentActivity = WeakReference(activity)
   }
 
@@ -39,15 +34,13 @@ class AppActivityLifecycleCallbacks: Application.ActivityLifecycleCallbacks {
     currentActivity = WeakReference(activity)
   }
 
-  override fun onActivityDestroyed(activity: Activity) {
-    currentActivity?.get()?.let {
-      if (it == activity) { // an activity may get stopped after a new one is resumed
-        currentActivity = null
-      }
-    }
+  override fun onActivityResumed(activity: Activity) {
+    currentActivity = WeakReference(activity)
   }
 
-  override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle?) {
+  override fun onActivityPaused(activity: Activity) {
+    Companion.stoppedCount +=1
+    currentActivity = null
   }
 
   override fun onActivityStopped(activity: Activity) {
@@ -59,8 +52,15 @@ class AppActivityLifecycleCallbacks: Application.ActivityLifecycleCallbacks {
     }
   }
 
-  override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-    currentActivity = WeakReference(activity)
+  override fun onActivityDestroyed(activity: Activity) {
+    currentActivity?.get()?.let {
+      if (it == activity) { // an activity may get stopped after a new one is resumed
+        currentActivity = null
+      }
+    }
+  }
+
+  override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle?) {
   }
 }
 
