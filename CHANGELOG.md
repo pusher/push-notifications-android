@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.10.0] - 2018-04-23
+
 ### Added
  - Example project now includes `NotificationsMessagingService` - this service will handle all
  data notifications sent to the application.
