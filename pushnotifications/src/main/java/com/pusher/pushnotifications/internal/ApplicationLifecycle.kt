@@ -1,5 +1,6 @@
 package com.pusher.pushnotifications.internal
 
+import java.lang.ref.WeakReference
 import android.app.Activity
 import android.app.Application
 import android.content.ContentProvider
@@ -8,7 +9,6 @@ import android.database.Cursor
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import com.pusher.pushnotifications.BuildConfig
 import com.pusher.pushnotifications.api.DeviceMetadata
 import com.pusher.pushnotifications.api.OperationCallback
@@ -21,30 +21,43 @@ class AppActivityLifecycleCallbacks: Application.ActivityLifecycleCallbacks {
     var startedCount = 0
     var stoppedCount = 0
     fun appInBackground(): Boolean = startedCount <= stoppedCount
+
+    internal var currentActivity: WeakReference<Activity>? = null
   }
 
-  override fun onActivityPaused(activity: Activity?) {
+  override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+    currentActivity = WeakReference(activity)
   }
 
-  override fun onActivityResumed(activity: Activity?) {
+  override fun onActivityStarted(activity: Activity) {
+    startedCount += 1
+    currentActivity = WeakReference(activity)
   }
 
-  override fun onActivityStarted(activity: Activity?) {
-    Companion.startedCount += 1
+  override fun onActivityResumed(activity: Activity) {
+    currentActivity = WeakReference(activity)
   }
 
-  override fun onActivityDestroyed(activity: Activity?) = Unit
-
-  override fun onActivitySaveInstanceState(activity: Activity?, outState: Bundle?) {
+  override fun onActivityPaused(activity: Activity) {
+    stoppedCount +=1
+    currentActivity = null
   }
 
-  override fun onActivityStopped(activity: Activity?) {
-    Companion.stoppedCount +=1
+  override fun onActivityStopped(activity: Activity) {
+    stoppedCount +=1
+    if (currentActivity?.get() == activity) { // an activity may get stopped after a new one is resumed
+        currentActivity = null
+    }
   }
 
-  override fun onActivityCreated(activity: Activity?, savedInstanceState: Bundle?) {
+  override fun onActivityDestroyed(activity: Activity) {
+    if (currentActivity?.get() == activity) { // an activity may get destroyed after a new one is resumed
+      currentActivity = null
+    }
   }
 
+  override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle?) {
+  }
 }
 
 class PushNotificationsInitProvider: ContentProvider() {

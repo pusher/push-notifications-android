@@ -3,6 +3,8 @@ package com.pusher.pushnotifications.sample
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
+import com.google.firebase.messaging.RemoteMessage
+import com.pusher.pushnotifications.PushNotificationReceivedListener
 import com.pusher.pushnotifications.PushNotifications
 import com.pusher.pushnotifications.PushNotificationsInstance
 
@@ -24,5 +26,15 @@ class MainActivity : AppCompatActivity() {
     PushNotifications.getSubscriptions().forEach { interest ->
       Log.i("MainActivity", "\t$interest")
     }
+  }
+
+  override fun onResume() {
+    super.onResume()
+
+    PushNotifications.setOnMessageReceivedListenerForVisibleActivity(this, object: PushNotificationReceivedListener {
+      override fun onMessageReceived(remoteMessage: RemoteMessage) {
+        Log.i("MainActivity", "Remote message received while this activity is visible!")
+      }
+    })
   }
 }

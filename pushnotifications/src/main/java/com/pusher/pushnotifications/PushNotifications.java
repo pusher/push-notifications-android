@@ -1,10 +1,13 @@
 package com.pusher.pushnotifications;
 
+import java.util.Set;
+
+import android.app.Activity;
+import android.app.Application;
+import android.app.Fragment;
 import android.content.Context;
 
-import com.pusher.pushnotifications.fcm.FCMMessagingService;
-
-import java.util.Set;
+import com.pusher.pushnotifications.fcm.MessagingService;
 
 public class PushNotifications {
     private static PushNotificationsInstance instance;
@@ -89,11 +92,17 @@ public class PushNotifications {
     }
 
     /**
-     * Configures the listener that handles a remote message when the app is in the foreground.
+     * Configures the listener that handles a remote message only when this activity is in the
+     * foreground.
+     *
+     * Use this method to update your UI. This should be called from the `Activity.onResume` method.
+     *
+     * If you intend to handle a remote message in all circumstances, read the service docs:
+     * https://docs.pusher.com/push-notifications/reference/android#handle-incoming-notifications
      *
      * @param messageReceivedListener the listener that handles a remote message
      */
-    public static void setOnMessageReceivedListener(PushNotificationReceivedListener messageReceivedListener) {
-        FCMMessagingService.setOnMessageReceivedListener(messageReceivedListener);
+    public static void setOnMessageReceivedListenerForVisibleActivity(Activity activity, PushNotificationReceivedListener messageReceivedListener) {
+        MessagingService.setOnMessageReceivedListenerForVisibleActivity(activity, messageReceivedListener);
     }
 }
