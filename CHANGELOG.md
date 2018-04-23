@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
  - Changed `setOnMessageReceived` to `setOnMessageReceivedListenerForVisibleActivity` to make it
  clear that it will only run when the activity is visible.
 
+## [0.9.14] - 2018-04-19
+
+### Fixed
+ - Bug which caused the SDK to "forget" interest subscriptions on app restart
+
 ## [0.9.13] - 2018-04-04
 
 ### Changed
