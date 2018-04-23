@@ -1,5 +1,6 @@
 package com.pusher.pushnotifications.internal
 
+import java.lang.ref.WeakReference
 import android.app.Activity
 import android.app.Application
 import android.content.ContentProvider
@@ -8,7 +9,6 @@ import android.database.Cursor
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import com.pusher.pushnotifications.BuildConfig
 import com.pusher.pushnotifications.api.DeviceMetadata
 import com.pusher.pushnotifications.api.OperationCallback
@@ -21,30 +21,47 @@ class AppActivityLifecycleCallbacks: Application.ActivityLifecycleCallbacks {
     var startedCount = 0
     var stoppedCount = 0
     fun appInBackground(): Boolean = startedCount <= stoppedCount
+
+    var currentActivity: WeakReference<Activity>? = null
   }
 
-  override fun onActivityPaused(activity: Activity?) {
-  }
-
-  override fun onActivityResumed(activity: Activity?) {
-  }
-
-  override fun onActivityStarted(activity: Activity?) {
-    Companion.startedCount += 1
-  }
-
-  override fun onActivityDestroyed(activity: Activity?) = Unit
-
-  override fun onActivitySaveInstanceState(activity: Activity?, outState: Bundle?) {
-  }
-
-  override fun onActivityStopped(activity: Activity?) {
+  override fun onActivityPaused(activity: Activity) {
     Companion.stoppedCount +=1
+    currentActivity = null
   }
 
-  override fun onActivityCreated(activity: Activity?, savedInstanceState: Bundle?) {
+  override fun onActivityResumed(activity: Activity) {
+    currentActivity = WeakReference(activity)
   }
 
+  override fun onActivityStarted(activity: Activity) {
+    Companion.startedCount += 1
+    currentActivity = WeakReference(activity)
+  }
+
+  override fun onActivityDestroyed(activity: Activity) {
+    currentActivity?.get()?.let {
+      if (it == activity) { // an activity may get stopped after a new one is resumed
+        currentActivity = null
+      }
+    }
+  }
+
+  override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle?) {
+  }
+
+  override fun onActivityStopped(activity: Activity) {
+    Companion.stoppedCount +=1
+    currentActivity?.get()?.let {
+      if (it == activity) { // an activity may get stopped after a new one is resumed
+        currentActivity = null
+      }
+    }
+  }
+
+  override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+    currentActivity = WeakReference(activity)
+  }
 }
 
 class PushNotificationsInitProvider: ContentProvider() {

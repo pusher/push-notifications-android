@@ -30,7 +30,7 @@
         </service>
 
         <service
-            android:name="com.pusher.pushnotifications.fcm.FCMMessagingService">
+            android:name="com.pusher.pushnotifications.fcm.EmptyMessagingService">
             <intent-filter android:priority="1">
                 <action android:name="com.google.firebase.MESSAGING_EVENT"/>
             </intent-filter>
