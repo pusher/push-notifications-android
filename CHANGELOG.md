@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+ - Example project now includes `NotificationsMessagingService` - this service will handle all
+ data notifications sent to the application.
+
+### Changed
+ - Changed `setOnMessageReceived` to `setOnMessageReceivedListenerForVisibleActivity` to make it
+ clear that it will only run when the activity is visible.
+
 ## [0.9.13] - 2018-04-04
 
 ### Changed
