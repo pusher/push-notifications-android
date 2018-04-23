@@ -50,31 +50,27 @@ abstract class MessagingService: Service() {
     }
   }
 
-  private val underlyingService: FirebaseMessagingService
+  private val underlyingService: FirebaseMessagingService =
+      WrappedFirebaseMessagingService({ applicationContext }, { remoteMessage: RemoteMessage ->
+        if (remoteMessage.data["pusherTokenValidation"] == "true") {
+          log.d("Received blank message from Pusher to perform token validation")
+        } else {
+          log.d("Received from FCM: $remoteMessage")
+          log.d("Received from FCM TITLE: " + remoteMessage.notification?.title)
+          log.d("Received from FCM BODY: " + remoteMessage.notification?.body)
 
-  init {
-    val onMessageReceivedHandler = { remoteMessage: RemoteMessage ->
-      if (remoteMessage.data["pusherTokenValidation"] == "true") {
-        log.d("Received blank message from Pusher to perform token validation")
-      } else {
-        log.d("Received from FCM: $remoteMessage")
-        log.d("Received from FCM TITLE: " + remoteMessage.notification?.title)
-        log.d("Received from FCM BODY: " + remoteMessage.notification?.body)
-
-        listenerActivity?.get()?.let { lActivity ->
-          AppActivityLifecycleCallbacks.currentActivity?.get()?.let { currActivity ->
-            if (lActivity == currActivity) {
-              listener?.onMessageReceived(remoteMessage)
-            }
+          val listenerActivity = listenerActivity?.get()
+          val currentActivity = AppActivityLifecycleCallbacks.currentActivity?.get()
+          when {
+            listenerActivity == null -> log.v("Missing listener activity")
+            currentActivity == null -> log.v("No active activity")
+            listenerActivity != currentActivity -> log.v("Listener activity and current activity don't match")
+            else ->listener?.onMessageReceived(remoteMessage)
           }
+
+          this.onMessageReceived(remoteMessage)
         }
-
-        this.onMessageReceived(remoteMessage)
-      }
-    }
-
-    underlyingService = WrappedFirebaseMessagingService({ applicationContext }, onMessageReceivedHandler)
-  }
+      })
 
   override fun onBind(i: Intent?): IBinder = underlyingService.onBind(i)
 

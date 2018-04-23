@@ -22,7 +22,7 @@ class AppActivityLifecycleCallbacks: Application.ActivityLifecycleCallbacks {
     var stoppedCount = 0
     fun appInBackground(): Boolean = startedCount <= stoppedCount
 
-    var currentActivity: WeakReference<Activity>? = null
+    internal var currentActivity: WeakReference<Activity>? = null
   }
 
   override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
@@ -30,7 +30,7 @@ class AppActivityLifecycleCallbacks: Application.ActivityLifecycleCallbacks {
   }
 
   override fun onActivityStarted(activity: Activity) {
-    Companion.startedCount += 1
+    startedCount += 1
     currentActivity = WeakReference(activity)
   }
 
@@ -39,24 +39,20 @@ class AppActivityLifecycleCallbacks: Application.ActivityLifecycleCallbacks {
   }
 
   override fun onActivityPaused(activity: Activity) {
-    Companion.stoppedCount +=1
+    stoppedCount +=1
     currentActivity = null
   }
 
   override fun onActivityStopped(activity: Activity) {
-    Companion.stoppedCount +=1
-    currentActivity?.get()?.let {
-      if (it == activity) { // an activity may get stopped after a new one is resumed
+    stoppedCount +=1
+    if (currentActivity?.get() == activity) { // an activity may get stopped after a new one is resumed
         currentActivity = null
-      }
     }
   }
 
   override fun onActivityDestroyed(activity: Activity) {
-    currentActivity?.get()?.let {
-      if (it == activity) { // an activity may get stopped after a new one is resumed
-        currentActivity = null
-      }
+    if (currentActivity?.get() == activity) { // an activity may get destroyed after a new one is resumed
+      currentActivity = null
     }
   }
 

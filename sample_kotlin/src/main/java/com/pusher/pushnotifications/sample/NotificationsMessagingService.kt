@@ -6,7 +6,7 @@ import com.pusher.pushnotifications.fcm.MessagingService
 
 class NotificationsMessagingService : MessagingService() {
   override fun onMessageReceived(remoteMessage: RemoteMessage) {
-    Log.i("NotificationsService", "Got a remote message :o")
+    Log.i("NotificationsService", "Got a remote message 🎉")
     // TODO: Do something useful here
   }
 }
