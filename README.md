@@ -1,9 +1,9 @@
-# Push Notifications Android 
+# Beams Android SDK
 
 [![Build Status](https://www.bitrise.io/app/45610b9746e396f5/status.svg?token=OsxReMr5vbhXk7Y0wRuynQ&branch=master)](https://www.bitrise.io/app/45610b9746e396f5)
 [![Twitter](https://img.shields.io/badge/twitter-@Pusher-blue.svg?style=flat)](http://twitter.com/Pusher)
 
-This is the Android SDK for the [Push Notifications](https://pusher.com/push-notifications) service.
+This is the Android SDK for Pusher's push notification service - [Beams](https://pusher.com/beams)
 
 The SDK is written in Kotlin, but aimed to be as Java-friendly as possible
 
@@ -41,7 +41,7 @@ apply plugin: 'com.google.gms.google-services'
 
 ## Documentation
 
-You can find our up-to-date documentation in [here](https://docs.pusher.com/push-notifications/).
+You can find our up-to-date documentation in [here](https://docs.pusher.com/beams/).
 
 ## Communication
 
@@ -51,8 +51,8 @@ You can find our up-to-date documentation in [here](https://docs.pusher.com/push
 
 ## Credits
 
-Push Notifications is owned and maintained by [Pusher](https://pusher.com).
+This SDK is owned and maintained by [Pusher](https://pusher.com).
 
 ## License
 
-Push Notifications is released under the MIT license. See [LICENSE](https://github.com/pusher/push-notifications-android/blob/master/LICENSE) for details.
+This SDK is released under the MIT license. See [LICENSE](https://github.com/pusher/push-notifications-android/blob/master/LICENSE) for details.
