@@ -5,7 +5,7 @@ import org.junit.Test
 class FeatureFlagManagerTest {
 
   @Test
-  fun isEnabled_NeverThrowsExceptions() {
+  fun `isEnabled never throws exceptions`() {
     FeatureFlag.values().forEach {
       FeatureFlagManager.isEnabled(it)
     }
