@@ -73,23 +73,24 @@ class PushNotificationsInstance(
       api.registerOrRefreshFCM(fcmToken, {
         object : OperationCallback<PushNotificationsAPI.RegisterDeviceResult> {
           override fun onSuccess(result: PushNotificationsAPI.RegisterDeviceResult) {
-            deviceStateStore.deviceId = result.deviceId
-            deviceStateStore.FCMToken = fcmToken
+            if (deviceStateStore.deviceId == null) {
+              synchronized(deviceStateStore) {
+                val previousLocalInterestSet = deviceStateStore.interestsSet
+                deviceStateStore.interestsSet = result.initialInterestSet.toMutableSet()
 
-            // sync deviceStateStore with iis
-            synchronized(deviceStateStore) {
-              val previousLocalInterestSet = deviceStateStore.interestsSet
-              deviceStateStore.interestsSet = result.initialInterestSet.toMutableSet()
+                jobQueue.forEach({ job -> job()})
 
-              jobQueue.forEach({ job -> job()})
-
-              if (!previousLocalInterestSet.equals(deviceStateStore.interestsSet)) {
-                api.setSubscriptions(result.deviceId, deviceStateStore.interestsSet, OperationCallbackNoArgs.noop)
+                if (!previousLocalInterestSet.equals(deviceStateStore.interestsSet)) {
+                  api.setSubscriptions(result.deviceId, deviceStateStore.interestsSet, OperationCallbackNoArgs.noop)
+                }
               }
+
+              jobQueue.clear()
+              log.i("Successfully started PushNotifications")
             }
 
-            jobQueue.clear()
-            log.i("Successfully started PushNotifications")
+            deviceStateStore.deviceId = result.deviceId
+            deviceStateStore.FCMToken = fcmToken
           }
 
           override fun onFailure(t: Throwable) {
