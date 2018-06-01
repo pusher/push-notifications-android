@@ -65,6 +65,7 @@ class PushNotificationsAPI(private val instanceId: String) {
                 return
               }
               fcmToken = token
+              operationCallback.onSuccess(dId)
             }
           })
       }
