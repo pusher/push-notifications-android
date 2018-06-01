@@ -16,7 +16,7 @@ import com.pusher.pushnotifications.validation.Validations
  *
  * @param message Error message to be shown
  */
-class PusherAlreadyRegisteredException(message: String): RuntimeException(message) {}
+class PusherAlreadyRegisteredException(message: String) : RuntimeException(message) {}
 
 /**
  * Interacts with the Pusher service to subscribe and unsubscribe from interests.
@@ -25,21 +25,22 @@ class PusherAlreadyRegisteredException(message: String): RuntimeException(messag
  * @param instanceId the id of the instance
  */
 class PushNotificationsInstance(
-  context: Context,
-  instanceId: String) {
+    context: Context,
+    instanceId: String) {
   private val log = Logger.get(this::class)
 
   private val api = PushNotificationsAPI(instanceId)
   private val deviceStateStore = DeviceStateStore(context)
+  private val jobQueue: ArrayList<() -> Boolean> = ArrayList()
 
   init {
     Validations.validateApplicationIcon(context)
-    PushNotificationsInstance.getInstanceId(context)?.let{
+    PushNotificationsInstance.getInstanceId(context)?.let {
       val isNewInstanceId = it != instanceId
       if (isNewInstanceId) {
         throw PusherAlreadyRegisteredException("This device has already been registered to a Pusher " +
-                "Push Notifications application with instance ID: $it. " +
-                "If you would like to register this device to $instanceId please reinstall the application.")
+            "Push Notifications application with instance ID: $it. " +
+            "If you would like to register this device to $instanceId please reinstall the application.")
       }
     }
     deviceStateStore.instanceId = instanceId
@@ -74,6 +75,18 @@ class PushNotificationsInstance(
             deviceStateStore.deviceId = api.deviceId
             deviceStateStore.FCMToken = fcmToken
 
+            // sync deviceStateStore with iis
+            synchronized(deviceStateStore) {
+              deviceStateStore.interestsSet = api.initialInterestSet.toMutableSet()
+
+              if (!jobQueue.isEmpty()) {
+                jobQueue.forEach({ job -> job()})
+                api.setSubscriptions(deviceStateStore.interestsSet, OperationCallback.noop)
+              }
+            }
+
+            jobQueue.clear()
+
             log.i("Successfully started PushNotifications")
           }
 
@@ -97,18 +110,30 @@ class PushNotificationsInstance(
   fun subscribe(interest: String) {
     if (!interest.matches(validInterestRegex)) {
       throw IllegalArgumentException(
-        "Interest `$interest` is not valid. It can only contain up to 164 characters " +
-          "and can only be ASCII upper/lower-case letters, numbers and one of _-=@,.:")
+          "Interest `$interest` is not valid. It can only contain up to 164 characters " +
+              "and can only be ASCII upper/lower-case letters, numbers and one of _-=@,.:")
     }
 
-    synchronized(deviceStateStore) {
-      val interestsSet = deviceStateStore.interestsSet
-      if (!interestsSet.add(interest)) {
-        return // not a new interest
+    val localStoreOperation: () -> Boolean = {
+      synchronized(deviceStateStore) {
+        val interestsSet = deviceStateStore.interestsSet
+        if (!interestsSet.add(interest)) {
+          false // not a new interest
+        } else {
+          deviceStateStore.interestsSet = interestsSet
+          true
+        }
       }
-      deviceStateStore.interestsSet = interestsSet
     }
-    api.subscribe(interest, OperationCallback.noop)
+
+    val hasLocalStoreChanged = localStoreOperation()
+    if (deviceStateStore.deviceId == null) {
+      jobQueue += localStoreOperation
+    } else {
+      if (hasLocalStoreChanged) {
+        api.subscribe(interest, OperationCallback.noop)
+      }
+    }
   }
 
   /**
@@ -117,14 +142,26 @@ class PushNotificationsInstance(
    * @param interest the name of the interest
    */
   fun unsubscribe(interest: String) {
-    synchronized(deviceStateStore) {
-      val interestsSet = deviceStateStore.interestsSet
-      if (!interestsSet.remove(interest)) {
-        return // interest wasn't present
+    val localStoreOperation: () -> Boolean = {
+      synchronized(deviceStateStore) {
+        val interestsSet = deviceStateStore.interestsSet
+        if (!interestsSet.remove(interest)) {
+          false // interest wasn't present
+        } else {
+          deviceStateStore.interestsSet = interestsSet
+          true
+        }
       }
-      deviceStateStore.interestsSet = interestsSet
     }
-    api.unsubscribe(interest, OperationCallback.noop)
+
+    val hasLocalStoreChanged = localStoreOperation()
+    if (deviceStateStore.deviceId == null) {
+      jobQueue += localStoreOperation
+    } else {
+      if (hasLocalStoreChanged) {
+        api.unsubscribe(interest, OperationCallback.noop)
+      }
+    }
   }
 
   /**
@@ -148,18 +185,30 @@ class PushNotificationsInstance(
       !it.matches(validInterestRegex)
     }?.let {
       throw IllegalArgumentException(
-        "Interest `$it` is not valid. It can only contain up to 164 characters " +
-          "and can only be ASCII upper/lower-case letters, numbers and one of _-=@,.:")
+          "Interest `$it` is not valid. It can only contain up to 164 characters " +
+              "and can only be ASCII upper/lower-case letters, numbers and one of _-=@,.:")
     }
 
-    synchronized(deviceStateStore) {
-      val localInterestsSet = deviceStateStore.interestsSet
-      if (localInterestsSet.containsAll(interests) && interests.containsAll(localInterestsSet)) {
-        return // they are the same
+    val localStoreOperation: () -> Boolean = {
+      synchronized(deviceStateStore) {
+        val localInterestsSet = deviceStateStore.interestsSet
+        if (localInterestsSet.containsAll(interests) && interests.containsAll(localInterestsSet)) {
+          false // they are the same
+        } else {
+          deviceStateStore.interestsSet = localInterestsSet
+          true
+        }
       }
-      deviceStateStore.interestsSet = localInterestsSet
     }
-    api.setSubscriptions(interests, OperationCallback.noop)
+
+    val hasLocalStoreChanged = localStoreOperation()
+    if (deviceStateStore.deviceId == null) {
+      jobQueue += localStoreOperation
+    } else {
+      if (hasLocalStoreChanged) {
+        api.setSubscriptions(interests, OperationCallback.noop)
+      }
+    }
   }
 
   /**

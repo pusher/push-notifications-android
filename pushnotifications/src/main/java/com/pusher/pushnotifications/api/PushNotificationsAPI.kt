@@ -35,6 +35,7 @@ class PushNotificationsAPI(private val instanceId: String) {
 
   var deviceId: String? = null
   var fcmToken: String? = null
+  var initialInterestSet: Set<String> = setOf()
 
   // Handles the JsonSyntaxException properly
   private fun safeExtractJsonError(possiblyJson: String): NOKResponse {
@@ -82,6 +83,7 @@ class PushNotificationsAPI(private val instanceId: String) {
         val responseBody = response?.body()
         if (responseBody != null) {
           deviceId = responseBody.id
+          initialInterestSet = responseBody.initialInterestSet
 
           operationCallback.onSuccess()
 
