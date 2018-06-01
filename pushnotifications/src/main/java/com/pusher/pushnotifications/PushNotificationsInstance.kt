@@ -4,6 +4,7 @@ import java.util.regex.Pattern
 import android.content.Context
 import com.google.firebase.iid.FirebaseInstanceId
 import com.pusher.pushnotifications.api.OperationCallback
+import com.pusher.pushnotifications.api.OperationCallbackNoArgs
 import com.pusher.pushnotifications.api.PushNotificationsAPI
 import com.pusher.pushnotifications.fcm.FCMInstanceIDService
 import com.pusher.pushnotifications.internal.DeviceStateStore
@@ -70,23 +71,24 @@ class PushNotificationsInstance(
 
     val handleFcmToken = { fcmToken: String ->
       api.registerOrRefreshFCM(fcmToken, {
-        object : OperationCallback {
-          override fun onSuccess() {
-            deviceStateStore.deviceId = api.deviceId
+        object : OperationCallback<PushNotificationsAPI.RegisterDeviceResult> {
+          override fun onSuccess(result: PushNotificationsAPI.RegisterDeviceResult) {
+            deviceStateStore.deviceId = result.deviceId
             deviceStateStore.FCMToken = fcmToken
 
             // sync deviceStateStore with iis
             synchronized(deviceStateStore) {
-              deviceStateStore.interestsSet = api.initialInterestSet.toMutableSet()
+              val previousLocalInterestSet = deviceStateStore.interestsSet
+              deviceStateStore.interestsSet = result.initialInterestSet.toMutableSet()
 
-              if (!jobQueue.isEmpty()) {
-                jobQueue.forEach({ job -> job()})
-                api.setSubscriptions(deviceStateStore.interestsSet, OperationCallback.noop)
+              jobQueue.forEach({ job -> job()})
+
+              if (!previousLocalInterestSet.equals(deviceStateStore.interestsSet)) {
+                api.setSubscriptions(result.deviceId, deviceStateStore.interestsSet, OperationCallbackNoArgs.noop)
               }
             }
 
             jobQueue.clear()
-
             log.i("Successfully started PushNotifications")
           }
 
@@ -127,11 +129,12 @@ class PushNotificationsInstance(
     }
 
     val hasLocalStoreChanged = localStoreOperation()
-    if (deviceStateStore.deviceId == null) {
+    val deviceId = deviceStateStore.deviceId
+    if (deviceId == null) {
       jobQueue += localStoreOperation
     } else {
       if (hasLocalStoreChanged) {
-        api.subscribe(interest, OperationCallback.noop)
+        api.subscribe(deviceId, interest, OperationCallbackNoArgs.noop)
       }
     }
   }
@@ -155,11 +158,12 @@ class PushNotificationsInstance(
     }
 
     val hasLocalStoreChanged = localStoreOperation()
-    if (deviceStateStore.deviceId == null) {
+    val deviceId = deviceStateStore.deviceId
+    if (deviceId == null) {
       jobQueue += localStoreOperation
     } else {
       if (hasLocalStoreChanged) {
-        api.unsubscribe(interest, OperationCallback.noop)
+        api.unsubscribe(deviceId, interest, OperationCallbackNoArgs.noop)
       }
     }
   }
@@ -202,11 +206,12 @@ class PushNotificationsInstance(
     }
 
     val hasLocalStoreChanged = localStoreOperation()
-    if (deviceStateStore.deviceId == null) {
+    val deviceId = deviceStateStore.deviceId
+    if (deviceId == null) {
       jobQueue += localStoreOperation
     } else {
       if (hasLocalStoreChanged) {
-        api.setSubscriptions(interests, OperationCallback.noop)
+        api.setSubscriptions(deviceId, interests, OperationCallbackNoArgs.noop)
       }
     }
   }

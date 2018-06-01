@@ -7,6 +7,7 @@ import com.google.gson.annotations.SerializedName
 import com.pusher.pushnotifications.logging.Logger
 import com.pusher.pushnotifications.PushNotificationsInstance
 import com.pusher.pushnotifications.api.OperationCallback
+import com.pusher.pushnotifications.api.OperationCallbackNoArgs
 import com.pusher.pushnotifications.reporting.api.*
 
 data class PusherMetadata(
@@ -93,7 +94,7 @@ class ReportingJobService: JobService() {
         if (instanceId != null) {
           ReportingAPI(instanceId).submit(
             reportEvent = reportEvent,
-            operationCallback = object: OperationCallback {
+            operationCallback = object: OperationCallbackNoArgs {
               override fun onSuccess() {
                 log.v("Successfully submitted report.")
                 jobFinished(params, false)

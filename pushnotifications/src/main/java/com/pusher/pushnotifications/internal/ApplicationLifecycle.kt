@@ -12,6 +12,7 @@ import android.os.Bundle
 import com.pusher.pushnotifications.BuildConfig
 import com.pusher.pushnotifications.api.DeviceMetadata
 import com.pusher.pushnotifications.api.OperationCallback
+import com.pusher.pushnotifications.api.OperationCallbackNoArgs
 import com.pusher.pushnotifications.api.PushNotificationsAPI
 import com.pusher.pushnotifications.logging.Logger
 
@@ -66,25 +67,29 @@ class PushNotificationsInitProvider: ContentProvider() {
   override fun onCreate(): Boolean {
     val deviceStateStore = DeviceStateStore(context)
 
-    deviceStateStore.instanceId?.let {
-      val api = PushNotificationsAPI(it)
+    deviceStateStore.instanceId?.let { instanceId ->
+      deviceStateStore.deviceId?.let { deviceId ->
+        val api = PushNotificationsAPI(instanceId)
+        api.deviceId = deviceId
 
-      api.deviceId = deviceStateStore.deviceId
-      api.setSubscriptions(deviceStateStore.interestsSet, OperationCallback.noop)
+        api.setSubscriptions(deviceId, deviceStateStore.interestsSet, OperationCallbackNoArgs.noop)
 
-      if (deviceStateStore.sdkVersion != BuildConfig.VERSION_NAME
-          || deviceStateStore.osVersion != Build.VERSION.RELEASE) {
-        val metadata = DeviceMetadata(BuildConfig.VERSION_NAME, Build.VERSION.RELEASE)
-        api.setMetadata(metadata, operationCallback = object: OperationCallback {
-          override fun onSuccess() {
-            deviceStateStore.sdkVersion = BuildConfig.VERSION_NAME
-            deviceStateStore.osVersion = Build.VERSION.RELEASE
-          }
+        val hasMetadataChanged =
+            deviceStateStore.sdkVersion != BuildConfig.VERSION_NAME
+            || deviceStateStore.osVersion != Build.VERSION.RELEASE
+        if (hasMetadataChanged) {
+          val metadata = DeviceMetadata(BuildConfig.VERSION_NAME, Build.VERSION.RELEASE)
+          api.setMetadata(deviceId, metadata, operationCallback = object: OperationCallbackNoArgs {
+            override fun onSuccess() {
+              deviceStateStore.sdkVersion = BuildConfig.VERSION_NAME
+              deviceStateStore.osVersion = Build.VERSION.RELEASE
+            }
 
-          override fun onFailure(t: Throwable) {
-            log.w("Failed to persist metadata.", t)
-          }
-        })
+            override fun onFailure(t: Throwable) {
+              log.w("Failed to persist metadata.", t)
+            }
+          })
+        }
       }
     }
 
