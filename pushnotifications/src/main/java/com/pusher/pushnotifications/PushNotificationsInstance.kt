@@ -154,11 +154,14 @@ class PushNotificationsInstance(
     }
 
     val deviceId = deviceStateStore.deviceId
-    val hasStoreChanged = addInterestToStore(interest)
-    if (deviceId == null) {
-      jobQueue +=  fun (): Boolean = addInterestToStore(interest)
-    } else if (hasStoreChanged) {
-      api.subscribe(deviceId, interest, OperationCallbackNoArgs.noop)
+
+    if (deviceId != null) {
+      if (addInterestToStore(interest)) {
+        api.subscribe(deviceId, interest, OperationCallbackNoArgs.noop)
+      }
+    } else {
+      addInterestToStore(interest)
+      jobQueue += fun(): Boolean = addInterestToStore(interest)
     }
   }
 
@@ -169,11 +172,14 @@ class PushNotificationsInstance(
    */
   fun unsubscribe(interest: String) {
     val deviceId = deviceStateStore.deviceId
-    val hasStoreChanged = removeInterestFromStore(interest)
-    if (deviceId == null) {
-      jobQueue +=  fun (): Boolean = removeInterestFromStore(interest)
-    } else if (hasStoreChanged) {
-      api.unsubscribe(deviceId, interest, OperationCallbackNoArgs.noop)
+
+    if (deviceId != null) {
+      if(removeInterestFromStore(interest)) {
+        api.unsubscribe(deviceId, interest, OperationCallbackNoArgs.noop)
+      }
+    } else {
+      removeInterestFromStore(interest)
+      jobQueue += fun (): Boolean = removeInterestFromStore(interest)
     }
   }
 
@@ -203,11 +209,13 @@ class PushNotificationsInstance(
     }
 
     val deviceId = deviceStateStore.deviceId
-    val hasStoreChanged = replaceAllInterestsInStore(interests)
-    if (deviceId == null) {
+    if (deviceId != null) {
+      if (replaceAllInterestsInStore(interests)) {
+        api.setSubscriptions(deviceId, interests, OperationCallbackNoArgs.noop)
+      }
+    } else {
+      replaceAllInterestsInStore(interests)
       jobQueue += fun (): Boolean = replaceAllInterestsInStore(interests)
-    } else if (hasStoreChanged) {
-      api.setSubscriptions(deviceId, interests, OperationCallbackNoArgs.noop)
     }
   }
 
