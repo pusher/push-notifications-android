@@ -31,8 +31,6 @@ class PushNotificationsAPI(private val instanceId: String) {
       .build()
       .create(PushNotificationService::class.java)
 
-  private val jobQueue: ArrayList<(String) -> Unit> = ArrayList()
-
   var deviceId: String? = null
   var fcmToken: String? = null
 
@@ -46,7 +44,13 @@ class PushNotificationsAPI(private val instanceId: String) {
     }
   }
 
-  fun registerOrRefreshFCM(token: String, operationCallback: OperationCallback) {
+  data class RegisterDeviceResult(
+      val deviceId: String,
+      val initialInterestSet: Set<String>
+    )
+
+  // TODO: Separate register and refresh into separate functions
+  fun registerOrRefreshFCM(token: String, operationCallback: OperationCallback<RegisterDeviceResult>) {
     deviceId?.let { dId ->
       if (fcmToken != null && fcmToken != token) {
         service.refreshToken(instanceId, dId, RefreshToken(token))
@@ -57,6 +61,7 @@ class PushNotificationsAPI(private val instanceId: String) {
                 registerOrRefreshFCM(token, operationCallback)
                 return
               }
+
               response?.errorBody()?.let { responseErrorBody ->
                 val error = safeExtractJsonError(responseErrorBody.string())
                 log.w("Failed to register device: $error")
@@ -64,6 +69,10 @@ class PushNotificationsAPI(private val instanceId: String) {
                 return
               }
               fcmToken = token
+              operationCallback.onSuccess(
+                RegisterDeviceResult(
+                    deviceId = dId,
+                    initialInterestSet = emptySet()))
             }
           })
       }
@@ -83,14 +92,10 @@ class PushNotificationsAPI(private val instanceId: String) {
         if (responseBody != null) {
           deviceId = responseBody.id
 
-          operationCallback.onSuccess()
-
-          synchronized(jobQueue) {
-            jobQueue.forEach {
-              it(responseBody.id)
-            }
-            jobQueue.clear()
-          }
+          operationCallback.onSuccess(
+              RegisterDeviceResult(
+                  deviceId = responseBody.id,
+                  initialInterestSet = responseBody.initialInterestSet))
 
           return
         }
@@ -112,70 +117,50 @@ class PushNotificationsAPI(private val instanceId: String) {
     })
   }
 
-  fun subscribe(interest: String, operationCallback: OperationCallback) {
-    val callback = object : RequestCallbackWithExpBackoff<Void>() {
-      override fun onResponse(call: Call<Void>?, response: Response<Void>?) {
-        if (response != null && response.code() >= 200 && response.code() < 300) {
-          log.d("Successfully subscribed to interest '$interest'")
-          operationCallback.onSuccess()
-          return
-        }
+  fun subscribe(deviceId: String, interest: String, operationCallback: OperationCallbackNoArgs) {
+    service.subscribe(instanceId, deviceId, interest)
+        .enqueue(object : RequestCallbackWithExpBackoff<Void>() {
+          override fun onResponse(call: Call<Void>?, response: Response<Void>?) {
+            if (response != null && response.code() >= 200 && response.code() < 300) {
+              log.d("Successfully subscribed to interest '$interest'")
+              operationCallback.onSuccess()
+              return
+            }
 
-        val responseErrorBody = response?.errorBody()
-        if (responseErrorBody != null) {
-          val error = safeExtractJsonError(responseErrorBody.string())
-          log.w("Failed to subscribe to interest: $error")
-          operationCallback.onFailure(error)
-        }
-      }
-    }
-
-    synchronized(jobQueue) {
-      deviceId?.let {
-        service.subscribe(instanceId = instanceId, deviceId = it, interest = interest)
-          .enqueue(callback)
-        return
-      }
-      jobQueue += {
-        service.subscribe(instanceId = instanceId, deviceId = it, interest = interest)
-          .enqueue(callback)
-      }
-    }
+            val responseErrorBody = response?.errorBody()
+            if (responseErrorBody != null) {
+              val error = safeExtractJsonError(responseErrorBody.string())
+              log.w("Failed to subscribe to interest: $error")
+              operationCallback.onFailure(error)
+            }
+          }
+        })
   }
 
-  fun unsubscribe(interest: String, operationCallback: OperationCallback) {
-    val callback = object : RequestCallbackWithExpBackoff<Void>() {
-      override fun onResponse(call: Call<Void>?, response: Response<Void>?) {
-        if (response != null && response.code() >= 200 && response.code() < 300) {
-          log.d("Successfully unsubscribed to interest '$interest'")
-          operationCallback.onSuccess()
-          return
-        }
+  fun unsubscribe(deviceId: String, interest: String, operationCallback: OperationCallbackNoArgs) {
+    service.unsubscribe(instanceId, deviceId, interest)
+        .enqueue(object : RequestCallbackWithExpBackoff<Void>() {
+          override fun onResponse(call: Call<Void>?, response: Response<Void>?) {
+            if (response != null && response.code() >= 200 && response.code() < 300) {
+              log.d("Successfully unsubscribed to interest '$interest'")
+              operationCallback.onSuccess()
+              return
+            }
 
-        val responseErrorBody = response?.errorBody()
-        if (responseErrorBody != null) {
-          val error = safeExtractJsonError(responseErrorBody.string())
-          log.w("Failed to unsubscribe to interest: $error")
-          operationCallback.onFailure(error)
-        }
-      }
-    }
-
-    synchronized(jobQueue) {
-      deviceId?.let {
-        service.unsubscribe(instanceId = instanceId, deviceId = it, interest = interest)
-          .enqueue(callback)
-        return
-      }
-      jobQueue += {
-        service.unsubscribe(instanceId = instanceId, deviceId = it, interest = interest)
-          .enqueue(callback)
-      }
-    }
+            val responseErrorBody = response?.errorBody()
+            if (responseErrorBody != null) {
+              val error = safeExtractJsonError(responseErrorBody.string())
+              log.w("Failed to unsubscribe to interest: $error")
+              operationCallback.onFailure(error)
+            }
+          }
+        })
   }
 
-  fun setSubscriptions(interests: Set<String>, operationCallback: OperationCallback) {
-    val callback = object : RequestCallbackWithExpBackoff<Void>() {
+  fun setSubscriptions(deviceId: String, interests: Set<String>, operationCallback: OperationCallbackNoArgs) {
+    service.setSubscriptions(
+        instanceId, deviceId, SetSubscriptionsRequest(interests)
+    ).enqueue(object : RequestCallbackWithExpBackoff<Void>() {
       override fun onResponse(call: Call<Void>?, response: Response<Void>?) {
         if (response != null && response.code() >= 200 && response.code() < 300) {
           log.d("Successfully updated the interest set")
@@ -190,25 +175,13 @@ class PushNotificationsAPI(private val instanceId: String) {
           operationCallback.onFailure(error)
         }
       }
-    }
-
-    synchronized(jobQueue) {
-      deviceId?.let {
-        service.setSubscriptions(
-          instanceId = instanceId, deviceId = it, interests = SetSubscriptionsRequest(interests)
-        ).enqueue(callback)
-        return
-      }
-      jobQueue += {
-        service.setSubscriptions(
-          instanceId = instanceId, deviceId = it, interests = SetSubscriptionsRequest(interests)
-        ).enqueue(callback)
-      }
-    }
+    })
   }
 
-  fun setMetadata(metadata: DeviceMetadata, operationCallback: OperationCallback) {
-    val callback = object : RequestCallbackWithExpBackoff<Void>() {
+  fun setMetadata(deviceId: String, metadata: DeviceMetadata, operationCallback: OperationCallbackNoArgs) {
+    service.setMetadata(
+        instanceId, deviceId, metadata
+    ).enqueue(object : RequestCallbackWithExpBackoff<Void>() {
       override fun onResponse(call: Call<Void>?, response: Response<Void>?) {
         if (response != null && response.code() >= 200 && response.code() < 300) {
           log.d("Successfully set metadata")
@@ -223,20 +196,6 @@ class PushNotificationsAPI(private val instanceId: String) {
           operationCallback.onFailure(error)
         }
       }
-    }
-
-    synchronized(jobQueue) {
-      deviceId?.let {
-        service.setMetadata(
-          instanceId = instanceId, deviceId = it, metadata = metadata
-        ).enqueue(callback)
-        return
-      }
-      jobQueue += {
-        service.setMetadata(
-          instanceId = instanceId, deviceId = it, metadata = metadata
-        ).enqueue(callback)
-      }
-    }
+    })
   }
 }

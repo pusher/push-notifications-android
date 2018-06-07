@@ -3,6 +3,7 @@ package com.pusher.pushnotifications.reporting.api
 import com.google.gson.Gson
 import com.pusher.pushnotifications.api.PusherLibraryHeaderInterceptor
 import com.pusher.pushnotifications.api.OperationCallback
+import com.pusher.pushnotifications.api.OperationCallbackNoArgs
 import com.pusher.pushnotifications.reporting.ReportingJobService
 import okhttp3.OkHttpClient
 import retrofit2.Call
@@ -29,7 +30,7 @@ class ReportingAPI(private val instanceId: String) {
       .build()
       .create(ReportingService::class.java)
 
-  fun submit(reportEvent: ReportEvent, operationCallback: OperationCallback) {
+  fun submit(reportEvent: ReportEvent, operationCallback: OperationCallbackNoArgs) {
     val callback = object : Callback<Void> {
       override fun onResponse(call: Call<Void>?, response: Response<Void>) {
         when {

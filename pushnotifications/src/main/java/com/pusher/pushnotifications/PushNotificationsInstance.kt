@@ -4,6 +4,7 @@ import java.util.regex.Pattern
 import android.content.Context
 import com.google.firebase.iid.FirebaseInstanceId
 import com.pusher.pushnotifications.api.OperationCallback
+import com.pusher.pushnotifications.api.OperationCallbackNoArgs
 import com.pusher.pushnotifications.api.PushNotificationsAPI
 import com.pusher.pushnotifications.fcm.FCMInstanceIDService
 import com.pusher.pushnotifications.internal.DeviceStateStore
@@ -16,7 +17,7 @@ import com.pusher.pushnotifications.validation.Validations
  *
  * @param message Error message to be shown
  */
-class PusherAlreadyRegisteredException(message: String): RuntimeException(message) {}
+class PusherAlreadyRegisteredException(message: String) : RuntimeException(message) {}
 
 /**
  * Interacts with the Pusher service to subscribe and unsubscribe from interests.
@@ -25,21 +26,22 @@ class PusherAlreadyRegisteredException(message: String): RuntimeException(messag
  * @param instanceId the id of the instance
  */
 class PushNotificationsInstance(
-  context: Context,
-  instanceId: String) {
+    context: Context,
+    instanceId: String) {
   private val log = Logger.get(this::class)
 
   private val api = PushNotificationsAPI(instanceId)
   private val deviceStateStore = DeviceStateStore(context)
+  private val jobQueue: ArrayList<() -> Boolean> = ArrayList()
 
   init {
     Validations.validateApplicationIcon(context)
-    PushNotificationsInstance.getInstanceId(context)?.let{
+    PushNotificationsInstance.getInstanceId(context)?.let {
       val isNewInstanceId = it != instanceId
       if (isNewInstanceId) {
         throw PusherAlreadyRegisteredException("This device has already been registered to a Pusher " +
-                "Push Notifications application with instance ID: $it. " +
-                "If you would like to register this device to $instanceId please reinstall the application.")
+            "Push Notifications application with instance ID: $it. " +
+            "If you would like to register this device to $instanceId please reinstall the application.")
       }
     }
     deviceStateStore.instanceId = instanceId
@@ -51,6 +53,35 @@ class PushNotificationsInstance(
     fun getInstanceId(context: Context): String? {
       return DeviceStateStore(context).instanceId
     }
+  }
+  
+
+  fun addInterestToStore(interest: String): Boolean {
+    val interestsSet = deviceStateStore.interestsSet
+    if (interestsSet.add(interest)) {
+      deviceStateStore.interestsSet = interestsSet
+      return true
+    }
+    return false // nothing changed
+  }
+
+  fun removeInterestFromStore(interest: String): Boolean {
+    val interestsSet = deviceStateStore.interestsSet
+    if (interestsSet.remove(interest)) {
+      deviceStateStore.interestsSet = interestsSet
+      return true
+    }
+    return false // nothing changed
+  }
+
+  fun replaceAllInterestsInStore(interests: Set<String>): Boolean {
+    val localInterestsSet = deviceStateStore.interestsSet
+    val areInterestSetsDifferent = localInterestsSet.containsAll(interests) && interests.containsAll(localInterestsSet)
+    if (areInterestSetsDifferent) {
+      deviceStateStore.interestsSet = localInterestsSet
+      return true
+    }
+    return false // nothing changed
   }
 
   /**
@@ -69,12 +100,26 @@ class PushNotificationsInstance(
 
     val handleFcmToken = { fcmToken: String ->
       api.registerOrRefreshFCM(fcmToken, {
-        object : OperationCallback {
-          override fun onSuccess() {
-            deviceStateStore.deviceId = api.deviceId
-            deviceStateStore.FCMToken = fcmToken
+        object : OperationCallback<PushNotificationsAPI.RegisterDeviceResult> {
+          override fun onSuccess(result: PushNotificationsAPI.RegisterDeviceResult) {
+            if (deviceStateStore.deviceId == null) {
+              synchronized(deviceStateStore) {
+                val previousLocalInterestSet = deviceStateStore.interestsSet
+                deviceStateStore.interestsSet = result.initialInterestSet.toMutableSet()
 
-            log.i("Successfully started PushNotifications")
+                jobQueue.forEach({ job -> job()})
+
+                if (!previousLocalInterestSet.equals(deviceStateStore.interestsSet)) {
+                  api.setSubscriptions(result.deviceId, deviceStateStore.interestsSet, OperationCallbackNoArgs.noop)
+                }
+              }
+
+              jobQueue.clear()
+              log.i("Successfully started PushNotifications")
+            }
+
+            deviceStateStore.deviceId = result.deviceId
+            deviceStateStore.FCMToken = fcmToken
           }
 
           override fun onFailure(t: Throwable) {
@@ -97,18 +142,22 @@ class PushNotificationsInstance(
   fun subscribe(interest: String) {
     if (!interest.matches(validInterestRegex)) {
       throw IllegalArgumentException(
-        "Interest `$interest` is not valid. It can only contain up to 164 characters " +
-          "and can only be ASCII upper/lower-case letters, numbers and one of _-=@,.:")
+          "Interest `$interest` is not valid. It can only contain up to 164 characters " +
+              "and can only be ASCII upper/lower-case letters, numbers and one of _-=@,.:")
     }
 
     synchronized(deviceStateStore) {
-      val interestsSet = deviceStateStore.interestsSet
-      if (!interestsSet.add(interest)) {
-        return // not a new interest
+      val deviceId = deviceStateStore.deviceId
+
+      if (deviceId != null) {
+        if (addInterestToStore(interest)) {
+          api.subscribe(deviceId, interest, OperationCallbackNoArgs.noop)
+        }
+      } else {
+        addInterestToStore(interest)
+        jobQueue += fun(): Boolean = addInterestToStore(interest)
       }
-      deviceStateStore.interestsSet = interestsSet
     }
-    api.subscribe(interest, OperationCallback.noop)
   }
 
   /**
@@ -118,13 +167,17 @@ class PushNotificationsInstance(
    */
   fun unsubscribe(interest: String) {
     synchronized(deviceStateStore) {
-      val interestsSet = deviceStateStore.interestsSet
-      if (!interestsSet.remove(interest)) {
-        return // interest wasn't present
+      val deviceId = deviceStateStore.deviceId
+
+      if (deviceId != null) {
+        if(removeInterestFromStore(interest)) {
+          api.unsubscribe(deviceId, interest, OperationCallbackNoArgs.noop)
+        }
+      } else {
+        removeInterestFromStore(interest)
+        jobQueue += fun (): Boolean = removeInterestFromStore(interest)
       }
-      deviceStateStore.interestsSet = interestsSet
     }
-    api.unsubscribe(interest, OperationCallback.noop)
   }
 
   /**
@@ -148,18 +201,21 @@ class PushNotificationsInstance(
       !it.matches(validInterestRegex)
     }?.let {
       throw IllegalArgumentException(
-        "Interest `$it` is not valid. It can only contain up to 164 characters " +
-          "and can only be ASCII upper/lower-case letters, numbers and one of _-=@,.:")
+          "Interest `$it` is not valid. It can only contain up to 164 characters " +
+              "and can only be ASCII upper/lower-case letters, numbers and one of _-=@,.:")
     }
 
     synchronized(deviceStateStore) {
-      val localInterestsSet = deviceStateStore.interestsSet
-      if (localInterestsSet.containsAll(interests) && interests.containsAll(localInterestsSet)) {
-        return // they are the same
+      val deviceId = deviceStateStore.deviceId
+      if (deviceId != null) {
+        if (replaceAllInterestsInStore(interests)) {
+          api.setSubscriptions(deviceId, interests, OperationCallbackNoArgs.noop)
+        }
+      } else {
+        replaceAllInterestsInStore(interests)
+        jobQueue += fun (): Boolean = replaceAllInterestsInStore(interests)
       }
-      deviceStateStore.interestsSet = localInterestsSet
     }
-    api.setSubscriptions(interests, OperationCallback.noop)
   }
 
   /**
