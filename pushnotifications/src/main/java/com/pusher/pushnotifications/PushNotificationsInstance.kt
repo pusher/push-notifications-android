@@ -57,38 +57,31 @@ class PushNotificationsInstance(
   
 
   fun addInterestToStore(interest: String): Boolean {
-    synchronized(deviceStateStore) {
-      val interestsSet = deviceStateStore.interestsSet
-      if (interestsSet.add(interest)) {
-        deviceStateStore.interestsSet = interestsSet
-        return true
-      }
-      return false // nothing changed
+    val interestsSet = deviceStateStore.interestsSet
+    if (interestsSet.add(interest)) {
+      deviceStateStore.interestsSet = interestsSet
+      return true
     }
+    return false // nothing changed
   }
 
   fun removeInterestFromStore(interest: String): Boolean {
-    synchronized(deviceStateStore) {
-      val interestsSet = deviceStateStore.interestsSet
-      if (interestsSet.remove(interest)) {
-        deviceStateStore.interestsSet = interestsSet
-        return true
-      }
-      return false // nothing changed
+    val interestsSet = deviceStateStore.interestsSet
+    if (interestsSet.remove(interest)) {
+      deviceStateStore.interestsSet = interestsSet
+      return true
     }
+    return false // nothing changed
   }
 
   fun replaceAllInterestsInStore(interests: Set<String>): Boolean {
-    synchronized(deviceStateStore) {
-      val localInterestsSet = deviceStateStore.interestsSet
-      val areInterestSetsDifferent = localInterestsSet.containsAll(interests) && interests.containsAll(localInterestsSet)
-      if (areInterestSetsDifferent) {
-        deviceStateStore.interestsSet = localInterestsSet
-        return true
-      } else {
-        return false // nothing changed
-      }
+    val localInterestsSet = deviceStateStore.interestsSet
+    val areInterestSetsDifferent = localInterestsSet.containsAll(interests) && interests.containsAll(localInterestsSet)
+    if (areInterestSetsDifferent) {
+      deviceStateStore.interestsSet = localInterestsSet
+      return true
     }
+    return false // nothing changed
   }
 
   /**
@@ -153,15 +146,17 @@ class PushNotificationsInstance(
               "and can only be ASCII upper/lower-case letters, numbers and one of _-=@,.:")
     }
 
-    val deviceId = deviceStateStore.deviceId
+    synchronized(deviceStateStore) {
+      val deviceId = deviceStateStore.deviceId
 
-    if (deviceId != null) {
-      if (addInterestToStore(interest)) {
-        api.subscribe(deviceId, interest, OperationCallbackNoArgs.noop)
+      if (deviceId != null) {
+        if (addInterestToStore(interest)) {
+          api.subscribe(deviceId, interest, OperationCallbackNoArgs.noop)
+        }
+      } else {
+        addInterestToStore(interest)
+        jobQueue += fun(): Boolean = addInterestToStore(interest)
       }
-    } else {
-      addInterestToStore(interest)
-      jobQueue += fun(): Boolean = addInterestToStore(interest)
     }
   }
 
@@ -171,15 +166,17 @@ class PushNotificationsInstance(
    * @param interest the name of the interest
    */
   fun unsubscribe(interest: String) {
-    val deviceId = deviceStateStore.deviceId
+    synchronized(deviceStateStore) {
+      val deviceId = deviceStateStore.deviceId
 
-    if (deviceId != null) {
-      if(removeInterestFromStore(interest)) {
-        api.unsubscribe(deviceId, interest, OperationCallbackNoArgs.noop)
+      if (deviceId != null) {
+        if(removeInterestFromStore(interest)) {
+          api.unsubscribe(deviceId, interest, OperationCallbackNoArgs.noop)
+        }
+      } else {
+        removeInterestFromStore(interest)
+        jobQueue += fun (): Boolean = removeInterestFromStore(interest)
       }
-    } else {
-      removeInterestFromStore(interest)
-      jobQueue += fun (): Boolean = removeInterestFromStore(interest)
     }
   }
 
@@ -208,14 +205,16 @@ class PushNotificationsInstance(
               "and can only be ASCII upper/lower-case letters, numbers and one of _-=@,.:")
     }
 
-    val deviceId = deviceStateStore.deviceId
-    if (deviceId != null) {
-      if (replaceAllInterestsInStore(interests)) {
-        api.setSubscriptions(deviceId, interests, OperationCallbackNoArgs.noop)
+    synchronized(deviceStateStore) {
+      val deviceId = deviceStateStore.deviceId
+      if (deviceId != null) {
+        if (replaceAllInterestsInStore(interests)) {
+          api.setSubscriptions(deviceId, interests, OperationCallbackNoArgs.noop)
+        }
+      } else {
+        replaceAllInterestsInStore(interests)
+        jobQueue += fun (): Boolean = replaceAllInterestsInStore(interests)
       }
-    } else {
-      replaceAllInterestsInStore(interests)
-      jobQueue += fun (): Boolean = replaceAllInterestsInStore(interests)
     }
   }
 
