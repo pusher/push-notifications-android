@@ -33,6 +33,7 @@ class PushNotificationsInstance(
   private val api = PushNotificationsAPI(instanceId)
   private val deviceStateStore = DeviceStateStore(context)
   private val jobQueue: ArrayList<() -> Boolean> = ArrayList()
+  private var onSubscriptionsChangedListener: SubscriptionsChangedListener? = null
 
   init {
     Validations.validateApplicationIcon(context)
@@ -107,10 +108,14 @@ class PushNotificationsInstance(
                 val previousLocalInterestSet = deviceStateStore.interestsSet
                 deviceStateStore.interestsSet = result.initialInterestSet.toMutableSet()
 
-                jobQueue.forEach({ job -> job()})
+                jobQueue.forEach({ job -> job() })
 
                 if (!previousLocalInterestSet.equals(deviceStateStore.interestsSet)) {
                   api.setSubscriptions(result.deviceId, deviceStateStore.interestsSet, OperationCallbackNoArgs.noop)
+
+                  onSubscriptionsChangedListener?.let{
+                    it.onSubscriptionsChanged(deviceStateStore.interestsSet)
+                  }
                 }
               }
 
@@ -225,5 +230,13 @@ class PushNotificationsInstance(
     synchronized(deviceStateStore) {
       return deviceStateStore.interestsSet
     }
+  }
+
+  /**
+   * Registers a listener for when subscriptions have changed
+   * @param listener - the listener object
+   */
+  fun setOnSubscriptionsChangedListener(listener: SubscriptionsChangedListener) {
+    onSubscriptionsChangedListener = listener
   }
 }

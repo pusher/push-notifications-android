@@ -105,4 +105,12 @@ public class PushNotifications {
     public static void setOnMessageReceivedListenerForVisibleActivity(Activity activity, PushNotificationReceivedListener messageReceivedListener) {
         MessagingService.setOnMessageReceivedListenerForVisibleActivity(activity, messageReceivedListener);
     }
+
+    /**
+     * Configures the listener that handles a change in subscriptions
+     * @param listener the listener to handle subscription change
+     */
+    public static void setOnSubscriptionsChangedListener(SubscriptionsChangedListener listener) {
+        instance.setOnSubscriptionsChangedListener(listener);
+    }
 }
