@@ -130,8 +130,8 @@ class DeviceStateStoreTest {
         .thenReturn(mutableSetOf<String>())
         .thenReturn(mutableSetOf("hello"))
 
-    Assert.assertThat(testDeviceStateStore.interestsSet, `is`(emptySet<String>()))
-    Assert.assertThat(testDeviceStateStore.interestsSet, `is`(equalTo(mutableSetOf("hello"))))
+    Assert.assertThat(testDeviceStateStore.interests, `is`(emptySet<String>()))
+    Assert.assertThat(testDeviceStateStore.interests, `is`(equalTo(mutableSetOf("hello"))))
   }
 
   @Test
@@ -141,6 +141,6 @@ class DeviceStateStoreTest {
     `when`(mockEditor.putStringSet("interests", mutableSetOf("hello"))).thenReturn(mockEditor)
     doNothing().`when`(mockEditor).apply()
 
-    testDeviceStateStore.interestsSet = mutableSetOf("hello")
+    testDeviceStateStore.interests = mutableSetOf("hello")
   }
 }

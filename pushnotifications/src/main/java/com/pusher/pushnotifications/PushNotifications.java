@@ -27,9 +27,9 @@ public class PushNotifications {
     }
 
     /**
-     * Subscribes the device to an interest. For example:
+     * Subscribes the device to an Interest. For example:
      * <pre>{@code PushNotifications.subscribe("hello");}</pre>
-     * @param interest the name of the interest
+     * @param interest the name of the Interest
      */
     public static void subscribe(String interest) {
         if (instance == null) {
@@ -40,9 +40,9 @@ public class PushNotifications {
     }
 
     /**
-     * Unsubscribes the device from the interest. For example:
+     * Unsubscribes the device from the Interest. For example:
      * <pre>{@code PushNotifications.unsubscribe("hello");}</pre>
-     * @param interest the name of the interest
+     * @param interest the name of the Interest
      */
     public static void unsubscribe(String interest) {
         if (instance == null) {
@@ -53,7 +53,7 @@ public class PushNotifications {
     }
 
     /**
-     * Unsubscribes the device from all the interests. For example:
+     * Unsubscribes the device from all the Interests. For example:
      * <pre>{@code PushNotifications.unsubscribeAll();}</pre>
      */
     public static void unsubscribeAll() {
@@ -66,7 +66,7 @@ public class PushNotifications {
 
     /**
      * Sets the subscriptions state for the device. Any interests not in the set will be
-     * unsubscribed from, so this will replace the interest set by the one provided.
+     * unsubscribed from, so this will replace the Interest set by the one provided.
      * <br>
      * For example:
      * <pre>{@code PushNotifications.setSubscriptions(Arrays.asList("hello", "donuts").toSet());}</pre>
@@ -81,7 +81,7 @@ public class PushNotifications {
     }
 
     /**
-     * @return the set of subscriptions that the device is currently subscribed to
+     * @return the Interest subscriptions that the device is currently subscribed to
      */
     public static Set<String> getSubscriptions() {
         if (instance == null) {
@@ -107,8 +107,11 @@ public class PushNotifications {
     }
 
     /**
-     * Configures the listener that handles a change in subscriptions
-     * @param listener the listener to handle subscription change
+     * Configures the listener that handles a change the device's Interest subscriptions
+     *
+     * Use this method to update your UI.
+     *
+     * @param listener the listener to handle Interest subscription change
      */
     public static void setOnSubscriptionsChangedListener(SubscriptionsChangedListener listener) {
         instance.setOnSubscriptionsChangedListener(listener);

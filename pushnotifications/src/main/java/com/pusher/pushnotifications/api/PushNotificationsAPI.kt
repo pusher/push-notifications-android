@@ -46,7 +46,7 @@ class PushNotificationsAPI(private val instanceId: String) {
 
   data class RegisterDeviceResult(
       val deviceId: String,
-      val initialInterestSet: Set<String>
+      val initialInterests: Set<String>
     )
 
   // TODO: Separate register and refresh into separate functions
@@ -72,7 +72,7 @@ class PushNotificationsAPI(private val instanceId: String) {
               operationCallback.onSuccess(
                 RegisterDeviceResult(
                     deviceId = dId,
-                    initialInterestSet = emptySet()))
+                    initialInterests = emptySet()))
             }
           })
       }
@@ -95,7 +95,7 @@ class PushNotificationsAPI(private val instanceId: String) {
           operationCallback.onSuccess(
               RegisterDeviceResult(
                   deviceId = responseBody.id,
-                  initialInterestSet = responseBody.initialInterestSet))
+                  initialInterests = responseBody.initialInterests))
 
           return
         }
