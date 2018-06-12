@@ -11,7 +11,6 @@ import android.os.Build
 import android.os.Bundle
 import com.pusher.pushnotifications.BuildConfig
 import com.pusher.pushnotifications.api.DeviceMetadata
-import com.pusher.pushnotifications.api.OperationCallback
 import com.pusher.pushnotifications.api.OperationCallbackNoArgs
 import com.pusher.pushnotifications.api.PushNotificationsAPI
 import com.pusher.pushnotifications.logging.Logger
@@ -72,7 +71,7 @@ class PushNotificationsInitProvider: ContentProvider() {
         val api = PushNotificationsAPI(instanceId)
         api.deviceId = deviceId
 
-        api.setSubscriptions(deviceId, deviceStateStore.interestsSet, OperationCallbackNoArgs.noop)
+        api.setSubscriptions(deviceId, deviceStateStore.interests, OperationCallbackNoArgs.noop)
 
         val hasMetadataChanged =
             deviceStateStore.sdkVersion != BuildConfig.VERSION_NAME

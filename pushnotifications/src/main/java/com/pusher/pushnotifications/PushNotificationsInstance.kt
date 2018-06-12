@@ -33,6 +33,7 @@ class PushNotificationsInstance(
   private val api = PushNotificationsAPI(instanceId)
   private val deviceStateStore = DeviceStateStore(context)
   private val jobQueue: ArrayList<() -> Boolean> = ArrayList()
+  private var onSubscriptionsChangedListener: SubscriptionsChangedListener? = null
 
   init {
     Validations.validateApplicationIcon(context)
@@ -57,28 +58,28 @@ class PushNotificationsInstance(
   
 
   fun addInterestToStore(interest: String): Boolean {
-    val interestsSet = deviceStateStore.interestsSet
-    if (interestsSet.add(interest)) {
-      deviceStateStore.interestsSet = interestsSet
+    val interests = deviceStateStore.interests
+    if (interests.add(interest)) {
+      deviceStateStore.interests = interests
       return true
     }
     return false // nothing changed
   }
 
   fun removeInterestFromStore(interest: String): Boolean {
-    val interestsSet = deviceStateStore.interestsSet
-    if (interestsSet.remove(interest)) {
-      deviceStateStore.interestsSet = interestsSet
+    val interests = deviceStateStore.interests
+    if (interests.remove(interest)) {
+      deviceStateStore.interests = interests
       return true
     }
     return false // nothing changed
   }
 
   fun replaceAllInterestsInStore(interests: Set<String>): Boolean {
-    val localInterestsSet = deviceStateStore.interestsSet
-    val areInterestSetsDifferent = localInterestsSet.containsAll(interests) && interests.containsAll(localInterestsSet)
-    if (areInterestSetsDifferent) {
-      deviceStateStore.interestsSet = localInterestsSet
+    val localInterests = deviceStateStore.interests
+    val areInterestsDifferent = localInterests.containsAll(interests) && interests.containsAll(localInterests)
+    if (areInterestsDifferent) {
+      deviceStateStore.interests = localInterests
       return true
     }
     return false // nothing changed
@@ -104,13 +105,17 @@ class PushNotificationsInstance(
           override fun onSuccess(result: PushNotificationsAPI.RegisterDeviceResult) {
             if (deviceStateStore.deviceId == null) {
               synchronized(deviceStateStore) {
-                val previousLocalInterestSet = deviceStateStore.interestsSet
-                deviceStateStore.interestsSet = result.initialInterestSet.toMutableSet()
+                val previousLocalInterests = deviceStateStore.interests
+                deviceStateStore.interests = result.initialInterests.toMutableSet()
 
-                jobQueue.forEach({ job -> job()})
+                jobQueue.forEach({ job -> job() })
 
-                if (!previousLocalInterestSet.equals(deviceStateStore.interestsSet)) {
-                  api.setSubscriptions(result.deviceId, deviceStateStore.interestsSet, OperationCallbackNoArgs.noop)
+                if (!previousLocalInterests.equals(deviceStateStore.interests)) {
+                  api.setSubscriptions(result.deviceId, deviceStateStore.interests, OperationCallbackNoArgs.noop)
+
+                  onSubscriptionsChangedListener?.let{
+                    it.onSubscriptionsChanged(deviceStateStore.interests)
+                  }
                 }
               }
 
@@ -148,14 +153,19 @@ class PushNotificationsInstance(
 
     synchronized(deviceStateStore) {
       val deviceId = deviceStateStore.deviceId
+      val haveInterestsChanged = addInterestToStore(interest)
 
       if (deviceId != null) {
-        if (addInterestToStore(interest)) {
+        if (haveInterestsChanged) {
           api.subscribe(deviceId, interest, OperationCallbackNoArgs.noop)
         }
       } else {
-        addInterestToStore(interest)
         jobQueue += fun(): Boolean = addInterestToStore(interest)
+      }
+      if (haveInterestsChanged) {
+        onSubscriptionsChangedListener?.let{
+          it.onSubscriptionsChanged(deviceStateStore.interests)
+        }
       }
     }
   }
@@ -168,14 +178,19 @@ class PushNotificationsInstance(
   fun unsubscribe(interest: String) {
     synchronized(deviceStateStore) {
       val deviceId = deviceStateStore.deviceId
+      val haveInterestsChanged = removeInterestFromStore(interest)
 
       if (deviceId != null) {
-        if(removeInterestFromStore(interest)) {
+        if (haveInterestsChanged) {
           api.unsubscribe(deviceId, interest, OperationCallbackNoArgs.noop)
         }
       } else {
-        removeInterestFromStore(interest)
         jobQueue += fun (): Boolean = removeInterestFromStore(interest)
+      }
+      if (haveInterestsChanged) {
+        onSubscriptionsChangedListener?.let{
+          it.onSubscriptionsChanged(deviceStateStore.interests)
+        }
       }
     }
   }
@@ -207,13 +222,19 @@ class PushNotificationsInstance(
 
     synchronized(deviceStateStore) {
       val deviceId = deviceStateStore.deviceId
+      val haveInterestsChanged = replaceAllInterestsInStore(interests)
+
       if (deviceId != null) {
-        if (replaceAllInterestsInStore(interests)) {
+        if (haveInterestsChanged) {
           api.setSubscriptions(deviceId, interests, OperationCallbackNoArgs.noop)
         }
       } else {
-        replaceAllInterestsInStore(interests)
         jobQueue += fun (): Boolean = replaceAllInterestsInStore(interests)
+      }
+      if (haveInterestsChanged) {
+        onSubscriptionsChangedListener?.let{
+          it.onSubscriptionsChanged(deviceStateStore.interests)
+        }
       }
     }
   }
@@ -223,7 +244,16 @@ class PushNotificationsInstance(
    */
   fun getSubscriptions(): Set<String> {
     synchronized(deviceStateStore) {
-      return deviceStateStore.interestsSet
+      return deviceStateStore.interests
     }
+  }
+
+  /**
+   * Registers a listener for when subscriptions have changed
+   *
+   * @param listener - the listener object
+   */
+  fun setOnSubscriptionsChangedListener(listener: SubscriptionsChangedListener) {
+    onSubscriptionsChangedListener = listener
   }
 }

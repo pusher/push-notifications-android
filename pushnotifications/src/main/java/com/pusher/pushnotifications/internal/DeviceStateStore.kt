@@ -8,7 +8,7 @@ class DeviceStateStore(context: Context) {
   private val preferencesInstanceIdKey = "instanceId"
   private val preferencesOSVersionKey = "osVersion"
   private val preferencesSDKVersionKey = "sdkVersion"
-  private val preferencesInterestsSetKey = "interests"
+  private val preferencesInterestsKey = "interests"
 
   private val preferences = context.getSharedPreferences(
     "com.pusher.pushnotifications.PushNotificationsInstance", Context.MODE_PRIVATE)
@@ -33,9 +33,9 @@ class DeviceStateStore(context: Context) {
     get() = preferences.getString(preferencesSDKVersionKey, null)
     set(value) = preferences.edit().putString(preferencesSDKVersionKey, value).apply()
 
-  var interestsSet: MutableSet<String>
+  var interests: MutableSet<String>
     // We need to clone the set we get from shared preferences because mutating it is not permitted
     // by the Android SDK
-    get() = preferences.getStringSet(preferencesInterestsSetKey, mutableSetOf<String>()).toMutableSet()
-    set(value) = preferences.edit().putStringSet(preferencesInterestsSetKey, value).apply()
+    get() = preferences.getStringSet(preferencesInterestsKey, mutableSetOf<String>()).toMutableSet()
+    set(value) = preferences.edit().putStringSet(preferencesInterestsKey, value).apply()
 }

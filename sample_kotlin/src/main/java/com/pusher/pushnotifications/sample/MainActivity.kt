@@ -7,6 +7,7 @@ import com.google.firebase.messaging.RemoteMessage
 import com.pusher.pushnotifications.PushNotificationReceivedListener
 import com.pusher.pushnotifications.PushNotifications
 import com.pusher.pushnotifications.PushNotificationsInstance
+import com.pusher.pushnotifications.SubscriptionsChangedListener
 
 class MainActivity : AppCompatActivity() {
   lateinit var pn: PushNotificationsInstance
@@ -17,6 +18,12 @@ class MainActivity : AppCompatActivity() {
     setContentView(R.layout.activity_main)
 
     PushNotifications.start(applicationContext, instanceId)
+
+    PushNotifications.setOnSubscriptionsChangedListener(object: SubscriptionsChangedListener {
+      override fun onSubscriptionsChanged(interests: Set<String>) {
+        Log.i("MainActivity", "Interests: ${interests.toString()}")
+      }
+    })
 
     PushNotifications.subscribe("hello")
     PushNotifications.subscribe("donuts")
