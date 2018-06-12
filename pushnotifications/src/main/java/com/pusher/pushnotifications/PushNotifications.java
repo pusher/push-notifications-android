@@ -95,7 +95,7 @@ public class PushNotifications {
      * Configures the listener that handles a remote message only when this activity is in the
      * foreground.
      *
-     * Use this method to update your UI. This should be called from the `Activity.onResume` method.
+     * You can use this method to update your UI. This should be called from the `Activity.onResume` method.
      *
      * If you intend to handle a remote message in all circumstances, read the service docs:
      * https://docs.pusher.com/push-notifications/reference/android#handle-incoming-notifications
@@ -109,7 +109,7 @@ public class PushNotifications {
     /**
      * Configures the listener that handles a change the device's Interest subscriptions
      *
-     * Use this method to update your UI.
+     * You can use this method to update your UI.
      *
      * @param listener the listener to handle Interest subscription change
      */

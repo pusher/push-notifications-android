@@ -23,7 +23,7 @@ abstract class MessagingService: Service() {
      * Configures the listener that handles a remote message only when this activity is in the
      * foreground.
      *
-     * Use this method to update your UI.
+     * You can use this method to update your UI.
      *
      * If you intend to handle a remote message in all circumstances, read the service docs:
      * https://docs.pusher.com/push-notifications/reference/android#handle-incoming-notifications
