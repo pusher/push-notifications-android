@@ -153,14 +153,17 @@ class PushNotificationsInstance(
 
     synchronized(deviceStateStore) {
       val deviceId = deviceStateStore.deviceId
+      val haveInterestsChanged = addInterestToStore(interest)
 
       if (deviceId != null) {
-        if (addInterestToStore(interest)) {
+        if (haveInterestsChanged) {
           api.subscribe(deviceId, interest, OperationCallbackNoArgs.noop)
         }
       } else {
-        addInterestToStore(interest)
         jobQueue += fun(): Boolean = addInterestToStore(interest)
+      }
+      onSubscriptionsChangedListener?.let{
+        it.onSubscriptionsChanged(deviceStateStore.interests)
       }
     }
   }
@@ -173,14 +176,17 @@ class PushNotificationsInstance(
   fun unsubscribe(interest: String) {
     synchronized(deviceStateStore) {
       val deviceId = deviceStateStore.deviceId
+      val haveInterestsChanged = removeInterestFromStore(interest)
 
       if (deviceId != null) {
-        if(removeInterestFromStore(interest)) {
+        if (haveInterestsChanged) {
           api.unsubscribe(deviceId, interest, OperationCallbackNoArgs.noop)
         }
       } else {
-        removeInterestFromStore(interest)
         jobQueue += fun (): Boolean = removeInterestFromStore(interest)
+      }
+      onSubscriptionsChangedListener?.let{
+        it.onSubscriptionsChanged(deviceStateStore.interests)
       }
     }
   }
@@ -212,13 +218,17 @@ class PushNotificationsInstance(
 
     synchronized(deviceStateStore) {
       val deviceId = deviceStateStore.deviceId
+      val haveInterestsChanged = replaceAllInterestsInStore(interests)
+
       if (deviceId != null) {
-        if (replaceAllInterestsInStore(interests)) {
+        if (haveInterestsChanged) {
           api.setSubscriptions(deviceId, interests, OperationCallbackNoArgs.noop)
         }
       } else {
-        replaceAllInterestsInStore(interests)
         jobQueue += fun (): Boolean = replaceAllInterestsInStore(interests)
+      }
+      onSubscriptionsChangedListener?.let{
+        it.onSubscriptionsChanged(deviceStateStore.interests)
       }
     }
   }
