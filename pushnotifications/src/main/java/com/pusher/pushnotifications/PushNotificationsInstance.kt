@@ -57,7 +57,7 @@ class PushNotificationsInstance(
   }
   
 
-  fun addInterestToStore(interest: String): Boolean {
+  private fun addInterestToStore(interest: String): Boolean {
     val interests = deviceStateStore.interests
     if (interests.add(interest)) {
       deviceStateStore.interests = interests
@@ -66,7 +66,7 @@ class PushNotificationsInstance(
     return false // nothing changed
   }
 
-  fun removeInterestFromStore(interest: String): Boolean {
+  private fun removeInterestFromStore(interest: String): Boolean {
     val interests = deviceStateStore.interests
     if (interests.remove(interest)) {
       deviceStateStore.interests = interests
@@ -75,7 +75,7 @@ class PushNotificationsInstance(
     return false // nothing changed
   }
 
-  fun replaceAllInterestsInStore(interests: Set<String>): Boolean {
+  private fun replaceAllInterestsInStore(interests: Set<String>): Boolean {
     val localInterests = deviceStateStore.interests
     val areInterestsDifferent = localInterests.containsAll(interests) && interests.containsAll(localInterests)
     if (areInterestsDifferent) {
