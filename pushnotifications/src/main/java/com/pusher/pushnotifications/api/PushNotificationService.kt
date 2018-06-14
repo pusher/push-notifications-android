@@ -62,6 +62,7 @@ data class RefreshToken(
 
 data class RegisterRequest(
   val token: String,
+  val knownPreviousClientIds: List<String>,
   val metadata: DeviceMetadata
 )
 

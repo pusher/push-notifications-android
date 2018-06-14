@@ -8,6 +8,7 @@ import com.pusher.pushnotifications.api.OperationCallbackNoArgs
 import com.pusher.pushnotifications.api.PushNotificationsAPI
 import com.pusher.pushnotifications.fcm.FCMInstanceIDService
 import com.pusher.pushnotifications.internal.DeviceStateStore
+import com.pusher.pushnotifications.internal.OldSDKDeviceStateStore
 import com.pusher.pushnotifications.logging.Logger
 import com.pusher.pushnotifications.validation.Validations
 
@@ -32,6 +33,7 @@ class PushNotificationsInstance(
 
   private val api = PushNotificationsAPI(instanceId)
   private val deviceStateStore = DeviceStateStore(context)
+  private val oldSDKDeviceStateStore = OldSDKDeviceStateStore(context)
   private val jobQueue: ArrayList<() -> Boolean> = ArrayList()
   private var onSubscriptionsChangedListener: SubscriptionsChangedListener? = null
 
@@ -100,7 +102,7 @@ class PushNotificationsInstance(
     }
 
     val handleFcmToken = { fcmToken: String ->
-      api.registerOrRefreshFCM(fcmToken, {
+      api.registerOrRefreshFCM(fcmToken, oldSDKDeviceStateStore.clientIds(), {
         object : OperationCallback<PushNotificationsAPI.RegisterDeviceResult> {
           override fun onSuccess(result: PushNotificationsAPI.RegisterDeviceResult) {
             if (deviceStateStore.deviceId == null) {
