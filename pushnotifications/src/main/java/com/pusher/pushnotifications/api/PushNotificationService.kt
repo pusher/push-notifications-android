@@ -72,7 +72,7 @@ data class DeviceMetadata (
 
 data class RegisterResponse(
   val id: String,
-  val initialInterests: Set<String>
+  val initialInterestSet: Set<String>
 )
 
 data class RegisterResponseError(

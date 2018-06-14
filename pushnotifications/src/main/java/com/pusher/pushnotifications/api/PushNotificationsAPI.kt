@@ -94,7 +94,7 @@ class PushNotificationsAPI(private val instanceId: String) {
           operationCallback.onSuccess(
               RegisterDeviceResult(
                   deviceId = responseBody.id,
-                  initialInterests = responseBody.initialInterests))
+                  initialInterests = responseBody.initialInterestSet))
 
           return
         }
