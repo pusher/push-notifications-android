@@ -10,7 +10,6 @@ import retrofit2.Call
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import java.util.*
 
 class PushNotificationsAPI(private val instanceId: String) {
   private val baseUrl = "https://$instanceId.pushnotifications.pusher.com/device_api/v1/"
@@ -95,7 +94,7 @@ class PushNotificationsAPI(private val instanceId: String) {
           operationCallback.onSuccess(
               RegisterDeviceResult(
                   deviceId = responseBody.id,
-                  initialInterests = responseBody.initialInterests))
+                  initialInterests = responseBody.initialInterestSet))
 
           return
         }

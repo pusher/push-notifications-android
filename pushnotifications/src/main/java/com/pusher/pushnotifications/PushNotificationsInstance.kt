@@ -110,12 +110,10 @@ class PushNotificationsInstance(
 
                 jobQueue.forEach({ job -> job() })
 
-                if (!previousLocalInterests.equals(deviceStateStore.interests)) {
-                  api.setSubscriptions(result.deviceId, deviceStateStore.interests, OperationCallbackNoArgs.noop)
+                api.setSubscriptions(result.deviceId, deviceStateStore.interests, OperationCallbackNoArgs.noop)
 
-                  onSubscriptionsChangedListener?.let{
-                    it.onSubscriptionsChanged(deviceStateStore.interests)
-                  }
+                if (!previousLocalInterests.equals(deviceStateStore.interests)) {
+                  onSubscriptionsChangedListener?.onSubscriptionsChanged(deviceStateStore.interests)
                 }
               }
 
@@ -163,9 +161,7 @@ class PushNotificationsInstance(
         jobQueue += fun(): Boolean = addInterestToStore(interest)
       }
       if (haveInterestsChanged) {
-        onSubscriptionsChangedListener?.let{
-          it.onSubscriptionsChanged(deviceStateStore.interests)
-        }
+        onSubscriptionsChangedListener?.onSubscriptionsChanged(deviceStateStore.interests)
       }
     }
   }
@@ -188,9 +184,7 @@ class PushNotificationsInstance(
         jobQueue += fun (): Boolean = removeInterestFromStore(interest)
       }
       if (haveInterestsChanged) {
-        onSubscriptionsChangedListener?.let{
-          it.onSubscriptionsChanged(deviceStateStore.interests)
-        }
+        onSubscriptionsChangedListener?.onSubscriptionsChanged(deviceStateStore.interests)
       }
     }
   }
@@ -232,9 +226,7 @@ class PushNotificationsInstance(
         jobQueue += fun (): Boolean = replaceAllInterestsInStore(interests)
       }
       if (haveInterestsChanged) {
-        onSubscriptionsChangedListener?.let{
-          it.onSubscriptionsChanged(deviceStateStore.interests)
-        }
+        onSubscriptionsChangedListener?.onSubscriptionsChanged(deviceStateStore.interests)
       }
     }
   }
