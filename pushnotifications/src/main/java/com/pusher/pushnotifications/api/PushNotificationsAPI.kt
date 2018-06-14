@@ -49,7 +49,11 @@ class PushNotificationsAPI(private val instanceId: String) {
     )
 
   // TODO: Separate register and refresh into separate functions
-  fun registerOrRefreshFCM(token: String, operationCallback: OperationCallback<RegisterDeviceResult>) {
+  fun registerOrRefreshFCM(
+      token: String,
+      knownPreviousClientIds: List<String>,
+      operationCallback: OperationCallback<RegisterDeviceResult>
+  ) {
     deviceId?.let { dId ->
       if (fcmToken != null && fcmToken != token) {
         service.refreshToken(instanceId, dId, RefreshToken(token))
@@ -57,7 +61,7 @@ class PushNotificationsAPI(private val instanceId: String) {
             override fun onResponse(call: Call<Void>?, response: Response<Void>?) {
               if (response?.code() == 404) {
                 deviceId = null
-                registerOrRefreshFCM(token, operationCallback)
+                registerOrRefreshFCM(token, knownPreviousClientIds, operationCallback)
                 return
               }
 
@@ -82,6 +86,7 @@ class PushNotificationsAPI(private val instanceId: String) {
         instanceId,
         RegisterRequest(
             token,
+            knownPreviousClientIds,
             DeviceMetadata(BuildConfig.VERSION_NAME, android.os.Build.VERSION.RELEASE)
         )
     )
