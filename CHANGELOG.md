@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [0.10.1] - 2018-06-13
+## [0.10.1] - 2018-06-25
 
 ### Added
  - Support for initial interest set, which enables migration from 3rd-party services
