@@ -9,6 +9,7 @@ class DeviceStateStore(context: Context) {
   private val preferencesOSVersionKey = "osVersion"
   private val preferencesSDKVersionKey = "sdkVersion"
   private val preferencesInterestsKey = "interests"
+  private val serverConfirmedInterestsHashKey = "serverConfirmedInterestsHash"
 
   private val preferences = context.getSharedPreferences(
     "com.pusher.pushnotifications.PushNotificationsInstance", Context.MODE_PRIVATE)
@@ -38,4 +39,8 @@ class DeviceStateStore(context: Context) {
     // by the Android SDK
     get() = preferences.getStringSet(preferencesInterestsKey, mutableSetOf<String>()).toMutableSet()
     set(value) = preferences.edit().putStringSet(preferencesInterestsKey, value).apply()
+
+  var serverConfirmedInterestsHash: String?
+    get() = preferences.getString(serverConfirmedInterestsHashKey, null)
+    set(value) = preferences.edit().putString(serverConfirmedInterestsHashKey, value).apply()
 }

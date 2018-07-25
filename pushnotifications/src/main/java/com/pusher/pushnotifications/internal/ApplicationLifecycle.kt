@@ -1,6 +1,8 @@
 package com.pusher.pushnotifications.internal
 
 import java.lang.ref.WeakReference
+import java.math.BigInteger
+import java.security.MessageDigest
 import android.app.Activity
 import android.app.Application
 import android.content.ContentProvider
@@ -68,10 +70,26 @@ class PushNotificationsInitProvider: ContentProvider() {
 
     deviceStateStore.instanceId?.let { instanceId ->
       deviceStateStore.deviceId?.let { deviceId ->
+        val md5Digest = MessageDigest.getInstance("MD5")
+        val interestsSorted = deviceStateStore.interests.sorted().joinToString()
+
+        md5Digest.update(interestsSorted.toByteArray())
+        val interestsHash = BigInteger(1, md5Digest.digest()).toString(16)
+
         val api = PushNotificationsAPI(instanceId)
         api.deviceId = deviceId
 
-        api.setSubscriptions(deviceId, deviceStateStore.interests, OperationCallbackNoArgs.noop)
+        if (interestsHash != deviceStateStore.serverConfirmedInterestsHash) {
+          api.setSubscriptions(deviceId, deviceStateStore.interests, object: OperationCallbackNoArgs {
+            override fun onSuccess() {
+              deviceStateStore.serverConfirmedInterestsHash = interestsHash
+            }
+
+            override fun onFailure(t: Throwable) {
+              // Nothing to do here.
+            }
+          })
+        }
 
         val hasMetadataChanged =
             deviceStateStore.sdkVersion != BuildConfig.VERSION_NAME
