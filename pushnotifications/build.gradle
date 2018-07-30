@@ -33,16 +33,16 @@ dependencies {
     implementation 'com.squareup.retrofit2:retrofit:2.3.0'
 
     testImplementation 'junit:junit:4.12'
-    testCompile "org.mockito:mockito-core:2.13.0"
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
+    testImplementation "org.mockito:mockito-core:2.13.0"
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jre7:${versions.kotlin}"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${versions.kotlin}"
 
-    provided "com.google.android.gms:play-services-gcm:${versions.playServices}"
-    provided "com.google.firebase:firebase-core:${versions.playServices}"
-    provided "com.google.firebase:firebase-messaging:${versions.playServices}"
+    compileOnly "com.google.android.gms:play-services-gcm:15.0.1"
+    compileOnly "com.google.firebase:firebase-core:16.0.1"
+    compileOnly "com.google.firebase:firebase-messaging:17.1.0"
 
-    compile 'com.firebase:firebase-jobdispatcher:0.8.5'
+    implementation 'com.firebase:firebase-jobdispatcher:0.8.5'
 
     lintChecks project(':pushnotifications-lint')
 }
