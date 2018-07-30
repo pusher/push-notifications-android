@@ -19,7 +19,7 @@ buildscript {
 
     dependencies {
         // Add this line
-        classpath 'com.google.gms:google-services:3.1.0'
+        classpath 'com.google.gms:google-services:4.0.1'
     }
 }
 ```
@@ -31,8 +31,8 @@ dependencies {
     ...
 
     // Add these lines
-    implementation 'com.google.firebase:firebase-messaging:11.8.0'
-    implementation 'com.pusher:push-notifications-android:0.10.1'
+    implementation 'com.google.firebase:firebase-messaging:17.1.0'
+    implementation 'com.pusher:push-notifications-android:0.10.3'
 }
 
 // Add this line to the end of the file
