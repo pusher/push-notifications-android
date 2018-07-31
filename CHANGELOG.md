@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 
+## [1.0.0] - 2018-07-31
+
+### Changed
+ - Bumped version to 1.0.0 for General availability (GA) release.
+
+
 ## [0.10.3] - 2018-07-30
 
 ### Changed
