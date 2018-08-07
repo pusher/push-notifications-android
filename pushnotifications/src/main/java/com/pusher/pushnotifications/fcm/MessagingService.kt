@@ -18,6 +18,7 @@ abstract class MessagingService: Service() {
 
     private var listenerActivity: WeakReference<Activity>? = null
     private var listener: PushNotificationReceivedListener? = null
+    var onRefreshToken: ((String) -> Unit)? = null
 
     /**
      * Configures the listener that handles a remote message only when this activity is in the
@@ -43,6 +44,11 @@ abstract class MessagingService: Service() {
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
       onMessageReceivedHandler(remoteMessage)
+    }
+
+    override fun onNewToken(token: String) {
+      MessagingService.log.d("Got new or refreshed FCM token: $token")
+      MessagingService.onRefreshToken?.let { it(token) }
     }
 
     override fun getApplicationContext(): Context {
