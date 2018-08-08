@@ -88,6 +88,12 @@ class PushNotificationsAPI(private val instanceId: String) {
       return
     }
 
+    if (fcmToken == token) {
+      return // Registration already in progress
+    }
+
+    fcmToken = token
+
     val call = service.register(
         instanceId,
         RegisterRequest(
@@ -121,6 +127,7 @@ class PushNotificationsAPI(private val instanceId: String) {
               }
 
           log.w("Failed to register device: $error")
+          fcmToken = null
           operationCallback.onFailure(error)
         }
       }
