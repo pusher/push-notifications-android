@@ -6,7 +6,7 @@ import com.google.firebase.iid.FirebaseInstanceId
 import com.pusher.pushnotifications.api.OperationCallback
 import com.pusher.pushnotifications.api.OperationCallbackNoArgs
 import com.pusher.pushnotifications.api.PushNotificationsAPI
-import com.pusher.pushnotifications.fcm.FCMInstanceIDService
+import com.pusher.pushnotifications.fcm.MessagingService
 import com.pusher.pushnotifications.internal.DeviceStateStore
 import com.pusher.pushnotifications.internal.OldSDKDeviceStateStore
 import com.pusher.pushnotifications.logging.Logger
@@ -134,8 +134,15 @@ class PushNotificationsInstance(
       }())
     }
 
-    FCMInstanceIDService.onRefreshToken = handleFcmToken
-    FirebaseInstanceId.getInstance().token?.let(handleFcmToken)
+    MessagingService.onRefreshToken = handleFcmToken
+    FirebaseInstanceId.getInstance().instanceId.addOnCompleteListener { task ->
+      if (!task.isSuccessful) {
+        log.w("Failed to get the token from FCM", task.exception)
+      } else {
+        handleFcmToken(task.result.token)
+      }
+    }
+
     return this
   }
 

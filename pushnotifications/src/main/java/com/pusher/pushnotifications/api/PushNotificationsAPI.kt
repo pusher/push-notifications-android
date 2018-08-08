@@ -56,22 +56,28 @@ class PushNotificationsAPI(private val instanceId: String) {
   ) {
     deviceId?.let { dId ->
       if (fcmToken != null && fcmToken != token) {
+        fcmToken = token // optimistic, prevents multiple calls for the same fcmToken
+
         service.refreshToken(instanceId, dId, RefreshToken(token))
           .enqueue(object : RequestCallbackWithExpBackoff<Void>() {
             override fun onResponse(call: Call<Void>?, response: Response<Void>?) {
               if (response?.code() == 404) {
                 deviceId = null
+                fcmToken = null
+
                 registerOrRefreshFCM(token, knownPreviousClientIds, operationCallback)
                 return
               }
 
               response?.errorBody()?.let { responseErrorBody ->
+                fcmToken = null
+
                 val error = safeExtractJsonError(responseErrorBody.string())
                 log.w("Failed to register device: $error")
                 operationCallback.onFailure(error)
                 return
               }
-              fcmToken = token
+
               operationCallback.onSuccess(
                 RegisterDeviceResult(
                     deviceId = dId,
@@ -81,6 +87,12 @@ class PushNotificationsAPI(private val instanceId: String) {
       }
       return
     }
+
+    if (fcmToken == token) {
+      return // Registration already in progress
+    }
+
+    fcmToken = token
 
     val call = service.register(
         instanceId,
@@ -115,6 +127,7 @@ class PushNotificationsAPI(private val instanceId: String) {
               }
 
           log.w("Failed to register device: $error")
+          fcmToken = null
           operationCallback.onFailure(error)
         }
       }
