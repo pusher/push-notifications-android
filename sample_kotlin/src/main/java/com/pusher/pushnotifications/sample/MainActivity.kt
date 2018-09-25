@@ -8,6 +8,8 @@ import com.pusher.pushnotifications.PushNotificationReceivedListener
 import com.pusher.pushnotifications.PushNotifications
 import com.pusher.pushnotifications.PushNotificationsInstance
 import com.pusher.pushnotifications.SubscriptionsChangedListener
+import com.pusher.pushnotifications.auth.AuthData
+import com.pusher.pushnotifications.auth.BeamsTokenProvider
 
 class MainActivity : AppCompatActivity() {
   lateinit var pn: PushNotificationsInstance
@@ -17,22 +19,23 @@ class MainActivity : AppCompatActivity() {
     super.onCreate(savedInstanceState)
     setContentView(R.layout.activity_main)
 
-    PushNotifications.start(applicationContext, instanceId)
+    val tokenProvider = BeamsTokenProvider(
+        authUrl = "http://example.com",
+        getAuthData = fun(): AuthData {
+          val sessionToken = "really-secure-token"
+          return AuthData(
+              headers = mapOf(
+                  "Authorization" to "Bearer $sessionToken"
+              )
+          )
+        }
+    )
 
-    PushNotifications.setOnSubscriptionsChangedListener(object: SubscriptionsChangedListener {
-      override fun onSubscriptionsChanged(interests: Set<String>) {
-        Log.i("MainActivity", "Interests: ${interests.toString()}")
-      }
-    })
+    PushNotifications.start(applicationContext, instanceId, tokenProvider)
 
-    PushNotifications.subscribe("hello")
-    PushNotifications.subscribe("donuts")
-    PushNotifications.subscribe("hello-donuts")
-
-    Log.i("MainActivity", "Current subscriptions are:")
-    PushNotifications.getSubscriptions().forEach { interest ->
-      Log.i("MainActivity", "\t$interest")
-    }
+    PushNotifications.subscribeDeviceTo("hello")
+    PushNotifications.subscribeDeviceTo("donuts")
+    PushNotifications.subscribeDeviceTo("hello-donuts")
   }
 
   override fun onResume() {

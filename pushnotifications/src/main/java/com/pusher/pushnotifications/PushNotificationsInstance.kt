@@ -2,10 +2,13 @@ package com.pusher.pushnotifications
 
 import java.util.regex.Pattern
 import android.content.Context
+import android.media.session.MediaSession
 import com.google.firebase.iid.FirebaseInstanceId
 import com.pusher.pushnotifications.api.OperationCallback
 import com.pusher.pushnotifications.api.OperationCallbackNoArgs
 import com.pusher.pushnotifications.api.PushNotificationsAPI
+import com.pusher.pushnotifications.auth.BeamsTokenProvider
+import com.pusher.pushnotifications.auth.TokenProvider
 import com.pusher.pushnotifications.fcm.MessagingService
 import com.pusher.pushnotifications.internal.DeviceStateStore
 import com.pusher.pushnotifications.internal.OldSDKDeviceStateStore
@@ -28,7 +31,9 @@ class PusherAlreadyRegisteredException(message: String) : RuntimeException(messa
  */
 class PushNotificationsInstance(
     context: Context,
-    instanceId: String) {
+    instanceId: String,
+    val tokenProvider: TokenProvider? = null
+) {
   private val log = Logger.get(this::class)
 
   private val api = PushNotificationsAPI(instanceId)
