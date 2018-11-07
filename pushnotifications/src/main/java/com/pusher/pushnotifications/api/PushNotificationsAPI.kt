@@ -215,4 +215,26 @@ class PushNotificationsAPI(private val instanceId: String) {
       }
     })
   }
+
+  fun setUserId(deviceId: String, jwt: String, operationCallback: OperationCallbackNoArgs) {
+    val authorizationHeader = "Bearer $jwt"
+    service.setUserId(
+        instanceId, deviceId, authorizationHeader
+    ).enqueue(object : RequestCallbackWithExpBackoff<Void>() {
+      override fun onResponse(call: Call<Void>?, response: Response<Void>?) {
+        if (response != null && response.code() >= 200 && response.code() < 300) {
+          log.d("Successfully set user id")
+          operationCallback.onSuccess()
+          return
+        }
+
+        val responseErrorBody = response?.errorBody()
+        if (responseErrorBody != null) {
+          val error = safeExtractJsonError(responseErrorBody.string())
+          log.w("Failed to set user id: $error")
+          operationCallback.onFailure(error)
+        }
+      }
+    })
+  }
 }

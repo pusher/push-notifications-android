@@ -3,10 +3,9 @@ package com.pusher.pushnotifications;
 import java.util.Set;
 
 import android.app.Activity;
-import android.app.Application;
-import android.app.Fragment;
 import android.content.Context;
 
+import com.pusher.pushnotifications.auth.TokenProvider;
 import com.pusher.pushnotifications.fcm.MessagingService;
 
 public class PushNotifications {
@@ -17,13 +16,26 @@ public class PushNotifications {
      * the Pusher services.
      * @param context the application context
      * @param instanceId the id of the instance
+     * @param tokenProvider used to fetch User Id token from your server
+     * @return the Push Notifications instance which should be used if a non-singleton approach
+     * is deemed better for your project.
+     */
+    public static PushNotificationsInstance start(Context context, String instanceId, TokenProvider tokenProvider) {
+        instance = new PushNotificationsInstance(context, instanceId, tokenProvider);
+        instance.start();
+        return instance;
+    }
+
+    /**
+     * Starts the PushNotification client and synchronizes the FCM device token with
+     * the Pusher services.
+     * @param context the application context
+     * @param instanceId the id of the instance
      * @return the Push Notifications instance which should be used if a non-singleton approach
      * is deemed better for your project.
      */
     public static PushNotificationsInstance start(Context context, String instanceId) {
-        instance = new PushNotificationsInstance(context, instanceId);
-        instance.start();
-        return instance;
+        return start(context, instanceId, null);
     }
 
     /**
@@ -89,6 +101,18 @@ public class PushNotifications {
         }
 
         return instance.getSubscriptions();
+    }
+
+    /**
+     * Associates the device with a user ID from your authentication system.
+     * Can be used to publish to all devices owned by that user.
+     * <i>Note: You must initialize the SDK with a TokenProvider before calling this method.</i>
+     * Example:
+     * <pre>{@code PushNotifications.setUserId("userid-1234");}</pre>
+     * @param userId unique identifier of the user you want to associate with this device
+     */
+    public static void setUserId(String userId, Callback<Void, PusherCallbackError> callback) {
+        instance.setUserId(userId, callback);
     }
 
     /**

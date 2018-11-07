@@ -1,5 +1,5 @@
 package com.pusher.pushnotifications.auth
 
 interface TokenProvider {
-    fun fetchToken(): String?
+  fun fetchToken(userId: String): String?
 }

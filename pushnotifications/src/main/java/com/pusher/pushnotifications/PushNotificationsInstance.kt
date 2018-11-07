@@ -2,10 +2,12 @@ package com.pusher.pushnotifications
 
 import java.util.regex.Pattern
 import android.content.Context
+import android.os.AsyncTask
 import com.google.firebase.iid.FirebaseInstanceId
 import com.pusher.pushnotifications.api.OperationCallback
 import com.pusher.pushnotifications.api.OperationCallbackNoArgs
 import com.pusher.pushnotifications.api.PushNotificationsAPI
+import com.pusher.pushnotifications.auth.TokenProvider
 import com.pusher.pushnotifications.fcm.MessagingService
 import com.pusher.pushnotifications.internal.DeviceStateStore
 import com.pusher.pushnotifications.internal.OldSDKDeviceStateStore
@@ -18,7 +20,9 @@ import com.pusher.pushnotifications.validation.Validations
  *
  * @param message Error message to be shown
  */
-class PusherAlreadyRegisteredException(message: String) : RuntimeException(message) {}
+class PusherAlreadyRegisteredException(message: String) : RuntimeException(message)
+
+data class PusherCallbackError(val message: String, val cause: Throwable?)
 
 /**
  * Interacts with the Pusher service to subscribe and unsubscribe from interests.
@@ -26,9 +30,11 @@ class PusherAlreadyRegisteredException(message: String) : RuntimeException(messa
  * @param context the application context
  * @param instanceId the id of the instance
  */
-class PushNotificationsInstance(
+class PushNotificationsInstance @JvmOverloads constructor(
     context: Context,
-    instanceId: String) {
+    instanceId: String,
+    private val tokenProvider: TokenProvider? = null
+) {
   private val log = Logger.get(this::class)
 
   private val api = PushNotificationsAPI(instanceId)
@@ -110,7 +116,7 @@ class PushNotificationsInstance(
                 val previousLocalInterests = deviceStateStore.interests
                 deviceStateStore.interests = result.initialInterests.toMutableSet()
 
-                jobQueue.forEach({ job -> job() })
+                jobQueue.forEach { job -> job() }
 
                 api.setSubscriptions(result.deviceId, deviceStateStore.interests, OperationCallbackNoArgs.noop)
 
@@ -256,5 +262,62 @@ class PushNotificationsInstance(
    */
   fun setOnSubscriptionsChangedListener(listener: SubscriptionsChangedListener) {
     onSubscriptionsChangedListener = listener
+  }
+
+  private class GetUserTokenTask(
+      private val tokenProvider: TokenProvider,
+      private val onComplete: (s: String?, exception: Exception?) -> Unit
+  ): AsyncTask<String, Unit, Pair<String?, Exception?>>() {
+
+    override fun doInBackground(vararg userIds: String): Pair<String?, Exception?> {
+      return try {
+        Pair(tokenProvider.fetchToken(userIds[0]), null)
+      } catch (ex: Exception) {
+        Pair(null, ex)
+      }
+    }
+
+    override fun onPostExecute(result: Pair<String?, Exception?>) {
+      onComplete(result.first, result.second)
+    }
+  }
+
+  /**
+   *
+   */
+  fun setUserId(userId: String, callback: Callback<Void, PusherCallbackError>) {
+    if (tokenProvider == null) {
+      throw RuntimeException("token provider was not set on `.start`")
+    }
+
+    synchronized(deviceStateStore) {
+      val job = {
+        GetUserTokenTask(tokenProvider) { jwt, exception ->
+          if (jwt == null) {
+            callback.onFailure(PusherCallbackError(
+                "Failed trying to set user Id for device", exception))
+          } else {
+            api.setUserId(deviceStateStore.deviceId!!, jwt, object : OperationCallbackNoArgs {
+              override fun onSuccess() {
+                callback.onSuccess()
+              }
+
+              override fun onFailure(t: Throwable) {
+                callback.onFailure(PusherCallbackError(
+                    "Failed trying to set user Id for device", t))
+              }
+            })
+          }
+        }.execute(userId)
+        true
+      }
+
+      val deviceId = deviceStateStore.deviceId
+      if (deviceId != null) {
+        job()
+      } else {
+        jobQueue += job
+      }
+    }
   }
 }

@@ -3,44 +3,36 @@ package com.pusher.pushnotifications.sample
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
-import com.google.firebase.messaging.RemoteMessage
-import com.pusher.pushnotifications.PushNotificationReceivedListener
-import com.pusher.pushnotifications.PushNotifications
-import com.pusher.pushnotifications.PushNotificationsInstance
-import com.pusher.pushnotifications.SubscriptionsChangedListener
+import com.pusher.pushnotifications.*
+import com.pusher.pushnotifications.auth.AuthData
+import com.pusher.pushnotifications.auth.AuthDataGetter
+import com.pusher.pushnotifications.auth.BeamsTokenProvider
 
 class MainActivity : AppCompatActivity() {
   lateinit var pn: PushNotificationsInstance
-  private val instanceId = "8a070eaa-033f-46d6-bb90-f4c15acc47e1"
+  private val instanceId = "e7e2c66e-34c6-4862-b7ca-3d90342eb171"
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     setContentView(R.layout.activity_main)
 
-    PushNotifications.start(applicationContext, instanceId)
+    val tokenProvider = BeamsTokenProvider(
+        authUrl = "https://beams-test-server.herokuapp.com/auth",
+        authDataGetter = object: AuthDataGetter {
+          override fun getAuthData(): AuthData {
+            return AuthData()
+          }
+        }
+    )
+    PushNotifications.start(applicationContext, instanceId, tokenProvider)
 
-    PushNotifications.setOnSubscriptionsChangedListener(object: SubscriptionsChangedListener {
-      override fun onSubscriptionsChanged(interests: Set<String>) {
-        Log.i("MainActivity", "Interests: ${interests.toString()}")
+    PushNotifications.setUserId("hello-donuts", object: Callback<Void, PusherCallbackError> {
+      override fun onSuccess(vararg values: Void) {
+        Log.e("MainActivity", "SUCCESSFULLY SET THE USER ID BOOOOM")
       }
-    })
 
-    PushNotifications.subscribe("hello")
-    PushNotifications.subscribe("donuts")
-    PushNotifications.subscribe("hello-donuts")
-
-    Log.i("MainActivity", "Current subscriptions are:")
-    PushNotifications.getSubscriptions().forEach { interest ->
-      Log.i("MainActivity", "\t$interest")
-    }
-  }
-
-  override fun onResume() {
-    super.onResume()
-
-    PushNotifications.setOnMessageReceivedListenerForVisibleActivity(this, object: PushNotificationReceivedListener {
-      override fun onMessageReceived(remoteMessage: RemoteMessage) {
-        Log.i("MainActivity", "Remote message received while this activity is visible!")
+      override fun onFailure(callbackError: PusherCallbackError) {
+        Log.e("MainActivity", "Error setting user Id: ${callbackError.message}")
       }
     })
   }

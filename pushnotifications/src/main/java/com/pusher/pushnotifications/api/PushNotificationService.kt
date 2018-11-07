@@ -44,6 +44,13 @@ interface PushNotificationService {
     @Path("deviceId") deviceId: String,
     @Body metadata: DeviceMetadata
   ): Call<Void>
+
+  @PUT("instances/{instanceId}/devices/fcm/{deviceId}/user")
+  fun setUserId(
+    @Path("instanceId") instanceId: String,
+    @Path("deviceId") deviceId: String,
+    @Header("Authorization") authorizationHeader: String
+  ): Call<Void>
 }
 
 data class NOKResponse(
