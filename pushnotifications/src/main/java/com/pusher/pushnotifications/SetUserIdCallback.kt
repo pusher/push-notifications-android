@@ -5,3 +5,9 @@ interface Callback<S, E> {
 
   fun onFailure(error: E)
 }
+
+class NoopCallback<S, E> : Callback<S, E> {
+  override fun onSuccess(vararg values: S) {}
+
+  override fun onFailure(error: E) {}
+}

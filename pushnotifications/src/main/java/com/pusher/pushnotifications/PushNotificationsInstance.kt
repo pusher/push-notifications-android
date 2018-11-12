@@ -13,6 +13,7 @@ import com.pusher.pushnotifications.internal.DeviceStateStore
 import com.pusher.pushnotifications.internal.OldSDKDeviceStateStore
 import com.pusher.pushnotifications.logging.Logger
 import com.pusher.pushnotifications.validation.Validations
+import java.lang.IllegalStateException
 
 /**
  * Thrown when the device is re-registered to a different instance id. If you wish to register a
@@ -20,7 +21,12 @@ import com.pusher.pushnotifications.validation.Validations
  *
  * @param message Error message to be shown
  */
-class PusherAlreadyRegisteredException(message: String) : RuntimeException(message)
+class PusherAlreadyRegisteredException(message: String) : IllegalStateException(message)
+
+/**
+ * Thrown when the device is re-registered to a different user id.
+ */
+class PusherAlreadyRegisteredAnotherUserIdException(message: String) : IllegalStateException(message)
 
 data class PusherCallbackError(val message: String, val cause: Throwable?)
 
@@ -291,6 +297,16 @@ class PushNotificationsInstance @JvmOverloads constructor(
     }
 
     synchronized(deviceStateStore) {
+      deviceStateStore.userId?.let { storedUserId ->
+        if (storedUserId != userId) {
+          throw PusherAlreadyRegisteredAnotherUserIdException(
+                  "This device has already been registered to another user id.")
+        } else if (storedUserId == userId) {
+          callback.onSuccess()
+          return
+        }
+      }
+
       val job = {
         GetUserTokenTask(tokenProvider) { jwt, exception ->
           if (jwt == null) {
@@ -300,6 +316,7 @@ class PushNotificationsInstance @JvmOverloads constructor(
             api.setUserId(deviceStateStore.deviceId!!, jwt, object : OperationCallbackNoArgs {
               override fun onSuccess() {
                 callback.onSuccess()
+                deviceStateStore.userId = userId
               }
 
               override fun onFailure(t: Throwable) {

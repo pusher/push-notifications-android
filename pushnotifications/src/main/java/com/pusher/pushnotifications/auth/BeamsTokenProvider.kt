@@ -19,7 +19,7 @@ interface AuthDataGetter {
 private val gson = Gson()
 private val okHttpClient = OkHttpClient()
 
-data class TokenResponse(
+private data class TokenResponse(
     val token: String
 )
 

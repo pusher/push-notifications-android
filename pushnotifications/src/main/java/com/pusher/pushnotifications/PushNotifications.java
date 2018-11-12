@@ -111,7 +111,23 @@ public class PushNotifications {
      * <pre>{@code PushNotifications.setUserId("userid-1234");}</pre>
      * @param userId unique identifier of the user you want to associate with this device
      */
+    public static void setUserId(String userId) {
+        setUserId(userId, new NoopCallback<Void, PusherCallbackError>());
+    }
+
+    /**
+     * Associates the device with a user ID from your authentication system.
+     * Can be used to publish to all devices owned by that user.
+     * <i>Note: You must initialize the SDK with a TokenProvider before calling this method.</i>
+     * Example:
+     * <pre>{@code PushNotifications.setUserId("userid-1234", callback);}</pre>
+     * @param userId unique identifier of the user you want to associate with this device
+     */
     public static void setUserId(String userId, Callback<Void, PusherCallbackError> callback) {
+        if (instance == null) {
+            throw new IllegalStateException("PushNotifications.start must have been called before");
+        }
+
         instance.setUserId(userId, callback);
     }
 
@@ -138,6 +154,10 @@ public class PushNotifications {
      * @param listener the listener to handle Interest subscription change
      */
     public static void setOnSubscriptionsChangedListener(SubscriptionsChangedListener listener) {
+        if (instance == null) {
+            throw new IllegalStateException("PushNotifications.start must have been called before");
+        }
+
         instance.setOnSubscriptionsChangedListener(listener);
     }
 }
