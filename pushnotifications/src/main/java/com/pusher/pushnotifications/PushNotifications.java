@@ -39,6 +39,26 @@ public class PushNotifications {
     }
 
     /**
+     * Stop the PushNotification client, completely deregistering the device and removing all
+     * state. It will be as though `.start` had never been called.
+     */
+    public static void stop() {
+        stop(new NoopCallback<Void, PusherCallbackError>());
+    }
+
+    /**
+     * Stop the PushNotification client, completely deregistering the device and removing all
+     * state. It will be as though `.start` had never been called.
+     */
+    public static void stop(Callback<Void, PusherCallbackError> callback) {
+        if (instance == null) {
+            throw new IllegalStateException("PushNotifications.start must have been called before");
+        }
+
+        instance.stop(callback);
+    }
+
+    /**
      * Subscribes the device to an Interest. For example:
      * <pre>{@code PushNotifications.subscribe("hello");}</pre>
      * @param interest the name of the Interest
@@ -159,5 +179,17 @@ public class PushNotifications {
         }
 
         instance.setOnSubscriptionsChangedListener(listener);
+    }
+
+    public static void clearAllState() {
+        clearAllState(new NoopCallback<Void, PusherCallbackError>());
+    }
+
+    public static void clearAllState(Callback<Void, PusherCallbackError> callback) {
+        if (instance == null) {
+            throw new IllegalStateException("PushNotifications.start must have been called before");
+        }
+
+        instance.clearAllState(callback);
     }
 }

@@ -48,4 +48,6 @@ class DeviceStateStore(context: Context) {
   var userId: String?
     get() = preferences.getString(preferencesUserIdKey, null)
     set(value) = preferences.edit().putString(preferencesUserIdKey, value).apply()
+
+  fun clear() = preferences.edit().clear().commit()
 }

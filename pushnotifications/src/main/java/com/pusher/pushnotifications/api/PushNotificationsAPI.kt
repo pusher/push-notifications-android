@@ -237,4 +237,32 @@ class PushNotificationsAPI(private val instanceId: String) {
       }
     })
   }
+
+  fun delete(deviceId: String, operationCallback: OperationCallbackNoArgs) {
+    service.delete(
+        instanceId, deviceId
+    ).enqueue(object : RequestCallbackWithExpBackoff<Void>() {
+      override fun onResponse(call: Call<Void>?, response: Response<Void>?) {
+        if (response != null && response.code() >= 200 && response.code() < 300) {
+          log.d("Successfully deleted device")
+          operationCallback.onSuccess()
+          return
+        }
+
+        // also, if we get a 404 Not Found, lets just be happy about it and move on
+        if (response != null && response.code() == 404) {
+          log.d("Successfully deleted device")
+          operationCallback.onSuccess()
+          return
+        }
+
+        val responseErrorBody = response?.errorBody()
+        if (responseErrorBody != null) {
+          val error = safeExtractJsonError(responseErrorBody.string())
+          log.w("Failed to delete device: $error")
+          operationCallback.onFailure(error)
+        }
+      }
+    })
+  }
 }

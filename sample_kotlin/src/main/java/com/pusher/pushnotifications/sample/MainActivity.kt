@@ -25,15 +25,22 @@ class MainActivity : AppCompatActivity() {
         }
     )
     PushNotifications.start(applicationContext, instanceId, tokenProvider)
+    PushNotifications.subscribe("hello")
+    PushNotifications.subscribe("pizza")
+    PushNotifications.clearAllState()
+    PushNotifications.subscribe("luka")
+    /*
+    PushNotifications.subscribe("luka")
 
     PushNotifications.setUserId("hello-donuts", object: Callback<Void, PusherCallbackError> {
       override fun onSuccess(vararg values: Void) {
         Log.e("MainActivity", "SUCCESSFULLY SET THE USER ID BOOOOM")
       }
 
-      override fun onFailure(callbackError: PusherCallbackError) {
-        Log.e("MainActivity", "Error setting user Id: ${callbackError.message}")
+      override fun onFailure(error: PusherCallbackError) {
+        Log.e("MainActivity", "Error setting user Id: ${error.message}")
       }
     })
+    */
   }
 }

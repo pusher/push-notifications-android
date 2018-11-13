@@ -14,6 +14,7 @@ import com.pusher.pushnotifications.internal.OldSDKDeviceStateStore
 import com.pusher.pushnotifications.logging.Logger
 import com.pusher.pushnotifications.validation.Validations
 import java.lang.IllegalStateException
+import java.lang.RuntimeException
 
 /**
  * Thrown when the device is re-registered to a different instance id. If you wish to register a
@@ -27,6 +28,8 @@ class PusherAlreadyRegisteredException(message: String) : IllegalStateException(
  * Thrown when the device is re-registered to a different user id.
  */
 class PusherAlreadyRegisteredAnotherUserIdException(message: String) : IllegalStateException(message)
+
+private class PusherSDKStopCalled : RuntimeException()
 
 data class PusherCallbackError(val message: String, val cause: Throwable?)
 
@@ -46,7 +49,7 @@ class PushNotificationsInstance @JvmOverloads constructor(
   private val api = PushNotificationsAPI(instanceId)
   private val deviceStateStore = DeviceStateStore(context)
   private val oldSDKDeviceStateStore = OldSDKDeviceStateStore(context)
-  private val jobQueue: ArrayList<() -> Boolean> = ArrayList()
+  private val jobQueue: ArrayList<(String) -> Boolean> = ArrayList()
   private var onSubscriptionsChangedListener: SubscriptionsChangedListener? = null
 
   init {
@@ -114,6 +117,7 @@ class PushNotificationsInstance @JvmOverloads constructor(
     }
 
     val handleFcmToken = { fcmToken: String ->
+
       api.registerOrRefreshFCM(fcmToken, oldSDKDeviceStateStore.clientIds(), {
         object : OperationCallback<PushNotificationsAPI.RegisterDeviceResult> {
           override fun onSuccess(result: PushNotificationsAPI.RegisterDeviceResult) {
@@ -122,7 +126,14 @@ class PushNotificationsInstance @JvmOverloads constructor(
                 val previousLocalInterests = deviceStateStore.interests
                 deviceStateStore.interests = result.initialInterests.toMutableSet()
 
-                jobQueue.forEach { job -> job() }
+                jobQueue.withIndex().forEach { (i, job) ->
+                  try {
+                      job(result.deviceId)
+                  } catch (_: PusherSDKStopCalled) {
+                    jobQueue.subList(0, i + 1).clear()
+                    return
+                  }
+                }
 
                 api.setSubscriptions(result.deviceId, deviceStateStore.interests, OperationCallbackNoArgs.noop)
 
@@ -158,6 +169,44 @@ class PushNotificationsInstance @JvmOverloads constructor(
     return this
   }
 
+  @JvmOverloads
+  fun stop(callback: Callback<Void, PusherCallbackError> = NoopCallback()) {
+    synchronized(deviceStateStore) {
+      val job = { deviceId: String ->
+        api.delete(deviceId, object : OperationCallbackNoArgs {
+          override fun onSuccess() {
+            if (deviceStateStore.clear()) {
+              api.deviceId = null
+              api.fcmToken = null
+              callback.onSuccess()
+            } else {
+              log.e("PushNotifications failed to stop the SDK")
+              callback.onFailure(PusherCallbackError(
+                      message = "PushNotifications failed to stop the SDK",
+                      cause = null)
+              )
+            }
+          }
+
+          override fun onFailure(t: Throwable) {
+            callback.onFailure(PusherCallbackError(
+                    message = "PushNotifications failed to stop the SDK",
+                    cause = t)
+            )
+          }
+        })
+        throw PusherSDKStopCalled()
+      }
+
+      val deviceId = deviceStateStore.deviceId
+      if (deviceId != null) {
+        job(deviceId)
+      } else {
+        jobQueue += job
+      }
+    }
+  }
+
   /**
    * Subscribes the device to an interest. For example:
    * <pre>{@code pushNotifications.subscribe("hello");}</pre>
@@ -179,7 +228,7 @@ class PushNotificationsInstance @JvmOverloads constructor(
           api.subscribe(deviceId, interest, OperationCallbackNoArgs.noop)
         }
       } else {
-        jobQueue += fun(): Boolean = addInterestToStore(interest)
+        jobQueue += fun(_: String): Boolean = addInterestToStore(interest)
       }
       if (haveInterestsChanged) {
         onSubscriptionsChangedListener?.onSubscriptionsChanged(deviceStateStore.interests)
@@ -202,7 +251,7 @@ class PushNotificationsInstance @JvmOverloads constructor(
           api.unsubscribe(deviceId, interest, OperationCallbackNoArgs.noop)
         }
       } else {
-        jobQueue += fun (): Boolean = removeInterestFromStore(interest)
+        jobQueue += fun (_: String): Boolean = removeInterestFromStore(interest)
       }
       if (haveInterestsChanged) {
         onSubscriptionsChangedListener?.onSubscriptionsChanged(deviceStateStore.interests)
@@ -244,7 +293,7 @@ class PushNotificationsInstance @JvmOverloads constructor(
           api.setSubscriptions(deviceId, interests, OperationCallbackNoArgs.noop)
         }
       } else {
-        jobQueue += fun (): Boolean = replaceAllInterestsInStore(interests)
+        jobQueue += fun (_: String): Boolean = replaceAllInterestsInStore(interests)
       }
       if (haveInterestsChanged) {
         onSubscriptionsChangedListener?.onSubscriptionsChanged(deviceStateStore.interests)
@@ -288,12 +337,10 @@ class PushNotificationsInstance @JvmOverloads constructor(
     }
   }
 
-  /**
-   *
-   */
-  fun setUserId(userId: String, callback: Callback<Void, PusherCallbackError>) {
+  @JvmOverloads
+  fun setUserId(userId: String, callback: Callback<Void, PusherCallbackError> = NoopCallback()) {
     if (tokenProvider == null) {
-      throw RuntimeException("token provider was not set on `.start`")
+      throw IllegalStateException("Token provider was not set on `.start`")
     }
 
     synchronized(deviceStateStore) {
@@ -307,16 +354,16 @@ class PushNotificationsInstance @JvmOverloads constructor(
         }
       }
 
-      val job = {
+      val job = { deviceId: String ->
         GetUserTokenTask(tokenProvider) { jwt, exception ->
           if (jwt == null) {
             callback.onFailure(PusherCallbackError(
                 "Failed trying to set user Id for device", exception))
           } else {
-            api.setUserId(deviceStateStore.deviceId!!, jwt, object : OperationCallbackNoArgs {
+            api.setUserId(deviceId, jwt, object : OperationCallbackNoArgs {
               override fun onSuccess() {
-                callback.onSuccess()
                 deviceStateStore.userId = userId
+                callback.onSuccess()
               }
 
               override fun onFailure(t: Throwable) {
@@ -331,10 +378,24 @@ class PushNotificationsInstance @JvmOverloads constructor(
 
       val deviceId = deviceStateStore.deviceId
       if (deviceId != null) {
-        job()
+        job(deviceId)
       } else {
         jobQueue += job
       }
     }
+  }
+
+  @JvmOverloads
+  fun clearAllState(callback: Callback<Void, PusherCallbackError> = NoopCallback()) {
+    stop(callback = object : Callback<Void, PusherCallbackError> {
+      override fun onSuccess(vararg values: Void) {
+        start()
+        callback.onSuccess()
+      }
+
+      override fun onFailure(error: PusherCallbackError) {
+        callback.onFailure(error)
+      }
+    })
   }
 }
