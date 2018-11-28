@@ -1,3 +1,7 @@
+plugins {
+    id 'com.jfrog.bintray' version '1.8.4'
+}
+
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply from: 'maven-push.gradle'
@@ -50,4 +54,29 @@ dependencies {
 
 repositories {
     mavenCentral()
+}
+
+bintray {
+    user = bintray_user
+    key = bintry_api_key
+    publish = true
+    override = true
+    publications = ['Release']
+    pkg {
+        repo = 'maven'
+        name = "$POM_ARTIFACT_ID"
+        userOrg = "pusher"
+        licenses = ["$POM_LICENCE_NAME"]
+        vcsUrl = "$POM_SCM_URL"
+        version {
+            name = "$VERSION_NAME"
+            desc = "$POM_DESCRIPTION"
+            released = new Date()
+            vcsTag = "$VERSION_NAME"
+            gpg {
+                sign = true
+                passphrase = System.getenv('SONATYPE_GPG_PASSPHRASE')
+            }
+        }
+    }
 }

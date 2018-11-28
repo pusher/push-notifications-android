@@ -14,6 +14,11 @@ buildscript {
         jcenter()
     }
 
+    ext {
+        bintray_user = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
+        bintry_api_key = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
+    }
+
     dependencies {
         classpath 'com.android.tools.build:gradle:3.1.3'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
@@ -39,6 +44,15 @@ allprojects {
     repositories {
         google()
         jcenter()
+    }
+    if (tasks.findByName('bintrayUpload')) {
+        task verifyBintrayCredentials {
+            def out = []
+            if (bintray_user == null) out += "Missing `bintrayUser` property or BINTRAY_USER env var"
+            if (bintry_api_key == null) out += "Missing `bintrayApiKey` property or BINTRAY_API_KEY env var"
+            if (!out.isEmpty()) throw new IllegalStateException("\n" + out.join("\n"))
+        }
+        bintrayUpload.doFirst verifyBintrayCredentials
     }
 }
 
