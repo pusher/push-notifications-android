@@ -76,7 +76,8 @@ class PushNotificationsInitProvider: ContentProvider() {
         md5Digest.update(interestsSorted.toByteArray())
         val interestsHash = BigInteger(1, md5Digest.digest()).toString(16)
 
-        val api = PushNotificationsAPI(instanceId)
+        val sdkConfig = SDKConfiguration(context)
+        val api = PushNotificationsAPI(instanceId, sdkConfig.overrideHostURL)
         api.deviceId = deviceId
 
         if (interestsHash != deviceStateStore.serverConfirmedInterestsHash) {
