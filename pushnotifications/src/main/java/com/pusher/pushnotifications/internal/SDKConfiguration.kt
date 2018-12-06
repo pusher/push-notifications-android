@@ -1,0 +1,16 @@
+package com.pusher.pushnotifications.internal
+
+import android.content.Context
+import android.content.pm.PackageManager
+import android.content.pm.PackageManager.GET_META_DATA
+
+class SDKConfiguration(context: Context) {
+  private val metadataOverrideHostURL = "com.pusher.pushnotifications:override-host-url"
+
+  val metadataBundle =
+          context.packageManager.getApplicationInfo(context.packageName, PackageManager.GET_META_DATA)
+                  .metaData
+
+  val overrideHostURL: String?
+    get() = metadataBundle.getString(metadataOverrideHostURL, null)
+}
