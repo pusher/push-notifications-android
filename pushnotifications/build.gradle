@@ -31,6 +31,7 @@ dependencies {
 
     implementation 'com.squareup.retrofit2:converter-gson:2.3.0'
     implementation 'com.squareup.retrofit2:retrofit:2.3.0'
+    implementation 'com.squareup.tape2:tape:2.0.0-beta1'
 
     testImplementation 'junit:junit:4.12'
     testImplementation "org.mockito:mockito-core:2.13.0"
