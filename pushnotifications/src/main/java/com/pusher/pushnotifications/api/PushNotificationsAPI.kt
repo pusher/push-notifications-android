@@ -10,6 +10,9 @@ import retrofit2.Call
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.lang.RuntimeException
+
+class PushNotificationsAPIException(cause: Throwable): RuntimeException(cause)
 
 class PushNotificationsAPI(private val instanceId: String, private val overrideHostURL: String?) {
   private val baseUrl =
@@ -48,6 +51,47 @@ class PushNotificationsAPI(private val instanceId: String, private val overrideH
       val deviceId: String,
       val initialInterests: Set<String>
     )
+
+  @Throws(PushNotificationsAPIException::class)
+  fun registerFCM(
+      token: String,
+      knownPreviousClientIds: List<String>
+  ): RegisterDeviceResult {
+    val response =
+        service.register(instanceId,
+          RegisterRequest(
+              token,
+              knownPreviousClientIds,
+              DeviceMetadata(BuildConfig.VERSION_NAME, android.os.Build.VERSION.RELEASE)
+          )
+      ).execute()
+
+    val responseBody = response?.body()
+    if (responseBody != null && response.code() >= 200 && response.code() < 300) {
+      deviceId = responseBody.id
+
+      return RegisterDeviceResult(
+              deviceId = responseBody.id,
+              initialInterests = responseBody.initialInterestSet)
+    }
+
+    val responseErrorBody = response?.errorBody()
+    if (responseErrorBody != null) {
+      val error =
+          try {
+            gson.fromJson(responseErrorBody.string(), RegisterResponseError::class.java)
+          } catch (jsonException: JsonSyntaxException) {
+            log.w("Failed to parse json `${responseErrorBody.string()}`", jsonException)
+            unknownNOKResponse
+          }
+
+      log.w("Failed to register device: $error")
+      fcmToken = null
+      throw RuntimeException(error)
+    }
+  }
+
+}
 
   // TODO: Separate register and refresh into separate functions
   fun registerOrRefreshFCM(
