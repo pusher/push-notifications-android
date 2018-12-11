@@ -9,6 +9,12 @@ interface ErrolService {
           @Path("instanceId") instanceId: String,
           @Path("deviceId") deviceId: String
   ): Call<GetDeviceResponse>
+
+  @GET("instances/{instanceId}/devices/fcm/{deviceId}/interests")
+  fun getDeviceInterests(
+          @Path("instanceId") instanceId: String,
+          @Path("deviceId") deviceId: String
+  ): Call<GetInterestsResponse>
 }
 
 data class NOKResponse(
@@ -30,4 +36,8 @@ data class GetDeviceResponse(
 data class DeviceMetadata (
   val sdkVersion: String,
   val androidVersion: String
+)
+
+data class GetInterestsResponse (
+    val interests: Set<String>
 )
