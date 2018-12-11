@@ -25,31 +25,38 @@ abstract class NanoHTTPDRouter(val port: Int): NanoHTTPD(port) {
     return notFoundResponse
   }
 
-  fun head(pathTemplate: String, f: (session: NanoHTTPD.IHTTPSession, Map<String, String>) -> NanoHTTPD.Response) {
+  fun head(pathTemplate: String, f: (session: NanoHTTPD.IHTTPSession, urlParams: Map<String, String>, body: ByteArray) -> NanoHTTPD.Response) {
     routes += handle(Method.HEAD, pathTemplate, f)
   }
 
-  fun get(pathTemplate: String, f: (session: NanoHTTPD.IHTTPSession, Map<String, String>) -> NanoHTTPD.Response) {
+  fun get(pathTemplate: String, f: (session: NanoHTTPD.IHTTPSession, urlParams: Map<String, String>, body: ByteArray) -> NanoHTTPD.Response) {
     routes += handle(Method.GET, pathTemplate, f)
   }
 
-  fun post(pathTemplate: String, f: (session: NanoHTTPD.IHTTPSession, Map<String, String>) -> NanoHTTPD.Response) {
+  fun post(pathTemplate: String, f: (session: NanoHTTPD.IHTTPSession, urlParams: Map<String, String>, body: ByteArray) -> NanoHTTPD.Response) {
     routes += handle(Method.POST, pathTemplate, f)
   }
 
-  fun put(pathTemplate: String, f: (session: NanoHTTPD.IHTTPSession, Map<String, String>) -> NanoHTTPD.Response) {
+  fun put(pathTemplate: String, f: (session: NanoHTTPD.IHTTPSession, urlParams: Map<String, String>, body: ByteArray) -> NanoHTTPD.Response) {
     routes += handle(Method.PUT, pathTemplate, f)
   }
 
-  fun delete(pathTemplate: String, f: (session: NanoHTTPD.IHTTPSession, Map<String, String>) -> NanoHTTPD.Response) {
+  fun delete(pathTemplate: String, f: (session: NanoHTTPD.IHTTPSession, urlParams: Map<String, String>, body: ByteArray) -> NanoHTTPD.Response) {
     routes += handle(Method.DELETE, pathTemplate, f)
   }
 
-  fun handle(method: Method, pathTemplate: String, f: (session: NanoHTTPD.IHTTPSession, Map<String, String>) -> NanoHTTPD.Response?): (session: NanoHTTPD.IHTTPSession) -> NanoHTTPD.Response? {
+  fun handle(method: Method, pathTemplate: String, f: (session: NanoHTTPD.IHTTPSession, urlParams: Map<String, String>, body: ByteArray) -> NanoHTTPD.Response?): (session: NanoHTTPD.IHTTPSession) -> NanoHTTPD.Response? {
     return { session ->
       if (session.method == method) {
         extractParams(pathTemplate, session.uri)?.let { extractedParms ->
-          f(session, extractedParms)
+          val contentLength = try {
+            Integer.parseInt(session.headers["content-length"])
+          } catch (e: Throwable) {
+            0
+          }
+          val buffer = ByteArray(contentLength)
+          session.inputStream.read(buffer, 0, contentLength)
+          f(session, extractedParms, buffer)
         }
       }
       else {
@@ -78,6 +85,12 @@ abstract class NanoHTTPDRouter(val port: Int): NanoHTTPD(port) {
           cursor += extractedParam.length
         }
       }
+
+      // has the `pathTemplate` been fully matched
+      if (cursor != path.length) {
+        return null
+      }
+
     } catch (_: Exception) {
       return null
     }
