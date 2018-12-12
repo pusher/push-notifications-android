@@ -110,8 +110,7 @@ class ServerSyncProcessHandler(
 
       // Replace interests with the result
       if (localInterestWillChange) {
-        deviceStateStore.interests.clear()
-        deviceStateStore.interests.addAll(interests)
+        deviceStateStore.interests = interests
         // TODO: call the callback in the UI thread somehow
       }
     }
@@ -134,7 +133,10 @@ class ServerSyncProcessHandler(
   private fun processJob(job: ServerSyncJob) {
     when(job) {
       is SubscribeJob -> {
-
+        api.subscribe(
+            deviceStateStore.deviceId!!,
+            job.interest,
+            RetryStrategy.WithInfiniteExpBackOff())
       }
     }
   }

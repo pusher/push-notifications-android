@@ -29,6 +29,7 @@ class DeviceRegistrationTest {
     val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
     assertTrue(deviceStateStore.clear())
     assertNull(deviceStateStore.deviceId)
+    assertThat(deviceStateStore.interests.size, `is`(equalTo(0)))
   }
 
   fun getStoredDeviceId(): String? {
