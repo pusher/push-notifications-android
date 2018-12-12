@@ -29,7 +29,6 @@ val unknownNOKResponse = NOKResponse("Unknown Service Error", "Something went wr
 
 data class GetDeviceResponse(
   val id: String,
-  val instanceId: String,
   val deviceMetadata: DeviceMetadata
 )
 

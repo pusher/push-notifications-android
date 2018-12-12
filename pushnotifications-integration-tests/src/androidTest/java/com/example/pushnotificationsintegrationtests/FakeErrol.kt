@@ -1,9 +1,6 @@
 package com.example.pushnotificationsintegrationtests
 
-import com.google.gson.Gson
 import fi.iki.elonen.NanoHTTPD
-import java.io.InputStreamReader
-import java.nio.charset.Charset
 import java.util.*
 
 data class FakeErrolDevice(
@@ -21,89 +18,75 @@ data class FakeErrolStorage(
   val devices: MutableMap<String, FakeErrolDevice>
 )
 
+data class NewDeviceResponse(
+    val id: String,
+    val initialInterestSet: Set<String>
+)
 
 data class SetSubscriptionsRequest(
     val interests: Set<String>
 )
 
-
 class FakeErrol(port: Int): NanoHTTPDRouter(port) {
   val storage = FakeErrolStorage(mutableMapOf())
-  val gson = Gson()
 
   init {
     start(NanoHTTPD.SOCKET_READ_TIMEOUT, false)
   }
 
   override fun setupRoutes() {
-    post("/instances/{instanceId}/devices/fcm") { session, params, body ->
+    post("/instances/{instanceId}/devices/fcm") {
       val device = FakeErrolDevice.New(mutableSetOf())
       storage.devices[device.id] = device
 
-      NanoHTTPD.newFixedLengthResponse(Response.Status.OK, mimeTypeJSON, """
-        {
-          "id": "${device.id}",
-          "initialInterestSet": []
-        }
-      """.trimIndent())
+      complete(Response.Status.OK,
+          NewDeviceResponse(id = device.id, initialInterestSet = emptySet()))
     }
 
-    get("/instances/{instanceId}/devices/fcm/{deviceId}") { session, params, body ->
+    get("/instances/{instanceId}/devices/fcm/{deviceId}") {
       val device = storage.devices[params["deviceId"]]
       if (device != null) {
-        NanoHTTPD.newFixedLengthResponse(Response.Status.OK, mimeTypeJSON, """
-          {
-            "id": "${device.id}",
-            "metadata": {
-              "sdkVersion": "",
-              "androidVersion": ""
-            }
-          }
-        """.trimIndent())
+        complete(Response.Status.OK, GetDeviceResponse(id = device.id, deviceMetadata = DeviceMetadata("", "")))
       } else {
-        notFoundResponse
+        complete(Response.Status.NOT_FOUND)
       }
     }
 
-    get("/instances/{instanceId}/devices/fcm/{deviceId}/interests") { session, params, body ->
+    get("/instances/{instanceId}/devices/fcm/{deviceId}/interests") {
       val device = storage.devices[params["deviceId"]]
       if (device != null) {
-        val responseBody = gson.toJson(GetInterestsResponse(interests = device.interests))
-        NanoHTTPD.newFixedLengthResponse(Response.Status.OK, mimeTypeJSON, responseBody)
+        complete(Response.Status.OK, GetInterestsResponse(interests = device.interests))
       } else {
-        notFoundResponse
+        complete(Response.Status.NOT_FOUND)
       }
     }
 
-    post("/instances/{instanceId}/devices/fcm/{deviceId}/interests/{interest}") { session, params, body ->
+    post("/instances/{instanceId}/devices/fcm/{deviceId}/interests/{interest}") {
       val device = storage.devices[params["deviceId"]]
       if (device != null) {
         device.interests.add(params["interest"]!!)
-        NanoHTTPD.newFixedLengthResponse(Response.Status.OK, mimeTypeJSON, "")
+        complete(Response.Status.OK)
       } else {
-        notFoundResponse
+        complete(Response.Status.NOT_FOUND)
       }
     }
 
-    put("/instances/{instanceId}/devices/fcm/{deviceId}/interests") { session, params, body ->
-      try {
-        val reqBody = gson.fromJson<SetSubscriptionsRequest>(body.toString(Charset.forName("UTF-8")), SetSubscriptionsRequest::class.java)
-
+    put("/instances/{instanceId}/devices/fcm/{deviceId}/interests") {
+      entity(SetSubscriptionsRequest::class.java) { setSubscriptions ->
         val device = storage.devices[params["deviceId"]]
         if (device != null) {
           device.interests.clear()
-          device.interests.addAll(reqBody.interests)
-          NanoHTTPD.newFixedLengthResponse(Response.Status.OK, mimeTypeJSON, "")
+          device.interests.addAll(setSubscriptions.interests)
+
+          complete(Response.Status.OK)
         } else {
-          notFoundResponse
+          complete(Response.Status.NOT_FOUND)
         }
-      } catch (e: Throwable) {
-        notFoundResponse
       }
     }
 
-    put("/instances/{instanceId}/devices/fcm/{deviceId}/metadata") { session, params, body ->
-      NanoHTTPD.newFixedLengthResponse(Response.Status.OK, mimeTypeJSON, "")
+    put("/instances/{instanceId}/devices/fcm/{deviceId}/metadata") {
+      complete(Response.Status.OK)
     }
   }
 }
