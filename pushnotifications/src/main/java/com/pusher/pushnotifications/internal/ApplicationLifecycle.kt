@@ -78,7 +78,7 @@ class PushNotificationsInitProvider: ContentProvider() {
 
         val sdkConfig = SDKConfiguration(context)
         val api = PushNotificationsAPI(instanceId, sdkConfig.overrideHostURL)
-        api.deviceId = deviceId
+        /* api.deviceId = deviceId
 
         if (interestsHash != deviceStateStore.serverConfirmedInterestsHash) {
           api.setSubscriptions(deviceId, deviceStateStore.interests, object: OperationCallbackNoArgs {
@@ -107,7 +107,7 @@ class PushNotificationsInitProvider: ContentProvider() {
               log.w("Failed to persist metadata.", t)
             }
           })
-        }
+        }*/
       }
     }
 

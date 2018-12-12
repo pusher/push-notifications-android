@@ -3,17 +3,13 @@ package com.pusher.pushnotifications
 import java.util.regex.Pattern
 import android.content.Context
 import android.os.HandlerThread
-import android.os.Looper
 import com.google.firebase.iid.FirebaseInstanceId
-import com.pusher.pushnotifications.api.OperationCallback
-import com.pusher.pushnotifications.api.OperationCallbackNoArgs
 import com.pusher.pushnotifications.api.PushNotificationsAPI
 import com.pusher.pushnotifications.fcm.MessagingService
 import com.pusher.pushnotifications.internal.*
 import com.pusher.pushnotifications.logging.Logger
 import com.pusher.pushnotifications.validation.Validations
 import java.io.File
-import java.nio.file.Files
 
 /**
  * Thrown when the device is re-registered to a different instance id. If you wish to register a
@@ -21,7 +17,7 @@ import java.nio.file.Files
  *
  * @param message Error message to be shown
  */
-class PusherAlreadyRegisteredException(message: String) : RuntimeException(message) {}
+class PusherAlreadyRegisteredException(message: String) : RuntimeException(message)
 
 /**
  * Interacts with the Pusher service to subscribe and unsubscribe from interests.
@@ -35,10 +31,8 @@ class PushNotificationsInstance(
   private val log = Logger.get(this::class)
 
   private val sdkConfig = SDKConfiguration(context)
-  private val api = PushNotificationsAPI(instanceId, sdkConfig.overrideHostURL)
   private val deviceStateStore = DeviceStateStore(context)
   private val oldSDKDeviceStateStore = OldSDKDeviceStateStore(context)
-  private val jobQueue: ArrayList<() -> Boolean> = ArrayList()
   private var onSubscriptionsChangedListener: SubscriptionsChangedListener? = null
 
   private val serverSyncHandler = {
@@ -46,7 +40,7 @@ class PushNotificationsInstance(
     handlerThread.start()
 
     ServerSyncHandler(
-        api = api,
+        api = PushNotificationsAPI(instanceId, sdkConfig.overrideHostURL),
         deviceStateStore = deviceStateStore,
         jobQueue = TapeJobQueue(File(context.filesDir, "$instanceId.jobqueue")),
         looper = handlerThread.looper
@@ -108,19 +102,10 @@ class PushNotificationsInstance(
    * the Pusher services.
    */
   fun start(): PushNotificationsInstance {
-    deviceStateStore.deviceId?.let {
-      api.deviceId = it
-      log.i("PushNotifications device id: $it")
-    }
-
-    deviceStateStore.FCMToken?.let {
-      api.fcmToken = it
-    }
-
     val handleFcmToken = { fcmToken: String ->
       synchronized(deviceStateStore) {
         if (!deviceStateStore.startHasBeenCalled) {
-          serverSyncHandler.sendMessage(ServerSyncHandler.start(fcmToken))
+          serverSyncHandler.sendMessage(ServerSyncHandler.start(fcmToken, oldSDKDeviceStateStore.clientIds()))
           deviceStateStore.startHasBeenCalled = true
         }
       }
