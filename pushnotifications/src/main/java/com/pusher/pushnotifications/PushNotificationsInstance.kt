@@ -79,7 +79,7 @@ class PushNotificationsInstance(
 
   private fun replaceAllInterestsInStore(interests: Set<String>): Boolean {
     val localInterests = deviceStateStore.interests
-    val areInterestsDifferent = localInterests.containsAll(interests) && interests.containsAll(localInterests)
+    val areInterestsDifferent = !(localInterests.containsAll(interests) && interests.containsAll(localInterests))
     if (areInterestsDifferent) {
       deviceStateStore.interests = localInterests
       return true
