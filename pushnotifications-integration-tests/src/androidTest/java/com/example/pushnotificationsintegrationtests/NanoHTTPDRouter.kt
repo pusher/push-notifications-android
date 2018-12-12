@@ -31,9 +31,9 @@ abstract class NanoHTTPDRouter(val port: Int): NanoHTTPD(port) {
   }
 
   data class Request(val session: NanoHTTPD.IHTTPSession, val params: Map<String, String>, val body: ByteArray) {
-    fun <T> entity(javaClass: Class<T>, f: Request.(e: T) -> NanoHTTPD.Response): NanoHTTPD.Response {
+    fun <T: Any> entity(kotlinClass: KClass<T>, f: Request.(e: T) -> NanoHTTPD.Response): NanoHTTPD.Response {
       return try {
-        val parsedEntity = gson.fromJson<T>(body.toString(Charset.forName("UTF-8")), javaClass)
+        val parsedEntity = gson.fromJson<T>(body.toString(Charset.forName("UTF-8")), kotlinClass.java)
         f(parsedEntity)
       } catch (_: JsonSyntaxException){
         complete(Response.Status.BAD_REQUEST)

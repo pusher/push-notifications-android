@@ -77,16 +77,18 @@ class ServerSyncProcessHandler(
   private val started: Boolean
   get() = deviceStateStore.deviceId != null
 
-  private fun startSDK(fcmToken: String, knownPreviousClientIds: List<String>) {
+  private fun processStartJob(startJob: StartJob) {
     // Register device with Errol
     val registrationResponse =
-        api.registerFCM(fcmToken, knownPreviousClientIds, RetryStrategy.WithInfiniteExpBackOff())
+        api.registerFCM(
+            token = startJob.fcmToken,
+            knownPreviousClientIds = startJob.knownPreviousClientIds,
+            retryStrategy = RetryStrategy.WithInfiniteExpBackOff())
 
     synchronized(deviceStateStore) {
-      // Store device id in deviceStateStore
       deviceStateStore.deviceId = registrationResponse.deviceId
 
-      // Replay sub/unsub operations in job queue over initial interest set
+      // Replay sub/unsub/setsub operations in job queue over initial interest set
       val interests = registrationResponse.initialInterests.toMutableSet()
       for(j in jobQueue.asIterable()) {
         if (j is StartJob) {
@@ -118,16 +120,16 @@ class ServerSyncProcessHandler(
     val remoteInterestsWillChange = deviceStateStore.interests != registrationResponse.initialInterests
     if (remoteInterestsWillChange) {
       api.setSubscriptions(
-          registrationResponse.deviceId,
-          deviceStateStore.interests,
-          RetryStrategy.WithInfiniteExpBackOff())
+          deviceId = registrationResponse.deviceId,
+          interests = deviceStateStore.interests,
+          retryStrategy = RetryStrategy.WithInfiniteExpBackOff())
     }
 
     // Clear queue up to the start job
     while (jobQueue.peek() !is StartJob) {
       jobQueue.pop()
     }
-    jobQueue.pop() // Remove start job
+    jobQueue.pop() // Also remove start job
   }
 
   private fun processJob(job: ServerSyncJob) {
@@ -138,7 +140,20 @@ class ServerSyncProcessHandler(
             job.interest,
             RetryStrategy.WithInfiniteExpBackOff())
       }
+      is UnsubscribeJob -> {
+        api.unsubscribe(
+            deviceStateStore.deviceId!!,
+            job.interest,
+            RetryStrategy.WithInfiniteExpBackOff())
+      }
+      is SetSubscriptionsJob -> {
+        api.setSubscriptions(
+            deviceStateStore.deviceId!!,
+            job.interests,
+            RetryStrategy.WithInfiniteExpBackOff())
+      }
     }
+    jobQueue.pop()
   }
 
   override fun handleMessage(msg: Message) {
@@ -151,7 +166,7 @@ class ServerSyncProcessHandler(
     }
 
     if(job is StartJob) {
-      startSDK(job.fcmToken, job.knownPreviousClientIds)
+      processStartJob(job)
     } else {
       processJob(job)
     }
