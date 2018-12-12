@@ -72,7 +72,7 @@ class FakeErrol(port: Int): NanoHTTPDRouter(port) {
     }
 
     put("/instances/{instanceId}/devices/fcm/{deviceId}/interests") {
-      entity(SetSubscriptionsRequest::class.java) { setSubscriptions ->
+      entity(SetSubscriptionsRequest::class) { setSubscriptions ->
         val device = storage.devices[params["deviceId"]]
         if (device != null) {
           device.interests.clear()

@@ -1,7 +1,5 @@
 package com.example.pushnotificationsintegrationtests
 
-import android.app.ActivityManager
-import android.content.Context
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
 import com.pusher.pushnotifications.PushNotificationsInstance
@@ -25,13 +23,6 @@ const val DEVICE_REGISTRATION_WAIT_MS: Long = 7000 // We need to wait for FCM to
  */
 @RunWith(AndroidJUnit4::class)
 class DeviceRegistrationTest {
-  fun wipeAndroidState() {
-    val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
-    assertTrue(deviceStateStore.clear())
-    assertNull(deviceStateStore.deviceId)
-    assertThat(deviceStateStore.interests.size, `is`(equalTo(0)))
-  }
-
   fun getStoredDeviceId(): String? {
     val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
     return deviceStateStore.deviceId
@@ -47,7 +38,10 @@ class DeviceRegistrationTest {
   @Before
   @After
   fun cleanup() {
-    wipeAndroidState()
+    val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
+    assertTrue(deviceStateStore.clear())
+    assertNull(deviceStateStore.deviceId)
+    assertThat(deviceStateStore.interests.size, `is`(equalTo(0)))
   }
 
   @Test
