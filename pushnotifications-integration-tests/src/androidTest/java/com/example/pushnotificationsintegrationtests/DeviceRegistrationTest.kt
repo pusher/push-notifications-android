@@ -2,10 +2,13 @@ package com.example.pushnotificationsintegrationtests
 
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
+import com.google.firebase.iid.FirebaseInstanceId
 import com.pusher.pushnotifications.PushNotificationsInstance
+import com.pusher.pushnotifications.fcm.MessagingService
 import com.pusher.pushnotifications.internal.DeviceStateStore
 import org.hamcrest.CoreMatchers.`is`
 import org.hamcrest.CoreMatchers.equalTo
+import org.hamcrest.CoreMatchers.not
 import org.junit.After
 
 import org.junit.Test
@@ -109,5 +112,32 @@ class DeviceRegistrationTest {
     Thread.sleep(1000)
     val interestsOnServer2 = errolClient.getDeviceInterests(storedDeviceId!!)
     assertThat(interestsOnServer2, `is`(equalTo(pni.getSubscriptions())))
+  }
+
+  //@SkipIfProductionErrol
+  @Test
+  fun refreshTokenAfterStart() {
+    // Start the SDK
+    val pni = PushNotificationsInstance(context, instanceId).start()
+    Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
+
+    // A device ID should have been stored
+    val storedDeviceId = getStoredDeviceId()
+    assertNotNull(storedDeviceId)
+
+    // and the stored id should match the server one
+    val getDeviceResponse = errolClient.getDevice(storedDeviceId!!)
+    assertNotNull(getDeviceResponse)
+
+    val oldToken = errol.storage.devices[storedDeviceId]?.token
+    assertThat(oldToken, `is`(not(equalTo(""))))
+
+    FirebaseInstanceId.getInstance().deleteInstanceId()
+    Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
+
+    // The server should have the new token now
+    val newToken = errol.storage.devices[storedDeviceId]?.token
+    assertThat(newToken, `is`(not(equalTo(""))))
+    assertThat(newToken, `is`(not(equalTo(oldToken))))
   }
 }

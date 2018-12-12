@@ -103,7 +103,14 @@ class PushNotificationsInstance(
    */
   fun start(): PushNotificationsInstance {
     val handleFcmToken = { fcmToken: String ->
-      serverSyncHandler.sendMessage(ServerSyncHandler.start(fcmToken, oldSDKDeviceStateStore.clientIds()))
+      synchronized(deviceStateStore) {
+        if (deviceStateStore.startHasBeenCalled) {
+          serverSyncHandler.sendMessage(ServerSyncHandler.refreshToken(fcmToken))
+        } else {
+          serverSyncHandler.sendMessage(ServerSyncHandler.start(fcmToken, oldSDKDeviceStateStore.clientIds()))
+          deviceStateStore.startHasBeenCalled = true
+        }
+      }
 
       Unit
     }
