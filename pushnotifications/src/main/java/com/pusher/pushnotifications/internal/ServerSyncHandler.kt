@@ -10,6 +10,7 @@ import java.io.Serializable
 
 sealed class ServerSyncJob: Serializable
 data class StartJob(val fcmToken: String, val knownPreviousClientIds: List<String>): ServerSyncJob()
+data class RefreshTokenJob(val newToken: String): ServerSyncJob()
 data class SubscribeJob(val interest: String): ServerSyncJob()
 data class UnsubscribeJob(val interest: String): ServerSyncJob()
 data class SetSubscriptionsJob(val interests: Set<String>): ServerSyncJob()
@@ -46,6 +47,11 @@ class ServerSyncHandler(
   }
 
   companion object {
+  fun refreshToken(fcmToken: String): Message =
+      Message().also {
+        it.obj = RefreshTokenJob(fcmToken)
+      }
+
   fun start(fcmToken: String, knownPreviousClientIds: List<String>): Message =
       Message().also {
         it.obj = StartJob(fcmToken, knownPreviousClientIds)
@@ -150,6 +156,12 @@ class ServerSyncProcessHandler(
         api.setSubscriptions(
             deviceStateStore.deviceId!!,
             job.interests,
+            RetryStrategy.WithInfiniteExpBackOff())
+      }
+      is RefreshTokenJob -> {
+        api.refreshToken(
+            deviceStateStore.deviceId!!,
+            job.newToken,
             RetryStrategy.WithInfiniteExpBackOff())
       }
     }

@@ -5,17 +5,22 @@ import java.util.*
 
 data class FakeErrolDevice(
   val id: String,
+  val token: String,
   val interests: MutableSet<String>
 ) {
   companion object {
-    fun New(interests: MutableSet<String>): FakeErrolDevice {
-      return FakeErrolDevice(UUID.randomUUID().toString(), interests)
+    fun New(token: String, interests: MutableSet<String>): FakeErrolDevice {
+      return FakeErrolDevice(UUID.randomUUID().toString(), token, interests)
     }
   }
 }
 
 data class FakeErrolStorage(
   val devices: MutableMap<String, FakeErrolDevice>
+)
+
+data class RegisterDeviceRequest(
+    val token: String
 )
 
 data class NewDeviceResponse(
@@ -36,11 +41,27 @@ class FakeErrol(port: Int): NanoHTTPDRouter(port) {
 
   override fun setupRoutes() {
     post("/instances/{instanceId}/devices/fcm") {
-      val device = FakeErrolDevice.New(mutableSetOf())
-      storage.devices[device.id] = device
+      entity(RegisterDeviceRequest::class) { registerDeviceRequest ->
+        val device = FakeErrolDevice.New(registerDeviceRequest.token, mutableSetOf())
+        storage.devices[device.id] = device
 
-      complete(Response.Status.OK,
-          NewDeviceResponse(id = device.id, initialInterestSet = emptySet()))
+        complete(Response.Status.OK,
+            NewDeviceResponse(id = device.id, initialInterestSet = emptySet()))
+      }
+    }
+
+    put("/instances/{instanceId}/devices/fcm/{deviceId}/token") {
+      val device = storage.devices[params["deviceId"]]
+      if (device != null) {
+        entity(RegisterDeviceRequest::class) { registerDeviceRequest ->
+          val device = FakeErrolDevice.New(registerDeviceRequest.token, mutableSetOf())
+          storage.devices[params["deviceId"]!!] = device.copy(token = registerDeviceRequest.token)
+
+          complete(Response.Status.OK)
+        }
+      } else {
+        complete(Response.Status.NOT_FOUND)
+      }
     }
 
     get("/instances/{instanceId}/devices/fcm/{deviceId}") {

@@ -112,7 +112,7 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
         throw PushNotificationsAPIException(error)
       }
 
-      throw PushNotificationsAPIException("Unknown error")
+      throw PushNotificationsAPIException("Unknown API error")
     })
   }
 /*
@@ -217,7 +217,7 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
           throw PushNotificationsAPIException(error)
         }
 
-        throw PushNotificationsAPIException("Unknown error")
+        throw PushNotificationsAPIException("Unknown API error")
       }
     })
   }
@@ -237,7 +237,7 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
           throw PushNotificationsAPIException(error)
         }
 
-        throw PushNotificationsAPIException("Unknown error")
+        throw PushNotificationsAPIException("Unknown API error")
       }
     })
   }
@@ -257,7 +257,27 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
           throw PushNotificationsAPIException(error)
         }
 
-        throw PushNotificationsAPIException("Unknown error")
+        throw PushNotificationsAPIException("Unknown API error")
+      }
+    })
+  }
+
+  fun refreshToken(deviceId: String, fcmToken: String, retryStrategy: RetryStrategy<Unit>) {
+    return retryStrategy.retry(fun() {
+      val response = service.refreshToken(
+          instanceId,
+          deviceId,
+          RefreshToken(fcmToken)
+      ).execute()
+      if (response.code() !in 200..299) {
+        val responseErrorBody = response?.errorBody()
+        if (responseErrorBody != null) {
+          val error = safeExtractJsonError(responseErrorBody.string())
+          log.w("Failed to refresh FCM token: $error")
+          throw PushNotificationsAPIException(error)
+        }
+
+        throw PushNotificationsAPIException("Unknown API error")
       }
     })
   }
@@ -281,7 +301,7 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
           throw PushNotificationsAPIException(error)
         }
 
-        throw PushNotificationsAPIException("Unknown error")
+        throw PushNotificationsAPIException("Unknown API error")
       }
     })
   }
