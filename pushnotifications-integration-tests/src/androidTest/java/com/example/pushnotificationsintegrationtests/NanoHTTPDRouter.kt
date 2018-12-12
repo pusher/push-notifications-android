@@ -1,11 +1,16 @@
 package com.example.pushnotificationsintegrationtests
 
+import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
 import fi.iki.elonen.NanoHTTPD
 import java.lang.Exception
+import java.nio.charset.Charset
+import kotlin.reflect.KClass
+
+private val gson = Gson()
 
 abstract class NanoHTTPDRouter(val port: Int): NanoHTTPD(port) {
   val mimeTypeJSON = "application/json"
-  val notFoundResponse = NanoHTTPD.newFixedLengthResponse(Response.Status.NOT_FOUND, NanoHTTPD.MIME_PLAINTEXT, "")
 
   private val routes = mutableListOf<(session: NanoHTTPD.IHTTPSession) -> NanoHTTPD.Response?>()
 
@@ -22,30 +27,51 @@ abstract class NanoHTTPDRouter(val port: Int): NanoHTTPD(port) {
       }
     }
 
-    return notFoundResponse
+    return NanoHTTPD.newFixedLengthResponse(Response.Status.NOT_FOUND, NanoHTTPD.MIME_PLAINTEXT, "")
   }
 
-  fun head(pathTemplate: String, f: (session: NanoHTTPD.IHTTPSession, urlParams: Map<String, String>, body: ByteArray) -> NanoHTTPD.Response) {
+  data class Request(val session: NanoHTTPD.IHTTPSession, val params: Map<String, String>, val body: ByteArray) {
+    fun <T> entity(javaClass: Class<T>, f: Request.(e: T) -> NanoHTTPD.Response): NanoHTTPD.Response {
+      return try {
+        val parsedEntity = gson.fromJson<T>(body.toString(Charset.forName("UTF-8")), javaClass)
+        f(parsedEntity)
+      } catch (_: JsonSyntaxException){
+        complete(Response.Status.BAD_REQUEST)
+      }
+    }
+
+    fun complete(status: NanoHTTPD.Response.Status): NanoHTTPD.Response {
+      return NanoHTTPD.newFixedLengthResponse(Response.Status.OK, NanoHTTPD.MIME_PLAINTEXT, "")
+    }
+
+    fun <T> complete(status: NanoHTTPD.Response.Status, value: T): NanoHTTPD.Response {
+      val jsonString = gson.toJson(value)
+
+      return NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "application/json", jsonString)
+    }
+  }
+
+  fun head(pathTemplate: String, f: Request.() -> NanoHTTPD.Response) {
     routes += handle(Method.HEAD, pathTemplate, f)
   }
 
-  fun get(pathTemplate: String, f: (session: NanoHTTPD.IHTTPSession, urlParams: Map<String, String>, body: ByteArray) -> NanoHTTPD.Response) {
+  fun get(pathTemplate: String, f: Request.() -> NanoHTTPD.Response) {
     routes += handle(Method.GET, pathTemplate, f)
   }
 
-  fun post(pathTemplate: String, f: (session: NanoHTTPD.IHTTPSession, urlParams: Map<String, String>, body: ByteArray) -> NanoHTTPD.Response) {
+  fun post(pathTemplate: String, f: Request.() -> NanoHTTPD.Response) {
     routes += handle(Method.POST, pathTemplate, f)
   }
 
-  fun put(pathTemplate: String, f: (session: NanoHTTPD.IHTTPSession, urlParams: Map<String, String>, body: ByteArray) -> NanoHTTPD.Response) {
+  fun put(pathTemplate: String, f: Request.() -> NanoHTTPD.Response) {
     routes += handle(Method.PUT, pathTemplate, f)
   }
 
-  fun delete(pathTemplate: String, f: (session: NanoHTTPD.IHTTPSession, urlParams: Map<String, String>, body: ByteArray) -> NanoHTTPD.Response) {
+  fun delete(pathTemplate: String, f: Request.() -> NanoHTTPD.Response) {
     routes += handle(Method.DELETE, pathTemplate, f)
   }
 
-  fun handle(method: Method, pathTemplate: String, f: (session: NanoHTTPD.IHTTPSession, urlParams: Map<String, String>, body: ByteArray) -> NanoHTTPD.Response?): (session: NanoHTTPD.IHTTPSession) -> NanoHTTPD.Response? {
+  fun handle(method: Method, pathTemplate: String, f: Request.() -> NanoHTTPD.Response?): (session: NanoHTTPD.IHTTPSession) -> NanoHTTPD.Response? {
     return { session ->
       if (session.method == method) {
         extractParams(pathTemplate, session.uri)?.let { extractedParms ->
@@ -56,7 +82,7 @@ abstract class NanoHTTPDRouter(val port: Int): NanoHTTPD(port) {
           }
           val buffer = ByteArray(contentLength)
           session.inputStream.read(buffer, 0, contentLength)
-          f(session, extractedParms, buffer)
+          f(Request(session, extractedParms, buffer))
         }
       }
       else {

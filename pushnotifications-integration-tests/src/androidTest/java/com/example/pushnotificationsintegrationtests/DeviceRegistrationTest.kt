@@ -86,7 +86,7 @@ class DeviceRegistrationTest {
     assertThat(pni.getSubscriptions(), `is`(equalTo(setOf("peanuts"))))
 
     // The server should have the interest too
-    Thread.sleep(100000)
+    Thread.sleep(1000)
     val interestsOnServer2 = errolClient.getDeviceInterests(storedDeviceId!!)
     assertThat(interestsOnServer2, `is`(equalTo(pni.getSubscriptions())))
   }
