@@ -81,7 +81,7 @@ class PushNotificationsInstance(
     val localInterests = deviceStateStore.interests
     val areInterestsDifferent = !(localInterests.containsAll(interests) && interests.containsAll(localInterests))
     if (areInterestsDifferent) {
-      deviceStateStore.interests = localInterests
+      deviceStateStore.interests = interests.toMutableSet()
       return true
     }
     return false // nothing changed
