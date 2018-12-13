@@ -12,10 +12,12 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.lang.RuntimeException
 
-class PushNotificationsAPIException: RuntimeException {
+open class PushNotificationsAPIException: RuntimeException {
   constructor(message: String): super(message)
   constructor(cause: Throwable): super(cause)
 }
+
+class PushNotificationsAPIDeviceNotFound: PushNotificationsAPIException("Device not found in the server")
 
 sealed class RetryStrategy<T> {
   abstract fun retry(f: () -> T): T
@@ -30,6 +32,9 @@ sealed class RetryStrategy<T> {
           if (result != null) {
             return result
           }
+        } catch (e: PushNotificationsAPIDeviceNotFound) {
+          // not recoverable here
+          throw e
         } catch (e: RuntimeException) {
         }
 
@@ -123,6 +128,10 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
   ) {
     return retryStrategy.retry(fun() {
       val response = service.subscribe(instanceId, deviceId, interest).execute()
+      if (response.code() == 404) {
+        throw PushNotificationsAPIDeviceNotFound()
+      }
+
       if (response.code() !in 200..299) {
         val responseErrorBody = response?.errorBody()
         if (responseErrorBody != null) {
@@ -143,6 +152,10 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
   ) {
     return retryStrategy.retry(fun() {
       val response = service.unsubscribe(instanceId, deviceId, interest).execute()
+      if (response.code() == 404) {
+        throw PushNotificationsAPIDeviceNotFound()
+      }
+
       if (response.code() !in 200..299) {
         val responseErrorBody = response?.errorBody()
         if (responseErrorBody != null) {
@@ -163,6 +176,10 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
           deviceId,
           SetSubscriptionsRequest(interests)
       ).execute()
+      if (response.code() == 404) {
+        throw PushNotificationsAPIDeviceNotFound()
+      }
+
       if (response.code() !in 200..299) {
         val responseErrorBody = response?.errorBody()
         if (responseErrorBody != null) {
@@ -183,6 +200,10 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
           deviceId,
           RefreshToken(fcmToken)
       ).execute()
+      if (response.code() == 404) {
+        throw PushNotificationsAPIDeviceNotFound()
+      }
+
       if (response.code() !in 200..299) {
         val responseErrorBody = response?.errorBody()
         if (responseErrorBody != null) {
@@ -207,6 +228,10 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
           deviceId,
           metadata
       ).execute()
+      if (response.code() == 404) {
+        throw PushNotificationsAPIDeviceNotFound()
+      }
+
       if (response.code() !in 200..299) {
         val responseErrorBody = response?.errorBody()
         if (responseErrorBody != null) {

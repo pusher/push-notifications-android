@@ -10,6 +10,12 @@ interface ErrolService {
           @Path("deviceId") deviceId: String
   ): Call<GetDeviceResponse>
 
+  @DELETE("instances/{instanceId}/devices/fcm/{deviceId}")
+  fun deleteDevice(
+          @Path("instanceId") instanceId: String,
+          @Path("deviceId") deviceId: String
+  ): Call<Void>
+
   @GET("instances/{instanceId}/devices/fcm/{deviceId}/interests")
   fun getDeviceInterests(
           @Path("instanceId") instanceId: String,

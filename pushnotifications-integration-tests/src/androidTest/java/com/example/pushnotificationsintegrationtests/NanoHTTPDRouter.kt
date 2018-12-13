@@ -41,13 +41,13 @@ abstract class NanoHTTPDRouter(val port: Int): NanoHTTPD(port) {
     }
 
     fun complete(status: NanoHTTPD.Response.Status): NanoHTTPD.Response {
-      return NanoHTTPD.newFixedLengthResponse(Response.Status.OK, NanoHTTPD.MIME_PLAINTEXT, "")
+      return NanoHTTPD.newFixedLengthResponse(status, NanoHTTPD.MIME_PLAINTEXT, "")
     }
 
     fun <T> complete(status: NanoHTTPD.Response.Status, value: T): NanoHTTPD.Response {
       val jsonString = gson.toJson(value)
 
-      return NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "application/json", jsonString)
+      return NanoHTTPD.newFixedLengthResponse(status, "application/json", jsonString)
     }
   }
 

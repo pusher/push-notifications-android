@@ -140,4 +140,35 @@ class DeviceRegistrationTest {
     assertThat(newToken, `is`(not(equalTo(""))))
     assertThat(newToken, `is`(not(equalTo(oldToken))))
   }
+
+  @Test
+  fun startDoSomeOperationsWhileHandlingUnexpectedDeviceDeletionCorrectly() {
+    // Start the SDK
+    val pni = PushNotificationsInstance(context, instanceId)
+    pni.subscribe("hello")
+    pni.start()
+    Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
+
+    // A device ID should have been stored
+    val storedDeviceId = getStoredDeviceId()
+    assertNotNull(storedDeviceId)
+
+    // and the stored id should match the server one
+    val getDeviceResponse = errolClient.getDevice(storedDeviceId!!)
+    assertNotNull(getDeviceResponse)
+
+    errolClient.deleteDevice(storedDeviceId)
+
+    pni.subscribe("potato")
+
+    Thread.sleep(1000)
+
+    val newStoredDeviceId = getStoredDeviceId()
+    assertNotNull(newStoredDeviceId)
+    assertThat(newStoredDeviceId, `is`(not(equalTo(storedDeviceId))))
+
+    assertThat(pni.getSubscriptions(), `is`(equalTo(setOf("hello", "potato"))))
+    val interestsOnServer = errolClient.getDeviceInterests(newStoredDeviceId!!)
+    assertThat(interestsOnServer, `is`(equalTo(setOf("hello", "potato"))))
+  }
 }
