@@ -221,4 +221,50 @@ class ServerSyncProcessHandlerTest {
 
     assertTrue(jobQueue.peek() == null)
   }
+
+  @Test
+  fun skipJobsIf400BadRequestAreReceived() {
+    val instanceId = "000000-c1de-09b9-a8f6-2a22dbdd062a"
+    val mockServer = MockWebServer()
+    mockServer.start()
+
+    val api = PushNotificationsAPI(instanceId, mockServer.url("/").toString())
+    val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
+
+    val tempFile = File.createTempFile("persistentJobQueue-", ".queue")
+    tempFile.delete() // QueueFile expects a handle to a non-existent file on first run.
+    val jobQueue = TapeJobQueue<ServerSyncJob>(tempFile)
+
+    val handler = ServerSyncProcessHandler(api, deviceStateStore, jobQueue, InstrumentationRegistry.getContext().mainLooper)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(0)))
+
+    val startJob = ServerSyncHandler.start("token-123", emptyList())
+    jobQueue.push(startJob.obj as ServerSyncJob)
+
+    // expect register device
+    mockServer.enqueue(MockResponse().setBody("""{"id": "d-123", "initialInterestSet": []}"""))
+
+    handler.handleMessage(startJob)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(1)))
+
+    // expect to fail with 400 for the next subscribe
+    mockServer.enqueue(MockResponse().setResponseCode(400).setBody(""))
+
+    // expect an unsubscribe
+    mockServer.enqueue(MockResponse().setBody(""))
+
+    val subJob = ServerSyncHandler.subscribe("hello")
+    jobQueue.push(subJob.obj as ServerSyncJob)
+    handler.handleMessage(subJob)
+
+    val unsubJob = ServerSyncHandler.unsubscribe("hello")
+    jobQueue.push(unsubJob.obj as ServerSyncJob)
+    handler.handleMessage(unsubJob)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(3)))
+
+    assertTrue(jobQueue.peek() == null)
+  }
 }

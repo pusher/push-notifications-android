@@ -5,8 +5,10 @@ import android.os.HandlerThread
 import android.os.Looper
 import android.os.Message
 import com.pusher.pushnotifications.api.PushNotificationsAPI
+import com.pusher.pushnotifications.api.PushNotificationsAPIBadRequest
 import com.pusher.pushnotifications.api.PushNotificationsAPIDeviceNotFound
 import com.pusher.pushnotifications.api.RetryStrategy
+import com.pusher.pushnotifications.logging.Logger
 import java.io.Serializable
 
 sealed class ServerSyncJob: Serializable
@@ -81,6 +83,7 @@ class ServerSyncProcessHandler(
     private val jobQueue: PersistentJobQueue<ServerSyncJob>,
     looper: Looper
 ): Handler(looper) {
+  private val log = Logger.get(this::class)
   private val started: Boolean
   get() = deviceStateStore.deviceId != null
 
@@ -192,7 +195,12 @@ class ServerSyncProcessHandler(
               RetryStrategy.WithInfiniteExpBackOff())
         }
       }
+    } catch (e: PushNotificationsAPIBadRequest) {
+      // not really recoverable, so log it here and also monitor 400s closely on our backend
+      // (this really shouldn't happen)
+      log.e("Fail to make a valid request to the server for job ($job), skipping it", e)
     } catch (e: PushNotificationsAPIDeviceNotFound) {
+      // server has forgotten about this device, it needs to be recreated
       recreateDevice(deviceStateStore.FCMToken!!)
       processJob(job)
       return // prevent the additional `jobQueue.pop`

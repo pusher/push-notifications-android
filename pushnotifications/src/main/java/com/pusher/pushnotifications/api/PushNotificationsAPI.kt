@@ -18,6 +18,7 @@ open class PushNotificationsAPIException: RuntimeException {
 }
 
 class PushNotificationsAPIDeviceNotFound: PushNotificationsAPIException("Device not found in the server")
+class PushNotificationsAPIBadRequest: PushNotificationsAPIException("A request to the server has been deemed invalid")
 
 sealed class RetryStrategy<T> {
   abstract fun retry(f: () -> T): T
@@ -34,6 +35,9 @@ sealed class RetryStrategy<T> {
           }
         } catch (e: PushNotificationsAPIDeviceNotFound) {
           // not recoverable here
+          throw e
+        } catch (e: PushNotificationsAPIBadRequest) {
+          // not recoverable
           throw e
         } catch (e: RuntimeException) {
         }
@@ -102,6 +106,12 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
           DeviceMetadata(BuildConfig.VERSION_NAME, android.os.Build.VERSION.RELEASE)
       )
       val response = service.register(instanceId, requestBody).execute()
+      if (response.code() == 400) {
+        // not throwing a `PushNotificationsAPIBadRequest` here so that it still retries this request.
+        // it would make the code that calls this more complex to handle it.
+        // this really shouldn't happen anyway
+        log.e("Critical error when registering a new device (error body: ${response?.errorBody()})")
+      }
 
       val responseBody = response?.body()
       if (responseBody != null && response.code() in 200..299) {
@@ -131,6 +141,9 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
       if (response.code() == 404) {
         throw PushNotificationsAPIDeviceNotFound()
       }
+      if (response.code() == 400) {
+        throw PushNotificationsAPIBadRequest()
+      }
 
       if (response.code() !in 200..299) {
         val responseErrorBody = response?.errorBody()
@@ -154,6 +167,9 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
       val response = service.unsubscribe(instanceId, deviceId, interest).execute()
       if (response.code() == 404) {
         throw PushNotificationsAPIDeviceNotFound()
+      }
+      if (response.code() == 400) {
+        throw PushNotificationsAPIBadRequest()
       }
 
       if (response.code() !in 200..299) {
@@ -179,6 +195,9 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
       if (response.code() == 404) {
         throw PushNotificationsAPIDeviceNotFound()
       }
+      if (response.code() == 400) {
+        throw PushNotificationsAPIBadRequest()
+      }
 
       if (response.code() !in 200..299) {
         val responseErrorBody = response?.errorBody()
@@ -202,6 +221,9 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
       ).execute()
       if (response.code() == 404) {
         throw PushNotificationsAPIDeviceNotFound()
+      }
+      if (response.code() == 400) {
+        throw PushNotificationsAPIBadRequest()
       }
 
       if (response.code() !in 200..299) {
@@ -230,6 +252,9 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
       ).execute()
       if (response.code() == 404) {
         throw PushNotificationsAPIDeviceNotFound()
+      }
+      if (response.code() == 400) {
+        throw PushNotificationsAPIBadRequest()
       }
 
       if (response.code() !in 200..299) {
