@@ -5,6 +5,7 @@ import android.os.HandlerThread
 import android.os.Looper
 import android.os.Message
 import com.pusher.pushnotifications.api.PushNotificationsAPI
+import com.pusher.pushnotifications.api.PushNotificationsAPIDeviceNotFound
 import com.pusher.pushnotifications.api.RetryStrategy
 import java.io.Serializable
 
@@ -83,6 +84,30 @@ class ServerSyncProcessHandler(
   private val started: Boolean
   get() = deviceStateStore.deviceId != null
 
+  private fun recreateDevice(fcmToken: String) {
+    // Register device with Errol
+    val registrationResponse =
+        api.registerFCM(
+            token = fcmToken,
+            knownPreviousClientIds = emptyList(),
+            retryStrategy = RetryStrategy.WithInfiniteExpBackOff())
+
+    var localInterests: Set<String> = emptySet()
+    synchronized(deviceStateStore) {
+      deviceStateStore.deviceId = registrationResponse.deviceId
+      deviceStateStore.FCMToken = fcmToken
+
+      localInterests = deviceStateStore.interests
+    }
+
+    if (localInterests.count() > 0) {
+      api.setSubscriptions(
+          deviceId = registrationResponse.deviceId,
+          interests = deviceStateStore.interests,
+          retryStrategy = RetryStrategy.WithInfiniteExpBackOff())
+    }
+  }
+
   private fun processStartJob(startJob: StartJob) {
     // Register device with Errol
     val registrationResponse =
@@ -93,6 +118,7 @@ class ServerSyncProcessHandler(
 
     synchronized(deviceStateStore) {
       deviceStateStore.deviceId = registrationResponse.deviceId
+      deviceStateStore.FCMToken = startJob.fcmToken
 
       // Replay sub/unsub/setsub operations in job queue over initial interest set
       val interests = registrationResponse.initialInterests.toMutableSet()
@@ -139,31 +165,37 @@ class ServerSyncProcessHandler(
   }
 
   private fun processJob(job: ServerSyncJob) {
-    when(job) {
-      is SubscribeJob -> {
-        api.subscribe(
-            deviceStateStore.deviceId!!,
-            job.interest,
-            RetryStrategy.WithInfiniteExpBackOff())
+    try {
+      when(job) {
+        is SubscribeJob -> {
+          api.subscribe(
+              deviceStateStore.deviceId!!,
+              job.interest,
+              RetryStrategy.WithInfiniteExpBackOff())
+        }
+        is UnsubscribeJob -> {
+          api.unsubscribe(
+              deviceStateStore.deviceId!!,
+              job.interest,
+              RetryStrategy.WithInfiniteExpBackOff())
+        }
+        is SetSubscriptionsJob -> {
+          api.setSubscriptions(
+              deviceStateStore.deviceId!!,
+              job.interests,
+              RetryStrategy.WithInfiniteExpBackOff())
+        }
+        is RefreshTokenJob -> {
+          api.refreshToken(
+              deviceStateStore.deviceId!!,
+              job.newToken,
+              RetryStrategy.WithInfiniteExpBackOff())
+        }
       }
-      is UnsubscribeJob -> {
-        api.unsubscribe(
-            deviceStateStore.deviceId!!,
-            job.interest,
-            RetryStrategy.WithInfiniteExpBackOff())
-      }
-      is SetSubscriptionsJob -> {
-        api.setSubscriptions(
-            deviceStateStore.deviceId!!,
-            job.interests,
-            RetryStrategy.WithInfiniteExpBackOff())
-      }
-      is RefreshTokenJob -> {
-        api.refreshToken(
-            deviceStateStore.deviceId!!,
-            job.newToken,
-            RetryStrategy.WithInfiniteExpBackOff())
-      }
+    } catch (e: PushNotificationsAPIDeviceNotFound) {
+      recreateDevice(deviceStateStore.FCMToken!!)
+      processJob(job)
+      return // prevent the additional `jobQueue.pop`
     }
     jobQueue.pop()
   }

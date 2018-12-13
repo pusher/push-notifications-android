@@ -51,6 +51,25 @@ class ErrolAPI(private val instanceId: String, private val overrideHostURL: Stri
     throw RuntimeException("Failed request to get device. " + response.raw())
   }
 
+  fun deleteDevice(deviceId: String) {
+    val response =
+      service.deleteDevice(
+          instanceId,
+          deviceId
+      ).execute()
+
+    if (response != null && response.code() >= 200 && response.code() < 300) {
+      return
+    }
+
+    val responseErrorBody = response?.errorBody()
+    if (responseErrorBody != null) {
+      log.w("Failed request body: $responseErrorBody")
+    }
+
+    throw RuntimeException("Failed request to delete device. " + response.raw())
+  }
+
   fun getDeviceInterests(deviceId: String): Set<String> {
     val response =
         service.getDeviceInterests(
