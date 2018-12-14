@@ -2,7 +2,9 @@ package com.pusher.pushnotifications
 
 import java.util.regex.Pattern
 import android.content.Context
+import android.os.Handler
 import android.os.HandlerThread
+import android.os.Looper
 import com.google.firebase.iid.FirebaseInstanceId
 import com.pusher.pushnotifications.api.PushNotificationsAPI
 import com.pusher.pushnotifications.fcm.MessagingService
@@ -215,5 +217,6 @@ class PushNotificationsInstance(
    */
   fun setOnSubscriptionsChangedListener(listener: SubscriptionsChangedListener) {
     onSubscriptionsChangedListener = listener
+    serverSyncHandler.setOnSubscriptionsChangedListener(listener)
   }
 }

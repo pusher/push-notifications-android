@@ -4,6 +4,7 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
 import android.os.Message
+import com.pusher.pushnotifications.SubscriptionsChangedListener
 import com.pusher.pushnotifications.api.PushNotificationsAPI
 import com.pusher.pushnotifications.api.PushNotificationsAPIBadRequest
 import com.pusher.pushnotifications.api.PushNotificationsAPIDeviceNotFound
@@ -24,7 +25,7 @@ class ServerSyncHandler(
     private val jobQueue: PersistentJobQueue<ServerSyncJob>,
     looper: Looper
 ): Handler(looper) {
-  private val serverSyncProcessHandlerHandler = {
+  private val serverSyncProcessHandler = {
     val handlerThread = HandlerThread(looper.thread.name + "-inner-worker")
     handlerThread.start()
 
@@ -35,8 +36,12 @@ class ServerSyncHandler(
     // when the app first launches, we should queue up all of the outstanding
     // jobs in the queue so we can pick up where we have left off
     jobQueue.asIterable().forEach { job ->
-      serverSyncProcessHandlerHandler.sendMessage(Message().also { it.obj = job })
+      serverSyncProcessHandler.sendMessage(Message().also { it.obj = job })
     }
+  }
+
+  fun setOnSubscriptionsChangedListener(onSubscriptionsChangedListener: SubscriptionsChangedListener) {
+    serverSyncProcessHandler.onSubscriptionsChangedListener = onSubscriptionsChangedListener
   }
 
   override fun handleMessage(msg: Message) {
@@ -46,7 +51,7 @@ class ServerSyncHandler(
 
     val clonedMsg = Message()
     clonedMsg.obj = msg.obj
-    serverSyncProcessHandlerHandler.sendMessage(clonedMsg)
+    serverSyncProcessHandler.sendMessage(clonedMsg)
   }
 
   companion object {
@@ -86,6 +91,8 @@ class ServerSyncProcessHandler(
   private val log = Logger.get(this::class)
   private val started: Boolean
   get() = deviceStateStore.deviceId != null
+
+  internal var onSubscriptionsChangedListener: SubscriptionsChangedListener? = null
 
   private fun recreateDevice(fcmToken: String) {
     // Register device with Errol
@@ -148,7 +155,12 @@ class ServerSyncProcessHandler(
       // Replace interests with the result
       if (localInterestWillChange) {
         deviceStateStore.interests = interests
-        // TODO: call the callback in the UI thread somehow
+        onSubscriptionsChangedListener?.let { listener ->
+          // always using the UI thread
+          Handler(Looper.getMainLooper()).post {
+            listener.onSubscriptionsChanged(interests.toSet())
+          }
+        }
       }
     }
 
