@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.2] - 2018-12-14
+
+### Fixed
+ - Set subscriptions didn't sync interests with server correctly (thanks @julioromano)
+
 ## [1.0.1] - 2018-08-08
 
 ### Changed
