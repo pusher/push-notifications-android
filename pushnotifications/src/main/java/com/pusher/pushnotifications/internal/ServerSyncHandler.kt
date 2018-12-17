@@ -183,17 +183,17 @@ class ServerSyncProcessHandler(
               RetryStrategy.WithInfiniteExpBackOff())
         }
       }
+      jobQueue.pop()
     } catch (e: PushNotificationsAPIBadRequest) {
       // not really recoverable, so log it here and also monitor 400s closely on our backend
       // (this really shouldn't happen)
       log.e("Fail to make a valid request to the server for job ($job), skipping it", e)
+      jobQueue.pop()
     } catch (e: PushNotificationsAPIDeviceNotFound) {
       // server has forgotten about this device, it needs to be recreated
       recreateDevice(deviceStateStore.FCMToken!!)
       processJob(job)
-      return // prevent the additional `jobQueue.pop`
     }
-    jobQueue.pop()
   }
 
   override fun handleMessage(msg: Message) {
