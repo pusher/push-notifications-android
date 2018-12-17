@@ -11,7 +11,6 @@ interface PersistentJobQueue<T: Serializable> {
   fun asIterable(): Iterable<T>
 }
 
-
 class TapeJobQueue<T: Serializable>(file: File): PersistentJobQueue<T> {
   private val queueFile = QueueFile.Builder(file).build()
 
@@ -25,6 +24,7 @@ class TapeJobQueue<T: Serializable>(file: File): PersistentJobQueue<T> {
     queueFile.add(jobBytes)
   }
 
+  @Suppress("unchecked_cast")
   override fun peek(): T? {
     val jobBytes = queueFile.peek() ?: return null
 
@@ -42,6 +42,7 @@ class TapeJobQueue<T: Serializable>(file: File): PersistentJobQueue<T> {
     queueFile.clear()
   }
 
+  @Suppress("unchecked_cast")
   override fun asIterable(): Iterable<T> {
     return queueFile.asIterable().map { jobBytes ->
       val byteInputStream = ByteArrayInputStream(jobBytes)
