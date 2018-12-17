@@ -2,16 +2,18 @@ package com.pusher.pushnotifications
 
 import java.util.regex.Pattern
 import android.content.Context
+import android.os.Build
+import android.os.Handler
+import android.os.HandlerThread
+import android.os.Looper
 import com.google.firebase.iid.FirebaseInstanceId
-import com.pusher.pushnotifications.api.OperationCallback
-import com.pusher.pushnotifications.api.OperationCallbackNoArgs
+import com.pusher.pushnotifications.api.DeviceMetadata
 import com.pusher.pushnotifications.api.PushNotificationsAPI
 import com.pusher.pushnotifications.fcm.MessagingService
-import com.pusher.pushnotifications.internal.DeviceStateStore
-import com.pusher.pushnotifications.internal.OldSDKDeviceStateStore
-import com.pusher.pushnotifications.internal.SDKConfiguration
+import com.pusher.pushnotifications.internal.*
 import com.pusher.pushnotifications.logging.Logger
 import com.pusher.pushnotifications.validation.Validations
+import java.io.File
 
 /**
  * Thrown when the device is re-registered to a different instance id. If you wish to register a
@@ -19,7 +21,7 @@ import com.pusher.pushnotifications.validation.Validations
  *
  * @param message Error message to be shown
  */
-class PusherAlreadyRegisteredException(message: String) : RuntimeException(message) {}
+class PusherAlreadyRegisteredException(message: String) : RuntimeException(message)
 
 /**
  * Interacts with the Pusher service to subscribe and unsubscribe from interests.
@@ -33,11 +35,21 @@ class PushNotificationsInstance(
   private val log = Logger.get(this::class)
 
   private val sdkConfig = SDKConfiguration(context)
-  private val api = PushNotificationsAPI(instanceId, sdkConfig.overrideHostURL)
   private val deviceStateStore = DeviceStateStore(context)
   private val oldSDKDeviceStateStore = OldSDKDeviceStateStore(context)
-  private val jobQueue: ArrayList<() -> Boolean> = ArrayList()
   private var onSubscriptionsChangedListener: SubscriptionsChangedListener? = null
+
+  private val serverSyncHandler = {
+    val handlerThread = HandlerThread("ServerSyncHandler-$instanceId")
+    handlerThread.start()
+
+    ServerSyncHandler(
+        api = PushNotificationsAPI(instanceId, sdkConfig.overrideHostURL),
+        deviceStateStore = deviceStateStore,
+        jobQueue = TapeJobQueue(File(context.filesDir, "$instanceId.jobqueue")),
+        looper = handlerThread.looper
+    )
+  }()
 
   init {
     Validations.validateApplicationIcon(context)
@@ -94,46 +106,17 @@ class PushNotificationsInstance(
    * the Pusher services.
    */
   fun start(): PushNotificationsInstance {
-    deviceStateStore.deviceId?.let {
-      api.deviceId = it
-      log.i("PushNotifications device id: $it")
-    }
-
-    deviceStateStore.FCMToken?.let {
-      api.fcmToken = it
-    }
-
     val handleFcmToken = { fcmToken: String ->
-      api.registerOrRefreshFCM(fcmToken, oldSDKDeviceStateStore.clientIds(), {
-        object : OperationCallback<PushNotificationsAPI.RegisterDeviceResult> {
-          override fun onSuccess(result: PushNotificationsAPI.RegisterDeviceResult) {
-            if (deviceStateStore.deviceId == null) {
-              synchronized(deviceStateStore) {
-                val previousLocalInterests = deviceStateStore.interests
-                deviceStateStore.interests = result.initialInterests.toMutableSet()
-
-                jobQueue.forEach({ job -> job() })
-
-                api.setSubscriptions(result.deviceId, deviceStateStore.interests, OperationCallbackNoArgs.noop)
-
-                if (!previousLocalInterests.equals(deviceStateStore.interests)) {
-                  onSubscriptionsChangedListener?.onSubscriptionsChanged(deviceStateStore.interests)
-                }
-              }
-
-              jobQueue.clear()
-              log.i("Successfully started PushNotifications")
-            }
-
-            deviceStateStore.deviceId = result.deviceId
-            deviceStateStore.FCMToken = fcmToken
-          }
-
-          override fun onFailure(t: Throwable) {
-            log.w("Failed to start PushNotifications", t)
-          }
+      synchronized(deviceStateStore) {
+        if (deviceStateStore.startHasBeenCalled) {
+          serverSyncHandler.sendMessage(ServerSyncHandler.refreshToken(fcmToken))
+        } else {
+          serverSyncHandler.sendMessage(ServerSyncHandler.start(fcmToken, oldSDKDeviceStateStore.clientIds()))
+          deviceStateStore.startHasBeenCalled = true
         }
-      }())
+      }
+
+      Unit
     }
 
     MessagingService.onRefreshToken = handleFcmToken
@@ -161,17 +144,9 @@ class PushNotificationsInstance(
     }
 
     synchronized(deviceStateStore) {
-      val deviceId = deviceStateStore.deviceId
       val haveInterestsChanged = addInterestToStore(interest)
-
-      if (deviceId != null) {
-        if (haveInterestsChanged) {
-          api.subscribe(deviceId, interest, OperationCallbackNoArgs.noop)
-        }
-      } else {
-        jobQueue += fun(): Boolean = addInterestToStore(interest)
-      }
       if (haveInterestsChanged) {
+        serverSyncHandler.sendMessage(ServerSyncHandler.subscribe(interest))
         onSubscriptionsChangedListener?.onSubscriptionsChanged(deviceStateStore.interests)
       }
     }
@@ -184,17 +159,10 @@ class PushNotificationsInstance(
    */
   fun unsubscribe(interest: String) {
     synchronized(deviceStateStore) {
-      val deviceId = deviceStateStore.deviceId
       val haveInterestsChanged = removeInterestFromStore(interest)
 
-      if (deviceId != null) {
-        if (haveInterestsChanged) {
-          api.unsubscribe(deviceId, interest, OperationCallbackNoArgs.noop)
-        }
-      } else {
-        jobQueue += fun (): Boolean = removeInterestFromStore(interest)
-      }
       if (haveInterestsChanged) {
+        serverSyncHandler.sendMessage(ServerSyncHandler.unsubscribe(interest))
         onSubscriptionsChangedListener?.onSubscriptionsChanged(deviceStateStore.interests)
       }
     }
@@ -226,17 +194,10 @@ class PushNotificationsInstance(
     }
 
     synchronized(deviceStateStore) {
-      val deviceId = deviceStateStore.deviceId
       val haveInterestsChanged = replaceAllInterestsInStore(interests)
 
-      if (deviceId != null) {
-        if (haveInterestsChanged) {
-          api.setSubscriptions(deviceId, interests, OperationCallbackNoArgs.noop)
-        }
-      } else {
-        jobQueue += fun (): Boolean = replaceAllInterestsInStore(interests)
-      }
       if (haveInterestsChanged) {
+        serverSyncHandler.sendMessage(ServerSyncHandler.setSubscriptions(deviceStateStore.interests))
         onSubscriptionsChangedListener?.onSubscriptionsChanged(deviceStateStore.interests)
       }
     }
@@ -258,5 +219,12 @@ class PushNotificationsInstance(
    */
   fun setOnSubscriptionsChangedListener(listener: SubscriptionsChangedListener) {
     onSubscriptionsChangedListener = listener
+    serverSyncHandler.setOnSubscriptionsChangedListener(listener)
+  }
+
+  internal fun onApplicationStarted() {
+    val deviceMetadata = DeviceMetadata(BuildConfig.VERSION_NAME, Build.VERSION.RELEASE)
+
+    serverSyncHandler.sendMessage(ServerSyncHandler.applicationStart(deviceMetadata))
   }
 }

@@ -1,11 +1,16 @@
 package com.example.pushnotificationsintegrationtests
 
+import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
 import fi.iki.elonen.NanoHTTPD
 import java.lang.Exception
+import java.nio.charset.Charset
+import kotlin.reflect.KClass
+
+private val gson = Gson()
 
 abstract class NanoHTTPDRouter(val port: Int): NanoHTTPD(port) {
   val mimeTypeJSON = "application/json"
-  val notFoundResponse = NanoHTTPD.newFixedLengthResponse(Response.Status.NOT_FOUND, NanoHTTPD.MIME_PLAINTEXT, "")
 
   private val routes = mutableListOf<(session: NanoHTTPD.IHTTPSession) -> NanoHTTPD.Response?>()
 
@@ -22,34 +27,62 @@ abstract class NanoHTTPDRouter(val port: Int): NanoHTTPD(port) {
       }
     }
 
-    return notFoundResponse
+    return NanoHTTPD.newFixedLengthResponse(Response.Status.NOT_FOUND, NanoHTTPD.MIME_PLAINTEXT, "")
   }
 
-  fun head(pathTemplate: String, f: (session: NanoHTTPD.IHTTPSession, Map<String, String>) -> NanoHTTPD.Response) {
+  data class Request(val session: NanoHTTPD.IHTTPSession, val params: Map<String, String>, val body: ByteArray) {
+    fun <T: Any> entity(kotlinClass: KClass<T>, f: Request.(e: T) -> NanoHTTPD.Response): NanoHTTPD.Response {
+      return try {
+        val parsedEntity = gson.fromJson<T>(body.toString(Charset.forName("UTF-8")), kotlinClass.java)
+        f(parsedEntity)
+      } catch (_: JsonSyntaxException){
+        complete(Response.Status.BAD_REQUEST)
+      }
+    }
+
+    fun complete(status: NanoHTTPD.Response.Status): NanoHTTPD.Response {
+      return NanoHTTPD.newFixedLengthResponse(status, NanoHTTPD.MIME_PLAINTEXT, "")
+    }
+
+    fun <T> complete(status: NanoHTTPD.Response.Status, value: T): NanoHTTPD.Response {
+      val jsonString = gson.toJson(value)
+
+      return NanoHTTPD.newFixedLengthResponse(status, "application/json", jsonString)
+    }
+  }
+
+  fun head(pathTemplate: String, f: Request.() -> NanoHTTPD.Response) {
     routes += handle(Method.HEAD, pathTemplate, f)
   }
 
-  fun get(pathTemplate: String, f: (session: NanoHTTPD.IHTTPSession, Map<String, String>) -> NanoHTTPD.Response) {
+  fun get(pathTemplate: String, f: Request.() -> NanoHTTPD.Response) {
     routes += handle(Method.GET, pathTemplate, f)
   }
 
-  fun post(pathTemplate: String, f: (session: NanoHTTPD.IHTTPSession, Map<String, String>) -> NanoHTTPD.Response) {
+  fun post(pathTemplate: String, f: Request.() -> NanoHTTPD.Response) {
     routes += handle(Method.POST, pathTemplate, f)
   }
 
-  fun put(pathTemplate: String, f: (session: NanoHTTPD.IHTTPSession, Map<String, String>) -> NanoHTTPD.Response) {
+  fun put(pathTemplate: String, f: Request.() -> NanoHTTPD.Response) {
     routes += handle(Method.PUT, pathTemplate, f)
   }
 
-  fun delete(pathTemplate: String, f: (session: NanoHTTPD.IHTTPSession, Map<String, String>) -> NanoHTTPD.Response) {
+  fun delete(pathTemplate: String, f: Request.() -> NanoHTTPD.Response) {
     routes += handle(Method.DELETE, pathTemplate, f)
   }
 
-  fun handle(method: Method, pathTemplate: String, f: (session: NanoHTTPD.IHTTPSession, Map<String, String>) -> NanoHTTPD.Response?): (session: NanoHTTPD.IHTTPSession) -> NanoHTTPD.Response? {
+  fun handle(method: Method, pathTemplate: String, f: Request.() -> NanoHTTPD.Response?): (session: NanoHTTPD.IHTTPSession) -> NanoHTTPD.Response? {
     return { session ->
       if (session.method == method) {
         extractParams(pathTemplate, session.uri)?.let { extractedParms ->
-          f(session, extractedParms)
+          val contentLength = try {
+            Integer.parseInt(session.headers["content-length"])
+          } catch (e: Throwable) {
+            0
+          }
+          val buffer = ByteArray(contentLength)
+          session.inputStream.read(buffer, 0, contentLength)
+          f(Request(session, extractedParms, buffer))
         }
       }
       else {
@@ -78,6 +111,12 @@ abstract class NanoHTTPDRouter(val port: Int): NanoHTTPD(port) {
           cursor += extractedParam.length
         }
       }
+
+      // has the `pathTemplate` been fully matched
+      if (cursor != path.length) {
+        return null
+      }
+
     } catch (_: Exception) {
       return null
     }

@@ -2,6 +2,7 @@ package com.pusher.pushnotifications.api;
 
 import retrofit2.Call
 import retrofit2.http.*
+import java.io.Serializable
 
 interface PushNotificationService {
   @POST("instances/{instanceId}/devices/fcm")
@@ -69,7 +70,7 @@ data class RegisterRequest(
 data class DeviceMetadata (
   val sdkVersion: String,
   val androidVersion: String
-)
+): Serializable
 
 data class RegisterResponse(
   val id: String,

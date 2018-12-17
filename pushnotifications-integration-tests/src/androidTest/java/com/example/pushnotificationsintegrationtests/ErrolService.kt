@@ -9,6 +9,18 @@ interface ErrolService {
           @Path("instanceId") instanceId: String,
           @Path("deviceId") deviceId: String
   ): Call<GetDeviceResponse>
+
+  @DELETE("instances/{instanceId}/devices/fcm/{deviceId}")
+  fun deleteDevice(
+          @Path("instanceId") instanceId: String,
+          @Path("deviceId") deviceId: String
+  ): Call<Void>
+
+  @GET("instances/{instanceId}/devices/fcm/{deviceId}/interests")
+  fun getDeviceInterests(
+          @Path("instanceId") instanceId: String,
+          @Path("deviceId") deviceId: String
+  ): Call<GetInterestsResponse>
 }
 
 data class NOKResponse(
@@ -23,11 +35,14 @@ val unknownNOKResponse = NOKResponse("Unknown Service Error", "Something went wr
 
 data class GetDeviceResponse(
   val id: String,
-  val instanceId: String,
   val deviceMetadata: DeviceMetadata
 )
 
 data class DeviceMetadata (
   val sdkVersion: String,
   val androidVersion: String
+)
+
+data class GetInterestsResponse (
+    val interests: Set<String>
 )

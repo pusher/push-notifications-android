@@ -3,15 +3,65 @@ package com.pusher.pushnotifications.api
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.pusher.pushnotifications.BuildConfig
-import com.pusher.pushnotifications.api.retrofit2.RequestCallbackWithExpBackoff
 import com.pusher.pushnotifications.logging.Logger
 import okhttp3.OkHttpClient
-import retrofit2.Call
-import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.lang.RuntimeException
 
-class PushNotificationsAPI(private val instanceId: String, private val overrideHostURL: String?) {
+open class PushNotificationsAPIException: RuntimeException {
+  constructor(message: String): super(message)
+  constructor(cause: Throwable): super(cause)
+}
+
+class PushNotificationsAPIDeviceNotFound: PushNotificationsAPIException("Device not found in the server")
+class PushNotificationsAPIBadRequest: PushNotificationsAPIException("A request to the server has been deemed invalid")
+
+sealed class RetryStrategy<T> {
+  abstract fun retry(f: () -> T): T
+
+  class JustDont<T>: RetryStrategy<T>() {
+    override fun retry(f: () -> T): T {
+      return f()
+    }
+  }
+
+  class WithInfiniteExpBackOff<T>: RetryStrategy<T>() {
+    private var retryCount = 0
+
+    override fun retry(f: () -> T): T {
+      while (true) {
+        try {
+          val result = f()
+          if (result != null) {
+            return result
+          }
+        } catch (e: PushNotificationsAPIDeviceNotFound) {
+          // not recoverable here
+          throw e
+        } catch (e: PushNotificationsAPIBadRequest) {
+          // not recoverable
+          throw e
+        } catch (e: RuntimeException) {
+        }
+
+        retryCount++
+        val delayMs = computeExponentialBackoff(retryCount)
+        Thread.sleep(delayMs)
+      }
+    }
+
+    private fun computeExponentialBackoff(retryCount: Int): Long =
+        Math.min(maxRetryDelayMs, baseRetryDelayMs * Math.pow(2.0, retryCount - 1.0)).toLong()
+
+    companion object {
+      private const val baseRetryDelayMs = 200.0
+      private const val maxRetryDelayMs = 64000.0
+    }
+  }
+}
+
+class PushNotificationsAPI(private val instanceId: String, overrideHostURL: String?) {
   private val baseUrl =
     overrideHostURL ?: "https://$instanceId.pushnotifications.pusher.com/device_api/v1/"
 
@@ -31,9 +81,6 @@ class PushNotificationsAPI(private val instanceId: String, private val overrideH
       .build()
       .create(PushNotificationService::class.java)
 
-  var deviceId: String? = null
-  var fcmToken: String? = null
-
   // Handles the JsonSyntaxException properly
   private fun safeExtractJsonError(possiblyJson: String): NOKResponse {
     return try {
@@ -47,172 +94,181 @@ class PushNotificationsAPI(private val instanceId: String, private val overrideH
   data class RegisterDeviceResult(
       val deviceId: String,
       val initialInterests: Set<String>
-    )
+  )
 
-  // TODO: Separate register and refresh into separate functions
-  fun registerOrRefreshFCM(
+  @Throws(PushNotificationsAPIException::class)
+  fun registerFCM(
       token: String,
       knownPreviousClientIds: List<String>,
-      operationCallback: OperationCallback<RegisterDeviceResult>
+      retryStrategy: RetryStrategy<RegisterDeviceResult>
+  ): RegisterDeviceResult {
+    return retryStrategy.retry(fun(): RegisterDeviceResult{
+      val requestBody = RegisterRequest(
+          token,
+          knownPreviousClientIds,
+          DeviceMetadata(BuildConfig.VERSION_NAME, android.os.Build.VERSION.RELEASE)
+      )
+      val response = service.register(instanceId, requestBody).execute()
+      if (response.code() == 400) {
+        // not throwing a `PushNotificationsAPIBadRequest` here so that it still retries this request.
+        // it would make the code that calls this more complex to handle it.
+        // this really shouldn't happen anyway
+        log.e("Critical error when registering a new device (error body: ${response?.errorBody()})")
+      }
+
+      val responseBody = response?.body()
+      if (responseBody != null && response.code() in 200..299) {
+        return RegisterDeviceResult(
+            deviceId = responseBody.id,
+            initialInterests = responseBody.initialInterestSet)
+      }
+
+      val responseErrorBody = response?.errorBody()
+      if (responseErrorBody != null) {
+        val error = safeExtractJsonError(responseErrorBody.string())
+        log.w("Failed to register device: $error")
+        throw PushNotificationsAPIException(error)
+      }
+
+      throw PushNotificationsAPIException("Unknown API error")
+    })
+  }
+
+  fun subscribe(
+    deviceId: String,
+    interest: String,
+    retryStrategy: RetryStrategy<Unit>
   ) {
-    deviceId?.let { dId ->
-      if (fcmToken != null && fcmToken != token) {
-        fcmToken = token // optimistic, prevents multiple calls for the same fcmToken
-
-        service.refreshToken(instanceId, dId, RefreshToken(token))
-          .enqueue(object : RequestCallbackWithExpBackoff<Void>() {
-            override fun onResponse(call: Call<Void>?, response: Response<Void>?) {
-              if (response?.code() == 404) {
-                deviceId = null
-                fcmToken = null
-
-                registerOrRefreshFCM(token, knownPreviousClientIds, operationCallback)
-                return
-              }
-
-              response?.errorBody()?.let { responseErrorBody ->
-                fcmToken = null
-
-                val error = safeExtractJsonError(responseErrorBody.string())
-                log.w("Failed to register device: $error")
-                operationCallback.onFailure(error)
-                return
-              }
-
-              operationCallback.onSuccess(
-                RegisterDeviceResult(
-                    deviceId = dId,
-                    initialInterests = emptySet()))
-            }
-          })
+    return retryStrategy.retry(fun() {
+      val response = service.subscribe(instanceId, deviceId, interest).execute()
+      if (response.code() == 404) {
+        throw PushNotificationsAPIDeviceNotFound()
       }
-      return
-    }
+      if (response.code() == 400) {
+        throw PushNotificationsAPIBadRequest()
+      }
 
-    if (fcmToken == token) {
-      return // Registration already in progress
-    }
-
-    fcmToken = token
-
-    val call = service.register(
-        instanceId,
-        RegisterRequest(
-            token,
-            knownPreviousClientIds,
-            DeviceMetadata(BuildConfig.VERSION_NAME, android.os.Build.VERSION.RELEASE)
-        )
-    )
-    call.enqueue(object : RequestCallbackWithExpBackoff<RegisterResponse>() {
-      override fun onResponse(call: Call<RegisterResponse>?, response: Response<RegisterResponse>?) {
-        val responseBody = response?.body()
-        if (responseBody != null) {
-          deviceId = responseBody.id
-
-          operationCallback.onSuccess(
-              RegisterDeviceResult(
-                  deviceId = responseBody.id,
-                  initialInterests = responseBody.initialInterestSet))
-
-          return
-        }
-
+      if (response.code() !in 200..299) {
         val responseErrorBody = response?.errorBody()
         if (responseErrorBody != null) {
-          val error =
-              try {
-                gson.fromJson(responseErrorBody.string(), RegisterResponseError::class.java)
-              } catch (jsonException: JsonSyntaxException) {
-                log.w("Failed to parse json `${responseErrorBody.string()}`", jsonException)
-                unknownNOKResponse
-              }
-
-          log.w("Failed to register device: $error")
-          fcmToken = null
-          operationCallback.onFailure(error)
+          val error = safeExtractJsonError(responseErrorBody.string())
+          log.w("Failed to subscribe to interest: $error")
+          throw PushNotificationsAPIException(error)
         }
+
+        throw PushNotificationsAPIException("Unknown API error")
       }
     })
   }
 
-  fun subscribe(deviceId: String, interest: String, operationCallback: OperationCallbackNoArgs) {
-    service.subscribe(instanceId, deviceId, interest)
-        .enqueue(object : RequestCallbackWithExpBackoff<Void>() {
-          override fun onResponse(call: Call<Void>?, response: Response<Void>?) {
-            if (response != null && response.code() >= 200 && response.code() < 300) {
-              log.d("Successfully subscribed to interest '$interest'")
-              operationCallback.onSuccess()
-              return
-            }
+  fun unsubscribe(
+      deviceId: String,
+      interest: String,
+      retryStrategy: RetryStrategy<Unit>
+  ) {
+    return retryStrategy.retry(fun() {
+      val response = service.unsubscribe(instanceId, deviceId, interest).execute()
+      if (response.code() == 404) {
+        throw PushNotificationsAPIDeviceNotFound()
+      }
+      if (response.code() == 400) {
+        throw PushNotificationsAPIBadRequest()
+      }
 
-            val responseErrorBody = response?.errorBody()
-            if (responseErrorBody != null) {
-              val error = safeExtractJsonError(responseErrorBody.string())
-              log.w("Failed to subscribe to interest: $error")
-              operationCallback.onFailure(error)
-            }
-          }
-        })
-  }
-
-  fun unsubscribe(deviceId: String, interest: String, operationCallback: OperationCallbackNoArgs) {
-    service.unsubscribe(instanceId, deviceId, interest)
-        .enqueue(object : RequestCallbackWithExpBackoff<Void>() {
-          override fun onResponse(call: Call<Void>?, response: Response<Void>?) {
-            if (response != null && response.code() >= 200 && response.code() < 300) {
-              log.d("Successfully unsubscribed to interest '$interest'")
-              operationCallback.onSuccess()
-              return
-            }
-
-            val responseErrorBody = response?.errorBody()
-            if (responseErrorBody != null) {
-              val error = safeExtractJsonError(responseErrorBody.string())
-              log.w("Failed to unsubscribe to interest: $error")
-              operationCallback.onFailure(error)
-            }
-          }
-        })
-  }
-
-  fun setSubscriptions(deviceId: String, interests: Set<String>, operationCallback: OperationCallbackNoArgs) {
-    service.setSubscriptions(
-        instanceId, deviceId, SetSubscriptionsRequest(interests)
-    ).enqueue(object : RequestCallbackWithExpBackoff<Void>() {
-      override fun onResponse(call: Call<Void>?, response: Response<Void>?) {
-        if (response != null && response.code() >= 200 && response.code() < 300) {
-          log.d("Successfully updated the interest set")
-          operationCallback.onSuccess()
-          return
-        }
-
+      if (response.code() !in 200..299) {
         val responseErrorBody = response?.errorBody()
         if (responseErrorBody != null) {
           val error = safeExtractJsonError(responseErrorBody.string())
-          log.w("Failed to update the interest set: $error")
-          operationCallback.onFailure(error)
+          log.w("Failed to unsubscribe from interest: $error")
+          throw PushNotificationsAPIException(error)
         }
+
+        throw PushNotificationsAPIException("Unknown API error")
       }
     })
   }
 
-  fun setMetadata(deviceId: String, metadata: DeviceMetadata, operationCallback: OperationCallbackNoArgs) {
-    service.setMetadata(
-        instanceId, deviceId, metadata
-    ).enqueue(object : RequestCallbackWithExpBackoff<Void>() {
-      override fun onResponse(call: Call<Void>?, response: Response<Void>?) {
-        if (response != null && response.code() >= 200 && response.code() < 300) {
-          log.d("Successfully set metadata")
-          operationCallback.onSuccess()
-          return
-        }
+  fun setSubscriptions(deviceId: String, interests: Set<String>, retryStrategy: RetryStrategy<Unit>) {
+    return retryStrategy.retry(fun() {
+      val response = service.setSubscriptions(
+          instanceId,
+          deviceId,
+          SetSubscriptionsRequest(interests)
+      ).execute()
+      if (response.code() == 404) {
+        throw PushNotificationsAPIDeviceNotFound()
+      }
+      if (response.code() == 400) {
+        throw PushNotificationsAPIBadRequest()
+      }
 
+      if (response.code() !in 200..299) {
         val responseErrorBody = response?.errorBody()
         if (responseErrorBody != null) {
           val error = safeExtractJsonError(responseErrorBody.string())
-          log.w("Failed to set metadata: $error")
-          operationCallback.onFailure(error)
+          log.w("Failed to set subscriptions: $error")
+          throw PushNotificationsAPIException(error)
         }
+
+        throw PushNotificationsAPIException("Unknown API error")
+      }
+    })
+  }
+
+  fun refreshToken(deviceId: String, fcmToken: String, retryStrategy: RetryStrategy<Unit>) {
+    return retryStrategy.retry(fun() {
+      val response = service.refreshToken(
+          instanceId,
+          deviceId,
+          RefreshToken(fcmToken)
+      ).execute()
+      if (response.code() == 404) {
+        throw PushNotificationsAPIDeviceNotFound()
+      }
+      if (response.code() == 400) {
+        throw PushNotificationsAPIBadRequest()
+      }
+
+      if (response.code() !in 200..299) {
+        val responseErrorBody = response?.errorBody()
+        if (responseErrorBody != null) {
+          val error = safeExtractJsonError(responseErrorBody.string())
+          log.w("Failed to refresh FCM token: $error")
+          throw PushNotificationsAPIException(error)
+        }
+
+        throw PushNotificationsAPIException("Unknown API error")
+      }
+    })
+  }
+
+  fun setMetadata(
+      deviceId: String,
+      metadata: DeviceMetadata,
+      retryStrategy: RetryStrategy<Unit>
+  ) {
+    return retryStrategy.retry(fun() {
+      val response = service.setMetadata(
+          instanceId,
+          deviceId,
+          metadata
+      ).execute()
+      if (response.code() == 404) {
+        throw PushNotificationsAPIDeviceNotFound()
+      }
+      if (response.code() == 400) {
+        throw PushNotificationsAPIBadRequest()
+      }
+
+      if (response.code() !in 200..299) {
+        val responseErrorBody = response?.errorBody()
+        if (responseErrorBody != null) {
+          val error = safeExtractJsonError(responseErrorBody.string())
+          log.w("Failed to set device metadata: $error")
+          throw PushNotificationsAPIException(error)
+        }
+
+        throw PushNotificationsAPIException("Unknown API error")
       }
     })
   }

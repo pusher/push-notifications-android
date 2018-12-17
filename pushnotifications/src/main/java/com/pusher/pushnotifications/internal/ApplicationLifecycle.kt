@@ -12,6 +12,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import com.pusher.pushnotifications.BuildConfig
+import com.pusher.pushnotifications.PushNotificationsInstance
 import com.pusher.pushnotifications.api.DeviceMetadata
 import com.pusher.pushnotifications.api.OperationCallbackNoArgs
 import com.pusher.pushnotifications.api.PushNotificationsAPI
@@ -69,46 +70,8 @@ class PushNotificationsInitProvider: ContentProvider() {
     val deviceStateStore = DeviceStateStore(context)
 
     deviceStateStore.instanceId?.let { instanceId ->
-      deviceStateStore.deviceId?.let { deviceId ->
-        val md5Digest = MessageDigest.getInstance("MD5")
-        val interestsSorted = deviceStateStore.interests.sorted().joinToString()
-
-        md5Digest.update(interestsSorted.toByteArray())
-        val interestsHash = BigInteger(1, md5Digest.digest()).toString(16)
-
-        val sdkConfig = SDKConfiguration(context)
-        val api = PushNotificationsAPI(instanceId, sdkConfig.overrideHostURL)
-        api.deviceId = deviceId
-
-        if (interestsHash != deviceStateStore.serverConfirmedInterestsHash) {
-          api.setSubscriptions(deviceId, deviceStateStore.interests, object: OperationCallbackNoArgs {
-            override fun onSuccess() {
-              deviceStateStore.serverConfirmedInterestsHash = interestsHash
-            }
-
-            override fun onFailure(t: Throwable) {
-              // Nothing to do here.
-            }
-          })
-        }
-
-        val hasMetadataChanged =
-            deviceStateStore.sdkVersion != BuildConfig.VERSION_NAME
-            || deviceStateStore.osVersion != Build.VERSION.RELEASE
-        if (hasMetadataChanged) {
-          val metadata = DeviceMetadata(BuildConfig.VERSION_NAME, Build.VERSION.RELEASE)
-          api.setMetadata(deviceId, metadata, operationCallback = object: OperationCallbackNoArgs {
-            override fun onSuccess() {
-              deviceStateStore.sdkVersion = BuildConfig.VERSION_NAME
-              deviceStateStore.osVersion = Build.VERSION.RELEASE
-            }
-
-            override fun onFailure(t: Throwable) {
-              log.w("Failed to persist metadata.", t)
-            }
-          })
-        }
-      }
+      val pni = PushNotificationsInstance(context, instanceId)
+      pni.onApplicationStarted()
     }
 
     (context.applicationContext as? Application).apply {

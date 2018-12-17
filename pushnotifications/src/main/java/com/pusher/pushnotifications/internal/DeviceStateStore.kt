@@ -10,6 +10,7 @@ class DeviceStateStore(context: Context) {
   private val preferencesSDKVersionKey = "sdkVersion"
   private val preferencesInterestsKey = "interests"
   private val serverConfirmedInterestsHashKey = "serverConfirmedInterestsHash"
+  private val startHasBeenCalledKey = "startHasBeenCalled"
 
   private val preferences = context.getSharedPreferences(
     "com.pusher.pushnotifications.PushNotificationsInstance", Context.MODE_PRIVATE)
@@ -43,6 +44,10 @@ class DeviceStateStore(context: Context) {
   var serverConfirmedInterestsHash: String?
     get() = preferences.getString(serverConfirmedInterestsHashKey, null)
     set(value) = preferences.edit().putString(serverConfirmedInterestsHashKey, value).apply()
+
+  var startHasBeenCalled: Boolean
+    get() = preferences.getBoolean(startHasBeenCalledKey, false)
+    set(value) = preferences.edit().putBoolean(startHasBeenCalledKey, value).apply()
 
   fun clear() = preferences.edit().clear().commit()
 }

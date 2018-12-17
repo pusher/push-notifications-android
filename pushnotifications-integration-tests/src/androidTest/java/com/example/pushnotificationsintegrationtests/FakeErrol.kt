@@ -5,17 +5,31 @@ import java.util.*
 
 data class FakeErrolDevice(
   val id: String,
+  val token: String,
   val interests: MutableSet<String>
 ) {
   companion object {
-    fun New(interests: MutableSet<String>): FakeErrolDevice {
-      return FakeErrolDevice(UUID.randomUUID().toString(), interests)
+    fun New(token: String, interests: MutableSet<String>): FakeErrolDevice {
+      return FakeErrolDevice(UUID.randomUUID().toString(), token, interests)
     }
   }
 }
 
 data class FakeErrolStorage(
   val devices: MutableMap<String, FakeErrolDevice>
+)
+
+data class RegisterDeviceRequest(
+    val token: String
+)
+
+data class NewDeviceResponse(
+    val id: String,
+    val initialInterestSet: Set<String>
+)
+
+data class SetSubscriptionsRequest(
+    val interests: Set<String>
 )
 
 class FakeErrol(port: Int): NanoHTTPDRouter(port) {
@@ -26,42 +40,84 @@ class FakeErrol(port: Int): NanoHTTPDRouter(port) {
   }
 
   override fun setupRoutes() {
-    post("/instances/{instanceId}/devices/fcm") { session, params ->
-      val device = FakeErrolDevice.New(mutableSetOf())
-      storage.devices[device.id] = device
+    post("/instances/{instanceId}/devices/fcm") {
+      entity(RegisterDeviceRequest::class) { registerDeviceRequest ->
+        val device = FakeErrolDevice.New(registerDeviceRequest.token, mutableSetOf())
+        storage.devices[device.id] = device
 
-      NanoHTTPD.newFixedLengthResponse(Response.Status.OK, mimeTypeJSON, """
-        {
-          "id": "${device.id}",
-          "initialInterestSet": []
-        }
-      """.trimIndent())
-    }
-
-    get("/instances/{instanceId}/devices/fcm/{deviceId}") { session, params ->
-      val device = storage.devices[params["deviceId"]]
-      if (device != null) {
-        NanoHTTPD.newFixedLengthResponse(Response.Status.OK, mimeTypeJSON, """
-          {
-            "id": "${device.id}",
-            "metadata": {
-              "sdkVersion": "",
-              "androidVersion": ""
-            }
-          }
-        """.trimIndent())
-      } else {
-        notFoundResponse
+        complete(Response.Status.OK,
+            NewDeviceResponse(id = device.id, initialInterestSet = emptySet()))
       }
     }
 
+    put("/instances/{instanceId}/devices/fcm/{deviceId}/token") {
+      val device = storage.devices[params["deviceId"]]
+      if (device != null) {
+        entity(RegisterDeviceRequest::class) { registerDeviceRequest ->
+          val device = FakeErrolDevice.New(registerDeviceRequest.token, mutableSetOf())
+          storage.devices[params["deviceId"]!!] = device.copy(token = registerDeviceRequest.token)
 
-    put("/instances/{instanceId}/devices/fcm/{deviceId}/interests") { session, params ->
-      NanoHTTPD.newFixedLengthResponse(Response.Status.OK, mimeTypeJSON, "")
+          complete(Response.Status.OK)
+        }
+      } else {
+        complete(Response.Status.NOT_FOUND)
+      }
     }
 
-    put("/instances/{instanceId}/devices/fcm/{deviceId}/metadata") { session, params ->
-      NanoHTTPD.newFixedLengthResponse(Response.Status.OK, mimeTypeJSON, "")
+    get("/instances/{instanceId}/devices/fcm/{deviceId}") {
+      val device = storage.devices[params["deviceId"]]
+      if (device != null) {
+        complete(Response.Status.OK, GetDeviceResponse(id = device.id, deviceMetadata = DeviceMetadata("", "")))
+      } else {
+        complete(Response.Status.NOT_FOUND)
+      }
+    }
+
+    delete("/instances/{instanceId}/devices/fcm/{deviceId}") {
+      val device = storage.devices[params["deviceId"]]
+      if (device != null) {
+        storage.devices -= params["deviceId"]!!
+        complete(Response.Status.OK)
+      } else {
+        complete(Response.Status.OK)
+      }
+    }
+
+    get("/instances/{instanceId}/devices/fcm/{deviceId}/interests") {
+      val device = storage.devices[params["deviceId"]]
+      if (device != null) {
+        complete(Response.Status.OK, GetInterestsResponse(interests = device.interests))
+      } else {
+        complete(Response.Status.NOT_FOUND)
+      }
+    }
+
+    post("/instances/{instanceId}/devices/fcm/{deviceId}/interests/{interest}") {
+      val device = storage.devices[params["deviceId"]]
+      if (device != null) {
+        device.interests.add(params["interest"]!!)
+        complete(Response.Status.OK)
+      } else {
+        complete(Response.Status.NOT_FOUND)
+      }
+    }
+
+    put("/instances/{instanceId}/devices/fcm/{deviceId}/interests") {
+      entity(SetSubscriptionsRequest::class) { setSubscriptions ->
+        val device = storage.devices[params["deviceId"]]
+        if (device != null) {
+          device.interests.clear()
+          device.interests.addAll(setSubscriptions.interests)
+
+          complete(Response.Status.OK)
+        } else {
+          complete(Response.Status.NOT_FOUND)
+        }
+      }
+    }
+
+    put("/instances/{instanceId}/devices/fcm/{deviceId}/metadata") {
+      complete(Response.Status.OK)
     }
   }
 }
