@@ -4,7 +4,7 @@ import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
 import com.google.firebase.iid.FirebaseInstanceId
 import com.pusher.pushnotifications.PushNotificationsInstance
-import com.pusher.pushnotifications.fcm.MessagingService
+import com.pusher.pushnotifications.SubscriptionsChangedListener
 import com.pusher.pushnotifications.internal.DeviceStateStore
 import org.hamcrest.CoreMatchers.`is`
 import org.hamcrest.CoreMatchers.equalTo
@@ -170,5 +170,46 @@ class DeviceRegistrationTest {
     assertThat(pni.getSubscriptions(), `is`(equalTo(setOf("hello", "potato"))))
     val interestsOnServer = errolClient.getDeviceInterests(newStoredDeviceId!!)
     assertThat(interestsOnServer, `is`(equalTo(setOf("hello", "potato"))))
+  }
+
+  @Test
+  fun onSubscriptionsChangedListenerShouldBeCalledIfInterestsChange() {
+    val pni = PushNotificationsInstance(context, instanceId)
+    var setOnSubscriptionsChangedListenerCalledCount = 0
+    var lastSetOnSubscriptionsChangedListenerCalledWithInterests: Set<String>? = null
+    pni.setOnSubscriptionsChangedListener(object: SubscriptionsChangedListener {
+      override fun onSubscriptionsChanged(interests: Set<String>) {
+        setOnSubscriptionsChangedListenerCalledCount++
+        lastSetOnSubscriptionsChangedListenerCalledWithInterests = interests
+      }
+    })
+
+    pni.subscribe("hello")
+    assertThat(setOnSubscriptionsChangedListenerCalledCount, `is`(equalTo(1)))
+    assertThat(lastSetOnSubscriptionsChangedListenerCalledWithInterests, `is`(equalTo(setOf("hello"))))
+
+    pni.subscribe("hello")
+    assertThat(setOnSubscriptionsChangedListenerCalledCount, `is`(equalTo(1)))
+
+    pni.unsubscribe("hello")
+    assertThat(setOnSubscriptionsChangedListenerCalledCount, `is`(equalTo(2)))
+    assertThat(lastSetOnSubscriptionsChangedListenerCalledWithInterests, `is`(equalTo(setOf())))
+
+    pni.unsubscribe("hello")
+    assertThat(setOnSubscriptionsChangedListenerCalledCount, `is`(equalTo(2)))
+
+    pni.setSubscriptions(setOf("hello", "panda"))
+    assertThat(setOnSubscriptionsChangedListenerCalledCount, `is`(equalTo(3)))
+    assertThat(lastSetOnSubscriptionsChangedListenerCalledWithInterests, `is`(equalTo(setOf("hello", "panda"))))
+
+    pni.setSubscriptions(setOf("hello", "panda"))
+    assertThat(setOnSubscriptionsChangedListenerCalledCount, `is`(equalTo(3)))
+
+    pni.unsubscribeAll()
+    assertThat(setOnSubscriptionsChangedListenerCalledCount, `is`(equalTo(4)))
+    assertThat(lastSetOnSubscriptionsChangedListenerCalledWithInterests, `is`(equalTo(setOf())))
+
+    pni.unsubscribeAll()
+    assertThat(setOnSubscriptionsChangedListenerCalledCount, `is`(equalTo(4)))
   }
 }

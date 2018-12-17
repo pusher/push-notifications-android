@@ -4,12 +4,12 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
 import android.os.Message
-import com.pusher.pushnotifications.api.PushNotificationsAPI
-import com.pusher.pushnotifications.api.PushNotificationsAPIBadRequest
-import com.pusher.pushnotifications.api.PushNotificationsAPIDeviceNotFound
-import com.pusher.pushnotifications.api.RetryStrategy
+import com.pusher.pushnotifications.SubscriptionsChangedListener
+import com.pusher.pushnotifications.api.*
 import com.pusher.pushnotifications.logging.Logger
 import java.io.Serializable
+import java.math.BigInteger
+import java.security.MessageDigest
 
 sealed class ServerSyncJob: Serializable
 data class StartJob(val fcmToken: String, val knownPreviousClientIds: List<String>): ServerSyncJob()
@@ -17,6 +17,7 @@ data class RefreshTokenJob(val newToken: String): ServerSyncJob()
 data class SubscribeJob(val interest: String): ServerSyncJob()
 data class UnsubscribeJob(val interest: String): ServerSyncJob()
 data class SetSubscriptionsJob(val interests: Set<String>): ServerSyncJob()
+data class ApplicationStartJob(val deviceMetadata: DeviceMetadata): ServerSyncJob()
 
 class ServerSyncHandler(
     private val api: PushNotificationsAPI,
@@ -24,7 +25,7 @@ class ServerSyncHandler(
     private val jobQueue: PersistentJobQueue<ServerSyncJob>,
     looper: Looper
 ): Handler(looper) {
-  private val serverSyncProcessHandlerHandler = {
+  private val serverSyncProcessHandler = {
     val handlerThread = HandlerThread(looper.thread.name + "-inner-worker")
     handlerThread.start()
 
@@ -37,6 +38,10 @@ class ServerSyncHandler(
     jobQueue.asIterable().forEach { job ->
       serverSyncProcessHandler.sendMessage(Message().also { it.obj = job })
     }
+  }
+
+  fun setOnSubscriptionsChangedListener(onSubscriptionsChangedListener: SubscriptionsChangedListener) {
+    serverSyncProcessHandler.onSubscriptionsChangedListener = onSubscriptionsChangedListener
   }
 
   override fun handleMessage(msg: Message) {
@@ -62,6 +67,9 @@ class ServerSyncHandler(
 
   fun setSubscriptions(interests: Set<String>): Message =
       Message.obtain().apply { obj = SetSubscriptionsJob(interests) }
+
+  fun applicationStart(deviceMetadata: DeviceMetadata): Message =
+      Message.obtain().apply { obj = ApplicationStartJob(deviceMetadata) }
   }
 }
 
@@ -74,6 +82,8 @@ class ServerSyncProcessHandler(
   private val log = Logger.get(this::class)
   private val started: Boolean
   get() = deviceStateStore.deviceId != null
+
+  internal var onSubscriptionsChangedListener: SubscriptionsChangedListener? = null
 
   private fun recreateDevice(fcmToken: String) {
     // Register device with Errol
@@ -136,7 +146,12 @@ class ServerSyncProcessHandler(
       // Replace interests with the result
       if (localInterestWillChange) {
         deviceStateStore.interests = interests
-        // TODO: call the callback in the UI thread somehow
+        onSubscriptionsChangedListener?.let { listener ->
+          // always using the UI thread
+          Handler(Looper.getMainLooper()).post {
+            listener.onSubscriptionsChanged(interests.toSet())
+          }
+        }
       }
     }
 
@@ -153,6 +168,42 @@ class ServerSyncProcessHandler(
       jobQueue.pop()
     }
     jobQueue.pop() // Also remove start job
+  }
+
+  private fun processApplicationStartJob(job: ApplicationStartJob) {
+    try {
+      val hasMetadataChanged =
+          deviceStateStore.sdkVersion != job.deviceMetadata.sdkVersion
+              || deviceStateStore.osVersion != job.deviceMetadata.androidVersion
+
+      if (hasMetadataChanged) {
+        api.setMetadata(
+            deviceStateStore.deviceId!!,
+            job.deviceMetadata,
+            RetryStrategy.JustDont())
+
+        deviceStateStore.sdkVersion = job.deviceMetadata.sdkVersion
+        deviceStateStore.osVersion = job.deviceMetadata.androidVersion
+      }
+
+      val interests = deviceStateStore.interests
+      val interestsSorted = interests.sorted().joinToString()
+      val md5Digest = MessageDigest.getInstance("MD5")
+      md5Digest.update(interestsSorted.toByteArray())
+      val interestsHash = BigInteger(1, md5Digest.digest()).toString(16)
+
+      if (interestsHash != deviceStateStore.serverConfirmedInterestsHash) {
+        api.setSubscriptions(
+            deviceStateStore.deviceId!!,
+            interests,
+            RetryStrategy.JustDont())
+
+          deviceStateStore.serverConfirmedInterestsHash = interestsHash
+      }
+    } catch (e: PushNotificationsAPIException) {
+      // all these operations are best-effort
+      log.w("Fail to apply some operations on the application start job, skipping it", e)
+    }
   }
 
   private fun processJob(job: ServerSyncJob) {
@@ -181,6 +232,9 @@ class ServerSyncProcessHandler(
               deviceStateStore.deviceId!!,
               job.newToken,
               RetryStrategy.WithInfiniteExpBackOff())
+        }
+        is ApplicationStartJob -> {
+          processApplicationStartJob(job)
         }
       }
       jobQueue.pop()

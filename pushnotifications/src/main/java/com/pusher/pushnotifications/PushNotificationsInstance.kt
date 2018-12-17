@@ -2,8 +2,12 @@ package com.pusher.pushnotifications
 
 import java.util.regex.Pattern
 import android.content.Context
+import android.os.Build
+import android.os.Handler
 import android.os.HandlerThread
+import android.os.Looper
 import com.google.firebase.iid.FirebaseInstanceId
+import com.pusher.pushnotifications.api.DeviceMetadata
 import com.pusher.pushnotifications.api.PushNotificationsAPI
 import com.pusher.pushnotifications.fcm.MessagingService
 import com.pusher.pushnotifications.internal.*
@@ -215,5 +219,12 @@ class PushNotificationsInstance(
    */
   fun setOnSubscriptionsChangedListener(listener: SubscriptionsChangedListener) {
     onSubscriptionsChangedListener = listener
+    serverSyncHandler.setOnSubscriptionsChangedListener(listener)
+  }
+
+  internal fun onApplicationStarted() {
+    val deviceMetadata = DeviceMetadata(BuildConfig.VERSION_NAME, Build.VERSION.RELEASE)
+
+    serverSyncHandler.sendMessage(ServerSyncHandler.applicationStart(deviceMetadata))
   }
 }

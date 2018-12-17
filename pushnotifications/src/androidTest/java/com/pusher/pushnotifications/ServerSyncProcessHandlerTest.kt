@@ -2,6 +2,7 @@ package com.pusher.pushnotifications
 
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
+import com.pusher.pushnotifications.api.DeviceMetadata
 import com.pusher.pushnotifications.api.PushNotificationsAPI
 import com.pusher.pushnotifications.internal.*
 import junit.framework.Assert.assertTrue
@@ -28,24 +29,22 @@ class ServerSyncProcessHandlerTest {
     Assert.assertThat(deviceStateStore.interests.size, `is`(equalTo(0)))
   }
 
+  val instanceId = "000000-c1de-09b9-a8f6-2a22dbdd062a"
+  val mockServer = MockWebServer().apply { start() }
+  val api = PushNotificationsAPI(instanceId, mockServer.url("/").toString())
+  val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
+  val jobQueue = {
+    val tempFile = File.createTempFile("persistentJobQueue-", ".queue")
+    tempFile.delete() // QueueFile expects a handle to a non-existent file on first run.
+    TapeJobQueue<ServerSyncJob>(tempFile)
+  }()
+  val handler = ServerSyncProcessHandler(api, deviceStateStore, jobQueue, InstrumentationRegistry.getContext().mainLooper)
+
   /**
    * Non-start jobs should be skipped if the SDK has not been started yet.
    */
   @Test
   fun skipJobsBeforeStart() {
-    val instanceId = "000000-c1de-09b9-a8f6-2a22dbdd062a"
-    val mockServer = MockWebServer()
-    mockServer.start()
-
-    val api = PushNotificationsAPI(instanceId, mockServer.url("/").toString())
-    val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
-
-    val tempFile = File.createTempFile("persistentJobQueue-", ".queue")
-    tempFile.delete() // QueueFile expects a handle to a non-existent file on first run.
-    val jobQueue = TapeJobQueue<ServerSyncJob>(tempFile)
-
-    val handler = ServerSyncProcessHandler(api, deviceStateStore, jobQueue, InstrumentationRegistry.getContext().mainLooper)
-
     listOf(
         ServerSyncHandler.subscribe("interest-0"),
         ServerSyncHandler.subscribe("interest-1"),
@@ -61,19 +60,6 @@ class ServerSyncProcessHandlerTest {
 
   @Test
   fun doPendingJobsAfterStart() {
-    val instanceId = "000000-c1de-09b9-a8f6-2a22dbdd062a"
-    val mockServer = MockWebServer()
-    mockServer.start()
-
-    val api = PushNotificationsAPI(instanceId, mockServer.url("/").toString())
-    val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
-
-    val tempFile = File.createTempFile("persistentJobQueue-", ".queue")
-    tempFile.delete() // QueueFile expects a handle to a non-existent file on first run.
-    val jobQueue = TapeJobQueue<ServerSyncJob>(tempFile)
-
-    val handler = ServerSyncProcessHandler(api, deviceStateStore, jobQueue, InstrumentationRegistry.getContext().mainLooper)
-
     val startJob = ServerSyncHandler.start("token-123", emptyList())
     listOf(
         ServerSyncHandler.subscribe("interest-0"),
@@ -101,21 +87,6 @@ class ServerSyncProcessHandlerTest {
 
   @Test
   fun doJobsAfterStart() {
-    val instanceId = "000000-c1de-09b9-a8f6-2a22dbdd062a"
-    val mockServer = MockWebServer()
-    mockServer.start()
-
-    val api = PushNotificationsAPI(instanceId, mockServer.url("/").toString())
-    val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
-
-    val tempFile = File.createTempFile("persistentJobQueue-", ".queue")
-    tempFile.delete() // QueueFile expects a handle to a non-existent file on first run.
-    val jobQueue = TapeJobQueue<ServerSyncJob>(tempFile)
-
-    val handler = ServerSyncProcessHandler(api, deviceStateStore, jobQueue, InstrumentationRegistry.getContext().mainLooper)
-
-    assertThat(mockServer.requestCount, `is`(equalTo(0)))
-
     val startJob = ServerSyncHandler.start("token-123", emptyList())
     jobQueue.push(startJob.obj as ServerSyncJob)
 
@@ -144,21 +115,6 @@ class ServerSyncProcessHandlerTest {
 
   @Test
   fun startAndThenRefreshToken() {
-    val instanceId = "000000-c1de-09b9-a8f6-2a22dbdd062a"
-    val mockServer = MockWebServer()
-    mockServer.start()
-
-    val api = PushNotificationsAPI(instanceId, mockServer.url("/").toString())
-    val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
-
-    val tempFile = File.createTempFile("persistentJobQueue-", ".queue")
-    tempFile.delete() // QueueFile expects a handle to a non-existent file on first run.
-    val jobQueue = TapeJobQueue<ServerSyncJob>(tempFile)
-
-    val handler = ServerSyncProcessHandler(api, deviceStateStore, jobQueue, InstrumentationRegistry.getContext().mainLooper)
-
-    assertThat(mockServer.requestCount, `is`(equalTo(0)))
-
     val startJob = ServerSyncHandler.start("token-123", emptyList())
     jobQueue.push(startJob.obj as ServerSyncJob)
 
@@ -180,21 +136,6 @@ class ServerSyncProcessHandlerTest {
 
   @Test
   fun startDoSomeOperationsWhileHandlingUnexpectedDeviceDeletionCorrectly() {
-    val instanceId = "000000-c1de-09b9-a8f6-2a22dbdd062a"
-    val mockServer = MockWebServer()
-    mockServer.start()
-
-    val api = PushNotificationsAPI(instanceId, mockServer.url("/").toString())
-    val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
-
-    val tempFile = File.createTempFile("persistentJobQueue-", ".queue")
-    tempFile.delete() // QueueFile expects a handle to a non-existent file on first run.
-    val jobQueue = TapeJobQueue<ServerSyncJob>(tempFile)
-
-    val handler = ServerSyncProcessHandler(api, deviceStateStore, jobQueue, InstrumentationRegistry.getContext().mainLooper)
-
-    assertThat(mockServer.requestCount, `is`(equalTo(0)))
-
     val startJob = ServerSyncHandler.start("token-123", emptyList())
     jobQueue.push(startJob.obj as ServerSyncJob)
 
@@ -224,21 +165,6 @@ class ServerSyncProcessHandlerTest {
 
   @Test
   fun skipJobsIf400BadRequestAreReceived() {
-    val instanceId = "000000-c1de-09b9-a8f6-2a22dbdd062a"
-    val mockServer = MockWebServer()
-    mockServer.start()
-
-    val api = PushNotificationsAPI(instanceId, mockServer.url("/").toString())
-    val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
-
-    val tempFile = File.createTempFile("persistentJobQueue-", ".queue")
-    tempFile.delete() // QueueFile expects a handle to a non-existent file on first run.
-    val jobQueue = TapeJobQueue<ServerSyncJob>(tempFile)
-
-    val handler = ServerSyncProcessHandler(api, deviceStateStore, jobQueue, InstrumentationRegistry.getContext().mainLooper)
-
-    assertThat(mockServer.requestCount, `is`(equalTo(0)))
-
     val startJob = ServerSyncHandler.start("token-123", emptyList())
     jobQueue.push(startJob.obj as ServerSyncJob)
 
@@ -266,5 +192,95 @@ class ServerSyncProcessHandlerTest {
     assertThat(mockServer.requestCount, `is`(equalTo(3)))
 
     assertTrue(jobQueue.peek() == null)
+  }
+
+  @Test
+  fun applicationStartJobWillSyncMetadataIfNeeded() {
+    val startJob = ServerSyncHandler.start("token-123", emptyList())
+    jobQueue.push(startJob.obj as ServerSyncJob)
+
+    // expect register device
+    mockServer.enqueue(MockResponse().setBody("""{"id": "d-123", "initialInterestSet": []}"""))
+
+    handler.handleMessage(startJob)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(1)))
+
+    val deviceMetadata = DeviceMetadata(sdkVersion = "123", androidVersion = "X")
+    val applicationStartJob = ServerSyncHandler.applicationStart(deviceMetadata)
+    jobQueue.push(applicationStartJob.obj as ServerSyncJob)
+
+    // expect set metadata to be called
+    mockServer.enqueue(MockResponse().setBody(""))
+    // expect set subscriptions to be called
+    mockServer.enqueue(MockResponse().setBody(""))
+
+    handler.handleMessage(applicationStartJob)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(3)))
+
+    // if nothing changes, then there are no server requests
+    jobQueue.push(applicationStartJob.obj as ServerSyncJob)
+    handler.handleMessage(applicationStartJob)
+    assertThat(mockServer.requestCount, `is`(equalTo(3)))
+
+    val newDeviceMetadata = DeviceMetadata(sdkVersion = "9001", androidVersion = "X")
+    val newApplicationStartJob = ServerSyncHandler.applicationStart(newDeviceMetadata)
+
+    // expect set metadata to be called
+    mockServer.enqueue(MockResponse().setBody(""))
+
+    jobQueue.push(newApplicationStartJob.obj as ServerSyncJob)
+    handler.handleMessage(newApplicationStartJob)
+    assertThat(mockServer.requestCount, `is`(equalTo(4)))
+  }
+
+  @Test
+  fun applicationStartJobWillSyncInterestsIfNeeded() {
+    val startJob = ServerSyncHandler.start("token-123", emptyList())
+    jobQueue.push(startJob.obj as ServerSyncJob)
+
+    // expect register device
+    mockServer.enqueue(MockResponse().setBody("""{"id": "d-123", "initialInterestSet": []}"""))
+
+    handler.handleMessage(startJob)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(1)))
+
+    val deviceMetadata = DeviceMetadata(sdkVersion = "123", androidVersion = "X")
+    val applicationStartJob = ServerSyncHandler.applicationStart(deviceMetadata)
+    jobQueue.push(applicationStartJob.obj as ServerSyncJob)
+
+    // expect set metadata to be called
+    mockServer.enqueue(MockResponse().setBody(""))
+    // expect set subscriptions to be called
+    mockServer.enqueue(MockResponse().setBody(""))
+
+    handler.handleMessage(applicationStartJob)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(3)))
+
+    // if nothing changes, then there are no server requests
+    jobQueue.push(applicationStartJob.obj as ServerSyncJob)
+    handler.handleMessage(applicationStartJob)
+    assertThat(mockServer.requestCount, `is`(equalTo(3)))
+
+    val newDeviceMetadata = DeviceMetadata(sdkVersion = "9001", androidVersion = "X")
+    val newApplicationStartJob = ServerSyncHandler.applicationStart(newDeviceMetadata)
+
+
+    // send a set subscriptions and make the server return a 400 so
+    // that it fails to sync the interests and doesn't retry
+    mockServer.enqueue(MockResponse().setBody("").setResponseCode(400))
+    val setSubscriptionsJob = ServerSyncHandler.setSubscriptions(setOf("orange"))
+    jobQueue.push(setSubscriptionsJob.obj as ServerSyncJob)
+    handler.handleMessage(setSubscriptionsJob)
+    assertThat(mockServer.requestCount, `is`(equalTo(4)))
+
+    // expect set subscriptions to be called when booting as the previous sync failed
+    mockServer.enqueue(MockResponse().setBody(""))
+    jobQueue.push(newApplicationStartJob.obj as ServerSyncJob)
+    handler.handleMessage(newApplicationStartJob)
+    assertThat(mockServer.requestCount, `is`(equalTo(5)))
   }
 }
