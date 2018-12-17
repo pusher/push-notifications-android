@@ -3,11 +3,8 @@ package com.pusher.pushnotifications.api
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.pusher.pushnotifications.BuildConfig
-import com.pusher.pushnotifications.api.retrofit2.RequestCallbackWithExpBackoff
 import com.pusher.pushnotifications.logging.Logger
 import okhttp3.OkHttpClient
-import retrofit2.Call
-import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.lang.RuntimeException
@@ -22,6 +19,12 @@ class PushNotificationsAPIBadRequest: PushNotificationsAPIException("A request t
 
 sealed class RetryStrategy<T> {
   abstract fun retry(f: () -> T): T
+
+  class JustDont<T>: RetryStrategy<T>() {
+    override fun retry(f: () -> T): T {
+      return f()
+    }
+  }
 
   class WithInfiniteExpBackOff<T>: RetryStrategy<T>() {
     private var retryCount = 0
