@@ -11,8 +11,9 @@ import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-class PushNotificationsAPI(private val instanceId: String) {
-  private val baseUrl = "https://$instanceId.pushnotifications.pusher.com/device_api/v1/"
+class PushNotificationsAPI(private val instanceId: String, private val overrideHostURL: String?) {
+  private val baseUrl =
+    overrideHostURL ?: "https://$instanceId.pushnotifications.pusher.com/device_api/v1/"
 
   private val log = Logger.get(this::class)
 

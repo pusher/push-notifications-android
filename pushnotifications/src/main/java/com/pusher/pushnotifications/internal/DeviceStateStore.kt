@@ -43,4 +43,6 @@ class DeviceStateStore(context: Context) {
   var serverConfirmedInterestsHash: String?
     get() = preferences.getString(serverConfirmedInterestsHashKey, null)
     set(value) = preferences.edit().putString(serverConfirmedInterestsHashKey, value).apply()
+
+  fun clear() = preferences.edit().clear().commit()
 }

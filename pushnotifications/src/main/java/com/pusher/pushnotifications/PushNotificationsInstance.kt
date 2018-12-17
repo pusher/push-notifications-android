@@ -9,6 +9,7 @@ import com.pusher.pushnotifications.api.PushNotificationsAPI
 import com.pusher.pushnotifications.fcm.MessagingService
 import com.pusher.pushnotifications.internal.DeviceStateStore
 import com.pusher.pushnotifications.internal.OldSDKDeviceStateStore
+import com.pusher.pushnotifications.internal.SDKConfiguration
 import com.pusher.pushnotifications.logging.Logger
 import com.pusher.pushnotifications.validation.Validations
 
@@ -31,7 +32,8 @@ class PushNotificationsInstance(
     instanceId: String) {
   private val log = Logger.get(this::class)
 
-  private val api = PushNotificationsAPI(instanceId)
+  private val sdkConfig = SDKConfiguration(context)
+  private val api = PushNotificationsAPI(instanceId, sdkConfig.overrideHostURL)
   private val deviceStateStore = DeviceStateStore(context)
   private val oldSDKDeviceStateStore = OldSDKDeviceStateStore(context)
   private val jobQueue: ArrayList<() -> Boolean> = ArrayList()
