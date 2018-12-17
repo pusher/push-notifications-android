@@ -35,7 +35,7 @@ class ServerSyncHandler(
     // when the app first launches, we should queue up all of the outstanding
     // jobs in the queue so we can pick up where we have left off
     jobQueue.asIterable().forEach { job ->
-      serverSyncProcessHandlerHandler.sendMessage(Message().also { it.obj = job })
+      serverSyncProcessHandler.sendMessage(Message().also { it.obj = job })
     }
   }
 
@@ -44,36 +44,24 @@ class ServerSyncHandler(
     val job = msg.obj as ServerSyncJob
     jobQueue.push(job)
 
-    val clonedMsg = Message()
-    clonedMsg.obj = msg.obj
-    serverSyncProcessHandlerHandler.sendMessage(clonedMsg)
+    serverSyncProcessHandler.sendMessage(Message.obtain(msg))
   }
 
   companion object {
   fun refreshToken(fcmToken: String): Message =
-      Message().also {
-        it.obj = RefreshTokenJob(fcmToken)
-      }
+      Message.obtain().apply { obj = RefreshTokenJob(fcmToken) }
 
   fun start(fcmToken: String, knownPreviousClientIds: List<String>): Message =
-      Message().also {
-        it.obj = StartJob(fcmToken, knownPreviousClientIds)
-      }
+      Message.obtain().apply { obj = StartJob(fcmToken, knownPreviousClientIds) }
 
   fun subscribe(interest: String): Message =
-      Message().also {
-        it.obj = SubscribeJob(interest)
-      }
+      Message.obtain().apply { obj = SubscribeJob(interest) }
 
   fun unsubscribe(interest: String): Message =
-      Message().also {
-        it.obj = UnsubscribeJob(interest)
-      }
+      Message.obtain().apply { obj = UnsubscribeJob(interest) }
 
   fun setSubscriptions(interests: Set<String>): Message =
-      Message().also {
-        it.obj = SetSubscriptionsJob(interests)
-      }
+      Message.obtain().apply { obj = SetSubscriptionsJob(interests) }
   }
 }
 
