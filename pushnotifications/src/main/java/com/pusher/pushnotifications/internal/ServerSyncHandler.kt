@@ -7,6 +7,7 @@ import android.os.Message
 import com.pusher.pushnotifications.SubscriptionsChangedListener
 import com.pusher.pushnotifications.api.*
 import com.pusher.pushnotifications.logging.Logger
+import java.io.File
 import java.io.Serializable
 import java.math.BigInteger
 import java.security.MessageDigest
@@ -59,13 +60,14 @@ class ServerSyncHandler private constructor(
         instanceId: String,
         api: PushNotificationsAPI,
         deviceStateStore: DeviceStateStore,
-        jobQueue: PersistentJobQueue<ServerSyncJob>
+        secureFileDir: File
     ): ServerSyncHandler {
       return synchronized(serverSyncHandlers) {
         serverSyncHandlers.getOrPut(instanceId) {
           val handlerThread = HandlerThread("ServerSyncHandler-$instanceId")
           handlerThread.start()
 
+          val jobQueue = TapeJobQueue<ServerSyncJob>(File(secureFileDir, "$instanceId.jobqueue"))
           ServerSyncHandler(api, deviceStateStore, jobQueue, handlerThread.looper)
         }
       }

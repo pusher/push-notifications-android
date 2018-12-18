@@ -44,7 +44,7 @@ class PushNotificationsInstance(
         instanceId = instanceId,
         api = PushNotificationsAPI(instanceId, sdkConfig.overrideHostURL),
         deviceStateStore = deviceStateStore,
-        jobQueue = TapeJobQueue(File(context.filesDir, "$instanceId.jobqueue"))
+        secureFileDir = context.filesDir
     )
   }()
 
