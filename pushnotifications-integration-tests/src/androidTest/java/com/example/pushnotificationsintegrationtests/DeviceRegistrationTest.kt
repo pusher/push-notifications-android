@@ -16,6 +16,7 @@ import org.junit.runner.RunWith
 
 import org.junit.Assert.*
 import org.junit.Before
+import java.io.File
 
 const val DEVICE_REGISTRATION_WAIT_MS: Long = 7000 // We need to wait for FCM to register the device etc.
 
@@ -45,6 +46,8 @@ class DeviceRegistrationTest {
     assertTrue(deviceStateStore.clear())
     assertNull(deviceStateStore.deviceId)
     assertThat(deviceStateStore.interests.size, `is`(equalTo(0)))
+
+    File(context.filesDir, "$instanceId.jobqueue").delete()
   }
 
   @Test
@@ -211,5 +214,28 @@ class DeviceRegistrationTest {
 
     pni.unsubscribeAll()
     assertThat(setOnSubscriptionsChangedListenerCalledCount, `is`(equalTo(4)))
+  }
+
+  @Test
+  fun multipleInstantiationsOfPushNotificationsInstanceAreSupported() {
+    val pni1 = PushNotificationsInstance(context, instanceId)
+    val pni2 = PushNotificationsInstance(context, instanceId)
+    pni1.start()
+    Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
+
+    (0..5).forEach { n ->
+      pni1.subscribe("hell-$n")
+      pni2.unsubscribe("hell-$n")
+    }
+
+    assertThat(pni1.getSubscriptions(), `is`(emptySet()))
+    assertThat(pni2.getSubscriptions(), `is`(emptySet()))
+
+    val storedDeviceId = getStoredDeviceId()
+    assertNotNull(storedDeviceId)
+
+    Thread.sleep(1000)
+    val interestsOnServer = errolClient.getDeviceInterests(storedDeviceId!!)
+    assertThat(interestsOnServer, `is`(emptySet()))
   }
 }

@@ -19,7 +19,7 @@ data class UnsubscribeJob(val interest: String): ServerSyncJob()
 data class SetSubscriptionsJob(val interests: Set<String>): ServerSyncJob()
 data class ApplicationStartJob(val deviceMetadata: DeviceMetadata): ServerSyncJob()
 
-class ServerSyncHandler(
+class ServerSyncHandler private constructor(
     private val api: PushNotificationsAPI,
     private val deviceStateStore: DeviceStateStore,
     private val jobQueue: PersistentJobQueue<ServerSyncJob>,
@@ -53,27 +53,45 @@ class ServerSyncHandler(
   }
 
   companion object {
-  fun refreshToken(fcmToken: String): Message =
-      Message.obtain().apply { obj = RefreshTokenJob(fcmToken) }
+    private val serverSyncHandlers = mutableMapOf<String, ServerSyncHandler>()
 
-  fun start(fcmToken: String, knownPreviousClientIds: List<String>): Message =
-      Message.obtain().apply { obj = StartJob(fcmToken, knownPreviousClientIds) }
+    fun obtain(
+        instanceId: String,
+        api: PushNotificationsAPI,
+        deviceStateStore: DeviceStateStore,
+        jobQueue: PersistentJobQueue<ServerSyncJob>
+    ): ServerSyncHandler {
+      return synchronized(serverSyncHandlers) {
+        serverSyncHandlers.getOrPut(instanceId) {
+          val handlerThread = HandlerThread("ServerSyncHandler-$instanceId")
+          handlerThread.start()
 
-  fun subscribe(interest: String): Message =
-      Message.obtain().apply { obj = SubscribeJob(interest) }
+          ServerSyncHandler(api, deviceStateStore, jobQueue, handlerThread.looper)
+        }
+      }
+    }
 
-  fun unsubscribe(interest: String): Message =
-      Message.obtain().apply { obj = UnsubscribeJob(interest) }
+    fun refreshToken(fcmToken: String): Message =
+        Message.obtain().apply { obj = RefreshTokenJob(fcmToken) }
 
-  fun setSubscriptions(interests: Set<String>): Message =
-      Message.obtain().apply { obj = SetSubscriptionsJob(interests) }
+    fun start(fcmToken: String, knownPreviousClientIds: List<String>): Message =
+        Message.obtain().apply { obj = StartJob(fcmToken, knownPreviousClientIds) }
 
-  fun applicationStart(deviceMetadata: DeviceMetadata): Message =
-      Message.obtain().apply { obj = ApplicationStartJob(deviceMetadata) }
+    fun subscribe(interest: String): Message =
+        Message.obtain().apply { obj = SubscribeJob(interest) }
+
+    fun unsubscribe(interest: String): Message =
+        Message.obtain().apply { obj = UnsubscribeJob(interest) }
+
+    fun setSubscriptions(interests: Set<String>): Message =
+        Message.obtain().apply { obj = SetSubscriptionsJob(interests) }
+
+    fun applicationStart(deviceMetadata: DeviceMetadata): Message =
+        Message.obtain().apply { obj = ApplicationStartJob(deviceMetadata) }
   }
 }
 
-class ServerSyncProcessHandler(
+class ServerSyncProcessHandler internal constructor(
     private val api: PushNotificationsAPI,
     private val deviceStateStore: DeviceStateStore,
     private val jobQueue: PersistentJobQueue<ServerSyncJob>,
@@ -118,12 +136,9 @@ class ServerSyncProcessHandler(
             retryStrategy = RetryStrategy.WithInfiniteExpBackOff())
 
     synchronized(deviceStateStore) {
-      deviceStateStore.deviceId = registrationResponse.deviceId
-      deviceStateStore.FCMToken = startJob.fcmToken
-
       // Replay sub/unsub/setsub operations in job queue over initial interest set
       val interests = registrationResponse.initialInterests.toMutableSet()
-      for(j in jobQueue.asIterable()) {
+      for (j in jobQueue.asIterable()) {
         if (j is StartJob) {
           break
         }
@@ -155,6 +170,15 @@ class ServerSyncProcessHandler(
       }
     }
 
+    deviceStateStore.deviceId = registrationResponse.deviceId
+    deviceStateStore.FCMToken = startJob.fcmToken
+
+    // Clear queue up to the start job
+    while (jobQueue.peek() !is StartJob) {
+      jobQueue.pop()
+    }
+    jobQueue.pop() // Also remove start job
+
     val remoteInterestsWillChange = deviceStateStore.interests != registrationResponse.initialInterests
     if (remoteInterestsWillChange) {
       api.setSubscriptions(
@@ -162,12 +186,6 @@ class ServerSyncProcessHandler(
           interests = deviceStateStore.interests,
           retryStrategy = RetryStrategy.WithInfiniteExpBackOff())
     }
-
-    // Clear queue up to the start job
-    while (jobQueue.peek() !is StartJob) {
-      jobQueue.pop()
-    }
-    jobQueue.pop() // Also remove start job
   }
 
   private fun processApplicationStartJob(job: ApplicationStartJob) {
@@ -259,7 +277,7 @@ class ServerSyncProcessHandler(
       return
     }
 
-    if(job is StartJob) {
+    if (job is StartJob) {
       processStartJob(job)
     } else {
       processJob(job)

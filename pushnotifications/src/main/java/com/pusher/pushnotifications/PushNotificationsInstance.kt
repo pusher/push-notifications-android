@@ -40,14 +40,11 @@ class PushNotificationsInstance(
   private var onSubscriptionsChangedListener: SubscriptionsChangedListener? = null
 
   private val serverSyncHandler = {
-    val handlerThread = HandlerThread("ServerSyncHandler-$instanceId")
-    handlerThread.start()
-
-    ServerSyncHandler(
+    ServerSyncHandler.obtain(
+        instanceId = instanceId,
         api = PushNotificationsAPI(instanceId, sdkConfig.overrideHostURL),
         deviceStateStore = deviceStateStore,
-        jobQueue = TapeJobQueue(File(context.filesDir, "$instanceId.jobqueue")),
-        looper = handlerThread.looper
+        jobQueue = TapeJobQueue(File(context.filesDir, "$instanceId.jobqueue"))
     )
   }()
 
