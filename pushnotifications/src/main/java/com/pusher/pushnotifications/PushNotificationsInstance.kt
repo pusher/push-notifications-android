@@ -3,9 +3,6 @@ package com.pusher.pushnotifications
 import java.util.regex.Pattern
 import android.content.Context
 import android.os.Build
-import android.os.Handler
-import android.os.HandlerThread
-import android.os.Looper
 import com.google.firebase.iid.FirebaseInstanceId
 import com.pusher.pushnotifications.api.DeviceMetadata
 import com.pusher.pushnotifications.api.PushNotificationsAPI
@@ -13,7 +10,6 @@ import com.pusher.pushnotifications.fcm.MessagingService
 import com.pusher.pushnotifications.internal.*
 import com.pusher.pushnotifications.logging.Logger
 import com.pusher.pushnotifications.validation.Validations
-import java.io.File
 
 /**
  * Thrown when the device is re-registered to a different instance id. If you wish to register a
@@ -40,14 +36,11 @@ class PushNotificationsInstance(
   private var onSubscriptionsChangedListener: SubscriptionsChangedListener? = null
 
   private val serverSyncHandler = {
-    val handlerThread = HandlerThread("ServerSyncHandler-$instanceId")
-    handlerThread.start()
-
-    ServerSyncHandler(
+    ServerSyncHandler.obtain(
+        instanceId = instanceId,
         api = PushNotificationsAPI(instanceId, sdkConfig.overrideHostURL),
         deviceStateStore = deviceStateStore,
-        jobQueue = TapeJobQueue(File(context.filesDir, "$instanceId.jobqueue")),
-        looper = handlerThread.looper
+        secureFileDir = context.filesDir
     )
   }()
 

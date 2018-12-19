@@ -42,7 +42,7 @@ sealed class RetryStrategy<T> {
         } catch (e: PushNotificationsAPIBadRequest) {
           // not recoverable
           throw e
-        } catch (e: RuntimeException) {
+        } catch (e: Exception) {
         }
 
         retryCount++
