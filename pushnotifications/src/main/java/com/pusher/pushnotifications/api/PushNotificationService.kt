@@ -45,6 +45,12 @@ interface PushNotificationService {
     @Path("deviceId") deviceId: String,
     @Body metadata: DeviceMetadata
   ): Call<Void>
+
+  @DELETE("instances/{instanceId}/devices/fcm/{deviceId}")
+  fun delete(
+    @Path("instanceId") instanceId: String,
+    @Path("deviceId") deviceId: String
+  ): Call<Void>
 }
 
 data class NOKResponse(

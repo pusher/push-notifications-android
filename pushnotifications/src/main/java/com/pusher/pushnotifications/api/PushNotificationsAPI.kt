@@ -272,4 +272,36 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
       }
     })
   }
+
+  fun delete(
+      deviceId: String,
+      retryStrategy: RetryStrategy<Unit>
+  ) {
+    return retryStrategy.retry(fun() {
+      val response = service.delete(
+          instanceId,
+          deviceId
+      ).execute()
+      if (response.code() == 404) {
+        // cool.
+      }
+      if (response.code() == 400) {
+        // not throwing a `PushNotificationsAPIBadRequest` here so that it still retries this request.
+        // it would make the code that calls this more complex to handle it.
+        // this really shouldn't happen anyway
+        log.e("Critical error when deleting a device (error body: ${response?.errorBody()})")
+      }
+
+      if (response.code() !in 200..299) {
+        val responseErrorBody = response?.errorBody()
+        if (responseErrorBody != null) {
+          val error = safeExtractJsonError(responseErrorBody.string())
+          log.w("Failed to delete device: $error")
+          throw PushNotificationsAPIException(error)
+        }
+
+        throw PushNotificationsAPIException("Unknown API error")
+      }
+    })
+  }
 }
