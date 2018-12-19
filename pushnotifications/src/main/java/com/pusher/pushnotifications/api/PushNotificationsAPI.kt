@@ -12,6 +12,7 @@ import java.lang.RuntimeException
 open class PushNotificationsAPIException: RuntimeException {
   constructor(message: String): super(message)
   constructor(cause: Throwable): super(cause)
+  constructor(message: String, cause: Throwable): super(message, cause)
 }
 
 class PushNotificationsAPIDeviceNotFound: PushNotificationsAPIException("Device not found in the server")
@@ -22,7 +23,13 @@ sealed class RetryStrategy<T> {
 
   class JustDont<T>: RetryStrategy<T>() {
     override fun retry(f: () -> T): T {
-      return f()
+      return try {
+        f()
+      } catch (e: PushNotificationsAPIException) {
+        throw e
+      } catch (e: Exception) {
+        throw PushNotificationsAPIException("Something went wrong", e)
+      }
     }
   }
 
