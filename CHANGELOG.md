@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.4] - 2018-12-19
+
+### Fixed
+ - Reliability improvements when Beams service is unavailable during application start
+
 ## [1.0.3] - 2018-12-19
 
 ### Changed
