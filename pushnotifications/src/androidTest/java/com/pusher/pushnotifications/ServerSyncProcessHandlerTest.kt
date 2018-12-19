@@ -238,6 +238,36 @@ class ServerSyncProcessHandlerTest {
   }
 
   @Test
+  fun applicationStartJobWillNotRetrySyncMetadata() {
+    val flakyMockServer = MockWebServer().apply { start() }
+
+    val flakyAPI = PushNotificationsAPI(instanceId, flakyMockServer.url("/").toString())
+    val handlerWithBrokenAPI =
+        ServerSyncProcessHandler(flakyAPI, deviceStateStore, jobQueue, InstrumentationRegistry.getContext().mainLooper)
+
+    val startJob = ServerSyncHandler.start("token-123", emptyList())
+    jobQueue.push(startJob.obj as ServerSyncJob)
+
+    // expect register device
+    flakyMockServer.enqueue(MockResponse().setBody("""{"id": "d-123", "initialInterestSet": []}"""))
+
+    handlerWithBrokenAPI.handleMessage(startJob)
+
+    assertThat(flakyMockServer.requestCount, `is`(equalTo(1)))
+
+    val deviceMetadata = DeviceMetadata(sdkVersion = "123", androidVersion = "X")
+    val applicationStartJob = ServerSyncHandler.applicationStart(deviceMetadata)
+    jobQueue.push(applicationStartJob.obj as ServerSyncJob)
+
+    // expect set metadata to be called, but the server is now dead
+    flakyMockServer.close()
+
+    handlerWithBrokenAPI.handleMessage(applicationStartJob)
+
+    // the test finishes means that it didn't retry indefinitely
+  }
+
+  @Test
   fun applicationStartJobWillSyncInterestsIfNeeded() {
     val startJob = ServerSyncHandler.start("token-123", emptyList())
     jobQueue.push(startJob.obj as ServerSyncJob)
