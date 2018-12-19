@@ -10,6 +10,7 @@ import org.hamcrest.CoreMatchers.`is`
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.CoreMatchers.not
 import org.junit.After
+import org.junit.AfterClass
 
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -37,6 +38,12 @@ class DeviceRegistrationTest {
   val errolClient = ErrolAPI(instanceId, "http://localhost:8080")
   companion object {
     val errol = FakeErrol(8080)
+
+    @AfterClass
+    @JvmStatic
+    fun shutdownFakeErrol() {
+      errol.stop()
+    }
   }
 
   @Before

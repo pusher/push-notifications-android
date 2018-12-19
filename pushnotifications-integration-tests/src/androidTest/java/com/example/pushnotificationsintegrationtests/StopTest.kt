@@ -8,6 +8,7 @@ import com.pusher.pushnotifications.internal.DeviceStateStore
 import org.hamcrest.CoreMatchers.`is`
 import org.hamcrest.CoreMatchers.equalTo
 import org.junit.After
+import org.junit.AfterClass
 
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -34,6 +35,12 @@ class StopTest {
 
   companion object {
     val errol = FakeErrol(8080)
+
+    @AfterClass
+    @JvmStatic
+    fun shutdownFakeErrol() {
+      DeviceRegistrationTest.errol.stop()
+    }
   }
 
   @Before
