@@ -220,4 +220,18 @@ class PushNotificationsInstance(
 
     serverSyncHandler.sendMessage(ServerSyncHandler.applicationStart(deviceMetadata))
   }
+
+  fun stop() {
+    synchronized(deviceStateStore) {
+      val hadAnyInterests = deviceStateStore.interests.isNotEmpty()
+
+      deviceStateStore.interests = mutableSetOf()
+      deviceStateStore.startHasBeenCalled = false
+      serverSyncHandler.sendMessage(ServerSyncHandler.stop())
+
+      if (hadAnyInterests) {
+        onSubscriptionsChangedListener?.onSubscriptionsChanged(emptySet())
+      }
+    }
+  }
 }

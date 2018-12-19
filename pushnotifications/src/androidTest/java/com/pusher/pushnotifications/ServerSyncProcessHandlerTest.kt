@@ -13,6 +13,8 @@ import org.hamcrest.CoreMatchers.`is`
 import org.hamcrest.CoreMatchers.equalTo
 import org.junit.After
 import org.junit.Assert
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -282,5 +284,101 @@ class ServerSyncProcessHandlerTest {
     jobQueue.push(newApplicationStartJob.obj as ServerSyncJob)
     handler.handleMessage(newApplicationStartJob)
     assertThat(mockServer.requestCount, `is`(equalTo(5)))
+  }
+
+  @Test
+  fun stopShouldDeleteTheDeviceFromTheServerAndClearDeviceStateStore() {
+    val startJob = ServerSyncHandler.start("token-123", emptyList())
+    jobQueue.push(startJob.obj as ServerSyncJob)
+
+    // expect register device
+    mockServer.enqueue(MockResponse().setBody("""{"id": "d-123", "initialInterestSet": []}"""))
+
+    handler.handleMessage(startJob)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(1)))
+    assertNotNull(deviceStateStore.deviceId)
+
+    val stopJob = ServerSyncHandler.stop()
+    jobQueue.push(stopJob.obj as ServerSyncJob)
+
+    // expect delete device
+    mockServer.enqueue(MockResponse().setBody(""))
+
+    handler.handleMessage(stopJob)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(2)))
+    assertNull(deviceStateStore.deviceId)
+  }
+
+  @Test
+  fun stopIfNotStartedShouldBeFine() {
+    val stopJob = ServerSyncHandler.stop()
+    jobQueue.push(stopJob.obj as ServerSyncJob)
+    assertThat(mockServer.requestCount, `is`(equalTo(0)))
+    assertNull(deviceStateStore.deviceId)
+    assertThat(deviceStateStore.interests.size, `is`(equalTo(0)))
+  }
+
+  @Test
+  fun stopShouldClearAnyPendingChangesBeforeStart() {
+    // + □ + ▷ should result in a single + subscription
+    val subJob1 = ServerSyncHandler.subscribe("hello")
+    jobQueue.push(subJob1.obj as ServerSyncJob)
+    handler.handleMessage(subJob1)
+
+    val stopJob = ServerSyncHandler.stop()
+    jobQueue.push(stopJob.obj as ServerSyncJob)
+
+    val subJob2 = ServerSyncHandler.subscribe("goodbye")
+    jobQueue.push(subJob2.obj as ServerSyncJob)
+    handler.handleMessage(subJob2)
+
+    val startJob = ServerSyncHandler.start("token-123", emptyList())
+    jobQueue.push(startJob.obj as ServerSyncJob)
+
+    // expect register device
+    mockServer.enqueue(MockResponse().setBody("""{"id": "d-123", "initialInterestSet": ["portugal"]}"""))
+
+    // expect set subscriptions
+    mockServer.enqueue(MockResponse().setBody(""))
+
+    handler.handleMessage(startJob)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(2)))
+    assertThat(deviceStateStore.interests, `is`(equalTo(setOf("portugal", "goodbye"))))
+  }
+
+  @Test
+  fun startStopStopShouldDeleteTheDeviceFromTheServerAndClearDeviceStateStore() {
+    val startJob = ServerSyncHandler.start("token-123", emptyList())
+    jobQueue.push(startJob.obj as ServerSyncJob)
+
+    // expect register device
+    mockServer.enqueue(MockResponse().setBody("""{"id": "d-123", "initialInterestSet": []}"""))
+
+    handler.handleMessage(startJob)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(1)))
+    assertNotNull(deviceStateStore.deviceId)
+
+    deviceStateStore.interests = mutableSetOf("hello")
+
+    val stopJob = ServerSyncHandler.stop()
+    jobQueue.push(stopJob.obj as ServerSyncJob)
+
+    // expect delete device
+    mockServer.enqueue(MockResponse().setBody(""))
+
+    handler.handleMessage(stopJob)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(2)))
+    assertNull(deviceStateStore.deviceId)
+
+    // and stopping again should do nothing
+    handler.handleMessage(stopJob)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(2)))
+    assertNull(deviceStateStore.deviceId)
   }
 }

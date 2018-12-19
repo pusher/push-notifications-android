@@ -19,6 +19,7 @@ data class SubscribeJob(val interest: String): ServerSyncJob()
 data class UnsubscribeJob(val interest: String): ServerSyncJob()
 data class SetSubscriptionsJob(val interests: Set<String>): ServerSyncJob()
 data class ApplicationStartJob(val deviceMetadata: DeviceMetadata): ServerSyncJob()
+class StopJob: ServerSyncJob()
 
 class ServerSyncHandler private constructor(
     private val api: PushNotificationsAPI,
@@ -90,6 +91,9 @@ class ServerSyncHandler private constructor(
 
     fun applicationStart(deviceMetadata: DeviceMetadata): Message =
         Message.obtain().apply { obj = ApplicationStartJob(deviceMetadata) }
+
+    fun stop(): Message =
+        Message.obtain().apply { obj = StopJob() }
   }
 }
 
@@ -144,7 +148,7 @@ class ServerSyncProcessHandler internal constructor(
         if (j is StartJob) {
           break
         }
-        when(j) {
+        when (j) {
           is SubscribeJob -> {
             interests += j.interest
           }
@@ -154,6 +158,12 @@ class ServerSyncProcessHandler internal constructor(
           is SetSubscriptionsJob -> {
             interests.clear()
             interests.addAll(j.interests)
+          }
+          is StopJob -> {
+            // Any subscriptions changes done at this point are just discarded,
+            // and we need to assume the initial interest set as the starting point again
+            interests.clear()
+            interests.addAll(registrationResponse.initialInterests)
           }
         }
       }
@@ -188,6 +198,20 @@ class ServerSyncProcessHandler internal constructor(
           interests = deviceStateStore.interests,
           retryStrategy = RetryStrategy.WithInfiniteExpBackOff())
     }
+  }
+
+  private fun processStopJob() {
+    api.delete(
+        deviceStateStore.deviceId!!,
+        RetryStrategy.WithInfiniteExpBackOff())
+
+    jobQueue.pop()
+
+    deviceStateStore.deviceId = null
+    deviceStateStore.FCMToken = null
+    deviceStateStore.osVersion = null
+    deviceStateStore.sdkVersion = null
+    deviceStateStore.serverConfirmedInterestsHash = null
   }
 
   private fun processApplicationStartJob(job: ApplicationStartJob) {
@@ -279,10 +303,10 @@ class ServerSyncProcessHandler internal constructor(
       return
     }
 
-    if (job is StartJob) {
-      processStartJob(job)
-    } else {
-      processJob(job)
+    when (job) {
+      is StartJob -> processStartJob(job)
+      is StopJob -> processStopJob()
+      else -> processJob(job)
     }
   }
 }
