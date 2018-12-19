@@ -5,8 +5,7 @@ import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
 import com.pusher.pushnotifications.PushNotificationsInstance
 import com.pusher.pushnotifications.internal.DeviceStateStore
-import org.hamcrest.CoreMatchers.`is`
-import org.hamcrest.CoreMatchers.equalTo
+import org.hamcrest.CoreMatchers.*
 import org.junit.After
 import org.junit.AfterClass
 
@@ -124,5 +123,6 @@ class StopTest {
     val newStoredDeviceId = getStoredDeviceId()
     assertNotNull(newStoredDeviceId)
     assertNotNull(errolClient.getDevice(newStoredDeviceId!!))
+    assertThat(newStoredDeviceId, `is`(not(equalTo(storedDeviceId))))
   }
 }
