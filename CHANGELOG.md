@@ -6,7 +6,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.1.0] - 2018-12-20
+
+### Changed
+ - Bumped version to 1.1.0 to denote the release of the SDK stop feature
+
 ## [1.0.4] - 2018-12-19
+
+### Added
+ - Added method to stop the SDK, deleting all interests and the device from the server
 
 ### Fixed
  - Reliability improvements when Beams service is unavailable during application start
