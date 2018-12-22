@@ -4,13 +4,16 @@ import android.content.Context
 
 class DeviceStateStore(context: Context) {
   private val preferencesDeviceIdKey = "deviceId"
+  private val preferencesUserIdKey = "userId"
   private val preferencesFCMTokenKey = "fcmToken"
   private val preferencesInstanceIdKey = "instanceId"
   private val preferencesOSVersionKey = "osVersion"
   private val preferencesSDKVersionKey = "sdkVersion"
   private val preferencesInterestsKey = "interests"
   private val serverConfirmedInterestsHashKey = "serverConfirmedInterestsHash"
-  private val startHasBeenCalledKey = "startHasBeenCalled"
+  private val startJobHasBeenEnqueuedKey = "startJobHasBeenEnqueued"
+  private val setUserIdHasBeenCalledWithKey = "setUserIdHasBeenCalledWith"
+
 
   private val preferences = context.getSharedPreferences(
     "com.pusher.pushnotifications.PushNotificationsInstance", Context.MODE_PRIVATE)
@@ -22,6 +25,10 @@ class DeviceStateStore(context: Context) {
   var deviceId: String?
     get() = preferences.getString(preferencesDeviceIdKey, null)
     set(value) = preferences.edit().putString(preferencesDeviceIdKey, value).apply()
+
+  var userId: String?
+    get() = preferences.getString(preferencesUserIdKey, null)
+    set(value) = preferences.edit().putString(preferencesUserIdKey, value).apply()
 
   var FCMToken: String?
     get() = preferences.getString(preferencesFCMTokenKey, null)
@@ -45,9 +52,13 @@ class DeviceStateStore(context: Context) {
     get() = preferences.getString(serverConfirmedInterestsHashKey, null)
     set(value) = preferences.edit().putString(serverConfirmedInterestsHashKey, value).apply()
 
-  var startHasBeenCalled: Boolean
-    get() = preferences.getBoolean(startHasBeenCalledKey, false)
-    set(value) = preferences.edit().putBoolean(startHasBeenCalledKey, value).apply()
+  var startJobHasBeenEnqueued: Boolean
+    get() = preferences.getBoolean(startJobHasBeenEnqueuedKey, false)
+    set(value) = preferences.edit().putBoolean(startJobHasBeenEnqueuedKey, value).apply()
+
+  var setUserIdHasBeenCalledWith: String?
+    get() = preferences.getString(setUserIdHasBeenCalledWithKey, null)
+    set(value) = preferences.edit().putString(setUserIdHasBeenCalledWithKey, value).apply()
 
   fun clear() = preferences.edit().clear().commit()
 }

@@ -17,6 +17,9 @@ open class PushNotificationsAPIException: RuntimeException {
 
 class PushNotificationsAPIDeviceNotFound: PushNotificationsAPIException("Device not found in the server")
 class PushNotificationsAPIBadRequest: PushNotificationsAPIException("A request to the server has been deemed invalid")
+class PushNotificationsAPIBadJWT(val reason: String): PushNotificationsAPIException(
+    "The request was rejected because the JWT was invalid/unauthorized: $reason"
+)
 
 sealed class RetryStrategy<T> {
   abstract fun retry(f: () -> T): T
@@ -48,6 +51,9 @@ sealed class RetryStrategy<T> {
           throw e
         } catch (e: PushNotificationsAPIBadRequest) {
           // not recoverable
+          throw e
+        } catch (e: PushNotificationsAPIBadJWT) {
+          // not recoverable - will need a new JWT
           throw e
         } catch (e: Exception) {
         }
@@ -272,6 +278,42 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
         if (responseErrorBody != null) {
           val error = safeExtractJsonError(responseErrorBody.string())
           log.w("Failed to set device metadata: $error")
+          throw PushNotificationsAPIException(error)
+        }
+
+        throw PushNotificationsAPIException("Unknown API error")
+      }
+    })
+  }
+
+  fun setUserId(
+      deviceId: String,
+      jwt: String,
+      retryStrategy: RetryStrategy<Unit>
+  ) {
+    return retryStrategy.retry(fun() {
+      val response = service.setUserId(instanceId, deviceId, jwt).execute()
+      if (response.code() == 404) {
+        throw PushNotificationsAPIDeviceNotFound()
+      }
+      if (response.code() == 400) {
+        throw PushNotificationsAPIBadRequest()
+      }
+      if (response.code() == 401 || response.code() == 403) {
+        val responseErrorBody = response?.errorBody()
+        if (responseErrorBody != null) {
+          val error = safeExtractJsonError(responseErrorBody.string())
+          throw PushNotificationsAPIBadJWT(error.desc)
+        }
+
+        throw PushNotificationsAPIBadJWT("Unknown reason")
+      }
+
+      if (response.code() !in 200..299) {
+        val responseErrorBody = response?.errorBody()
+        if (responseErrorBody != null) {
+          val error = safeExtractJsonError(responseErrorBody.string())
+          log.w("Failed to set user id: $error")
           throw PushNotificationsAPIException(error)
         }
 

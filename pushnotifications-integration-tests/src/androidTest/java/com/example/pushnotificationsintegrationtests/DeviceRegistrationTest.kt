@@ -48,11 +48,11 @@ class DeviceRegistrationTest {
 
   @Before
   @After
-  fun cleanup() {
+  fun wipeLocalState() {
     val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
     assertTrue(deviceStateStore.clear())
-    assertNull(deviceStateStore.deviceId)
     assertThat(deviceStateStore.interests.size, `is`(equalTo(0)))
+    assertNull(deviceStateStore.deviceId)
 
     File(context.filesDir, "$instanceId.jobqueue").delete()
   }
@@ -221,6 +221,41 @@ class DeviceRegistrationTest {
 
     pni.unsubscribeAll()
     assertThat(setOnSubscriptionsChangedListenerCalledCount, `is`(equalTo(4)))
+  }
+
+  @Test
+  fun onSubscriptionsChangedListenerShouldBeCalledIfInterestsChangeDuringDeviceRegistration() {
+    val pni = PushNotificationsInstance(context, instanceId)
+    pni.start()
+    Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
+
+    pni.subscribe("hello")
+
+    // force a fresh state locally, but keep the device in the server
+    wipeLocalState()
+
+    var setOnSubscriptionsChangedListenerCalledCount = 0
+    var lastSetOnSubscriptionsChangedListenerCalledWithInterests: Set<String>? = null
+    var lastSetOnSubscriptionsChangedListenerCalledThread: Thread? = null
+    pni.setOnSubscriptionsChangedListener(object : SubscriptionsChangedListener {
+      override fun onSubscriptionsChanged(interests: Set<String>) {
+        setOnSubscriptionsChangedListenerCalledCount++
+        lastSetOnSubscriptionsChangedListenerCalledWithInterests = interests
+        lastSetOnSubscriptionsChangedListenerCalledThread = Thread.currentThread()
+      }
+    })
+
+    // this will cause it to receive the initial interest set of {"hello"}
+    pni.start()
+    Thread.sleep(1000)
+
+    assertThat(setOnSubscriptionsChangedListenerCalledCount, `is`(equalTo(1)))
+    assertThat(lastSetOnSubscriptionsChangedListenerCalledWithInterests, `is`(equalTo(setOf("hello"))))
+
+    // We want to run these callbacks from the UI thread as it's more likely to be useful
+    // for the customers. Although, we are not going to make any promises at this point
+    val mainThread = InstrumentationRegistry.getTargetContext().mainLooper.thread
+    assertThat(lastSetOnSubscriptionsChangedListenerCalledThread, `is`(equalTo(mainThread)))
   }
 
   @Test

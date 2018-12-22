@@ -21,7 +21,7 @@ public class PushNotifications {
      * is deemed better for your project.
      */
     public static PushNotificationsInstance start(Context context, String instanceId) {
-        instance = new PushNotificationsInstance(context, instanceId);
+        instance = new PushNotificationsInstance(context, instanceId, null);
         instance.start();
         return instance;
     }

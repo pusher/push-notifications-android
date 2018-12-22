@@ -19,6 +19,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.lang.IllegalStateException
 
 @RunWith(AndroidJUnit4::class)
 class ServerSyncProcessHandlerTest {
@@ -40,7 +41,8 @@ class ServerSyncProcessHandlerTest {
     tempFile.delete() // QueueFile expects a handle to a non-existent file on first run.
     TapeJobQueue<ServerSyncJob>(tempFile)
   }()
-  val handler = ServerSyncProcessHandler(api, deviceStateStore, jobQueue, InstrumentationRegistry.getContext().mainLooper)
+  val looper = InstrumentationRegistry.getContext().mainLooper
+  val handler = ServerSyncProcessHandler(api, deviceStateStore, jobQueue, ServerSyncEventHandler.obtain(instanceId, looper), looper)
 
   /**
    * Non-start jobs should be skipped if the SDK has not been started yet.
@@ -243,7 +245,7 @@ class ServerSyncProcessHandlerTest {
 
     val flakyAPI = PushNotificationsAPI(instanceId, flakyMockServer.url("/").toString())
     val handlerWithBrokenAPI =
-        ServerSyncProcessHandler(flakyAPI, deviceStateStore, jobQueue, InstrumentationRegistry.getContext().mainLooper)
+        ServerSyncProcessHandler(flakyAPI, deviceStateStore, jobQueue, ServerSyncEventHandler.obtain(instanceId, looper), looper)
 
     val startJob = ServerSyncHandler.start("token-123", emptyList())
     jobQueue.push(startJob.obj as ServerSyncJob)
@@ -410,5 +412,62 @@ class ServerSyncProcessHandlerTest {
 
     assertThat(mockServer.requestCount, `is`(equalTo(2)))
     assertNull(deviceStateStore.deviceId)
+  }
+
+  @Test
+  fun setUserIdAfterStartShouldSetTheUserIdInTheServerAndDeviceStateStore() {
+    val userId = "alice"
+    val jwt = "definitely-a-jwt-just-trust-me"
+
+    val startJob = ServerSyncHandler.start("token-123", emptyList())
+    jobQueue.push(startJob.obj as ServerSyncJob)
+
+    // expect register device
+    mockServer.enqueue(MockResponse().setBody("""{"id": "d-123", "initialInterestSet": []}"""))
+
+    handler.handleMessage(startJob)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(1)))
+    assertNotNull(deviceStateStore.deviceId)
+
+    val setUserIdJob = ServerSyncHandler.setUserId(userId, jwt)
+    jobQueue.push(setUserIdJob.obj as ServerSyncJob)
+
+    // Expect set user id
+    mockServer.enqueue(MockResponse().setBody(""))
+
+    handler.handleMessage(setUserIdJob)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(2)))
+    assertThat(deviceStateStore.userId, `is`(equalTo(userId)))
+  }
+
+  @Test
+  fun setUserIdBeforeStartShouldSetTheUserIdInTheServerAndDeviceStateStore() {
+    val userId = "alice"
+    val jwt = "definitely-a-jwt-just-trust-me"
+
+    val setUserIdJob = ServerSyncHandler.setUserId(userId, jwt)
+    jobQueue.push(setUserIdJob.obj as ServerSyncJob)
+
+    handler.handleMessage(setUserIdJob)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(0)))
+    assertNull(deviceStateStore.userId)
+
+    val startJob = ServerSyncHandler.start("token-123", emptyList())
+    jobQueue.push(startJob.obj as ServerSyncJob)
+
+    // expect register device
+    mockServer.enqueue(MockResponse().setBody("""{"id": "d-123", "initialInterestSet": []}"""))
+
+    // Expect set user id
+    mockServer.enqueue(MockResponse().setBody(""))
+
+    handler.handleMessage(startJob)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(2)))
+    assertNotNull(deviceStateStore.deviceId)
+    assertThat(deviceStateStore.userId, `is`(equalTo(userId)))
   }
 }

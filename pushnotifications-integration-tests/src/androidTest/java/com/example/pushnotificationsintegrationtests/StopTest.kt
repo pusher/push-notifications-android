@@ -38,17 +38,17 @@ class StopTest {
     @AfterClass
     @JvmStatic
     fun shutdownFakeErrol() {
-      DeviceRegistrationTest.errol.stop()
+      errol.stop()
     }
   }
 
   @Before
   @After
-  fun cleanup() {
+  fun wipeLocalState() {
     val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
     assertTrue(deviceStateStore.clear())
-    assertNull(deviceStateStore.deviceId)
     assertThat(deviceStateStore.interests.size, `is`(equalTo(0)))
+    assertNull(deviceStateStore.deviceId)
 
     File(context.filesDir, "$instanceId.jobqueue").delete()
   }

@@ -7,7 +7,7 @@ android {
 
     defaultConfig {
         applicationId "com.example.pushnotificationsintegrationtests"
-        minSdkVersion 18
+        minSdkVersion 23
         targetSdkVersion 27
         versionCode 1
         versionName "1.0"
@@ -49,6 +49,12 @@ dependencies {
     implementation "com.google.android.gms:play-services-gcm:15.0.1"
     implementation "com.google.firebase:firebase-core:16.0.1"
     implementation "com.google.firebase:firebase-messaging:17.1.0"
+
+    api 'io.jsonwebtoken:jjwt-api:0.10.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.10.5'
+    runtimeOnly('io.jsonwebtoken:jjwt-orgjson:0.10.5') {
+        exclude group: 'org.json', module: 'json' //provided by Android natively
+    }
 }
 
 apply plugin: 'com.google.gms.google-services'
