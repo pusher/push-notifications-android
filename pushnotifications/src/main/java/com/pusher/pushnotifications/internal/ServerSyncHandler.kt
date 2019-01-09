@@ -172,6 +172,9 @@ class ServerSyncProcessHandler internal constructor(
           is SetUserIdJob -> {
             outstandingJobs.add(j)
           }
+          is ApplicationStartJob -> {
+            // ignoring it as we are already going to sync the state anyway
+          }
           else -> {
             throw IllegalStateException("Job $j unexpected during SDK start")
           }

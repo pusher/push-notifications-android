@@ -318,6 +318,30 @@ class ServerSyncProcessHandlerTest {
     assertThat(mockServer.requestCount, `is`(equalTo(5)))
   }
 
+
+  @Test
+  fun applicationStartJobShouldBeIgnoredBeforeStart() {
+    // The application boots, ans an ApplicationStartJob is enqueued
+    val deviceMetadata = DeviceMetadata(sdkVersion = "123", androidVersion = "X")
+    val applicationStartJob = ServerSyncHandler.applicationStart(deviceMetadata)
+    jobQueue.push(applicationStartJob.obj as ServerSyncJob)
+    handler.handleMessage(applicationStartJob)
+
+    // Nothing should happen
+    assertThat(mockServer.requestCount, `is`(equalTo(0)))
+
+    // A start job is enqueued
+    val startJob = ServerSyncHandler.start("token-123", emptyList())
+    jobQueue.push(startJob.obj as ServerSyncJob)
+
+    // expect register device and nothing else
+    mockServer.enqueue(MockResponse().setBody("""{"id": "d-123", "initialInterestSet": []}"""))
+
+    handler.handleMessage(startJob)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(1)))
+  }
+
   @Test
   fun stopShouldDeleteTheDeviceFromTheServerAndClearDeviceStateStore() {
     val startJob = ServerSyncHandler.start("token-123", emptyList())
