@@ -342,12 +342,8 @@ class PushNotificationsInstance @JvmOverloads constructor(
         throw PusherAlreadyRegisteredAnotherUserIdException(
             "This device has already been registered to another user id.")
       }
-      deviceStateStore.setUserIdHasBeenCalledWith = userId
 
-      if (deviceStateStore.userId != null) {
-        callback.onSuccess()
-        return
-      }
+      deviceStateStore.setUserIdHasBeenCalledWith = userId
     }
 
     GetUserTokenTask(tokenProvider) { jwt, exception ->

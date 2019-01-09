@@ -159,14 +159,20 @@ class SetUserIdTest {
     assertNotNull(getDeviceResponse)
     assertThat(getDeviceResponse!!.userId, `is`(equalTo(userId)))
 
+    // Restart the SDK
     pni.stop()
+    val newJwt = makeJWT(instanceId, secretKey, "another-$userId")
+    tokenProvider.jwt = newJwt
     pni.start()
-    pni.setUserId("another-$userId")
 
-    Thread.sleep(132000)
+    // Set a different user id
+    pni.setUserId("another-$userId")
+    Thread.sleep(1000)
+
     // A new device ID should have been stored
     val newStoredDeviceId = getStoredDeviceId()
     assertNotNull(newStoredDeviceId)
+    assertThat(newStoredDeviceId, `is`(not(equalTo(storedDeviceId))))
 
     // Assert that the correct user id has been set for the device on the server
     val newGetDeviceResponse = errolClient.getDevice(newStoredDeviceId!!)
@@ -334,7 +340,7 @@ class SetUserIdTest {
     }
   }
 
-  private class StubTokenProvider(val jwt: String): TokenProvider {
+  private class StubTokenProvider(var jwt: String): TokenProvider {
     override fun fetchToken(userId: String): String {
       return jwt
     }
