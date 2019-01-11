@@ -73,12 +73,6 @@ internal class ServerSyncEventHandler private constructor(looper: Looper): Handl
   }
 
   internal companion object {
-    fun interestsChangedEvent(interests: Set<String>): Message =
-        Message.obtain().apply { obj = InterestsChangedEvent(interests) }
-
-    fun userIdSet(userId: String, pusherCallbackError: PusherCallbackError?): Message =
-        Message.obtain().apply { obj = UserIdSet(userId, pusherCallbackError) }
-
     private val serverSyncEventHandlers = mutableMapOf<String, ServerSyncEventHandler>()
     internal fun obtain(instanceId: String, looper: Looper): ServerSyncEventHandler {
       return synchronized(serverSyncEventHandlers) {
@@ -115,8 +109,13 @@ class PushNotificationsInstance @JvmOverloads constructor(
         api = PushNotificationsAPI(instanceId, sdkConfig.overrideHostURL),
         deviceStateStore = deviceStateStore,
         secureFileDir = context.filesDir,
-        serverSyncEventHandler = serverSyncEventHandler
-    )
+        handleServerSyncEvent = { msg ->
+          serverSyncEventHandler.sendMessage(Message.obtain().apply { obj = msg })
+        }
+    ).also {
+      // obtain caches the server sync handler but we always want to use the latest TokenProvider
+      it.setTokenProvider(tokenProvider)
+    }
   }()
 
   init {
@@ -297,24 +296,6 @@ class PushNotificationsInstance @JvmOverloads constructor(
     serverSyncHandler.sendMessage(ServerSyncHandler.applicationStart(deviceMetadata))
   }
 
-  private class GetUserTokenTask(
-      private val tokenProvider: TokenProvider,
-      private val onComplete: (s: String?, exception: Exception?) -> Unit
-  ): AsyncTask<String, Unit, Pair<String?, Exception?>>() {
-
-    override fun doInBackground(vararg userIds: String): Pair<String?, Exception?> {
-      return try {
-        Pair(tokenProvider.fetchToken(userIds[0]), null)
-      } catch (ex: Exception) {
-        Pair(null, ex)
-      }
-    }
-
-    override fun onPostExecute(result: Pair<String?, Exception?>) {
-      onComplete(result.first, result.second)
-    }
-  }
-
   /**
    * Sets the user id that is associated with this device.
    * <i>Note: This method can only be called after start. Once a user id has been set for the device
@@ -346,15 +327,8 @@ class PushNotificationsInstance @JvmOverloads constructor(
       deviceStateStore.setUserIdHasBeenCalledWith = userId
     }
 
-    GetUserTokenTask(tokenProvider) { jwt, exception ->
-      if (jwt == null) {
-        callback.onFailure(PusherCallbackError(
-            "Failed trying to set user Id for device", exception))
-      } else {
-        serverSyncEventHandler.addUserIdCallback(userId, callback)
-        serverSyncHandler.sendMessage(ServerSyncHandler.setUserId(userId, jwt))
-      }
-    }.execute(userId)
+    serverSyncEventHandler.addUserIdCallback(userId, callback)
+    serverSyncHandler.sendMessage(ServerSyncHandler.setUserId(userId))
   }
 
   fun stop() {

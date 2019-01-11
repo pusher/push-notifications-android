@@ -11,9 +11,7 @@ import com.pusher.pushnotifications.auth.TokenProvider
 import com.pusher.pushnotifications.internal.DeviceStateStore
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
-import io.jsonwebtoken.security.Keys
 import org.hamcrest.CoreMatchers.*
-import org.hamcrest.Matchers.contains
 import org.junit.After
 import org.junit.AfterClass
 import org.junit.Assert.*
