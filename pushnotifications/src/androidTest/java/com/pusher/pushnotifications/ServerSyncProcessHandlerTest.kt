@@ -163,7 +163,7 @@ class ServerSyncProcessHandlerTest {
 
     // expect register device
     mockServer.enqueue(MockResponse().setBody("""{"id": "d-123", "initialInterestSet": []}"""))
-    // expect a subscribe
+    // expect set subscriptions
     mockServer.enqueue(MockResponse().setBody(""))
 
     val subJob = ServerSyncHandler.subscribe("hello")
@@ -173,6 +173,123 @@ class ServerSyncProcessHandlerTest {
     assertThat(mockServer.requestCount, `is`(equalTo(4)))
 
     assertTrue(jobQueue.peek() == null)
+  }
+
+  @Test
+  fun startDoSomeOperationsWhileHandlingUnexpectedDeviceDeletionCorrectlyWithUserId() {
+    val startJob = ServerSyncHandler.start("token-123", emptyList())
+    jobQueue.push(startJob.obj as ServerSyncJob)
+
+    // expect register device
+    mockServer.enqueue(MockResponse().setBody("""{"id": "d-123", "initialInterestSet": []}"""))
+
+    handler.handleMessage(startJob)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(1)))
+
+    // setting the user id now
+    val userId = "alice"
+    handler.tokenProvider = StubTokenProvider()
+
+    val setUserIdJob = ServerSyncHandler.setUserId(userId)
+    jobQueue.push(setUserIdJob.obj as ServerSyncJob)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(1)))
+    assertNull(deviceStateStore.userId)
+
+    // expect set user id
+    mockServer.enqueue(MockResponse().setBody(""))
+
+    handler.handleMessage(setUserIdJob)
+    assertThat(deviceStateStore.userId, `is`(equalTo(userId)))
+
+    // expect to fail with 404 not found the next subscribe
+    mockServer.enqueue(MockResponse().setResponseCode(404).setBody(""))
+
+    // expect register device
+    mockServer.enqueue(MockResponse().setBody("""{"id": "d-123", "initialInterestSet": []}"""))
+
+    // expect set user id
+    mockServer.enqueue(MockResponse().setBody(""))
+
+    // expect set subscriptions
+    mockServer.enqueue(MockResponse().setBody(""))
+
+    val subJob = ServerSyncHandler.subscribe("hello")
+    jobQueue.push(subJob.obj as ServerSyncJob)
+    handler.handleMessage(subJob)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(6)))
+    assertTrue(jobQueue.peek() == null)
+    assertThat(deviceStateStore.userId, `is`(equalTo(userId)))
+  }
+
+  @Test
+  fun aDeviceWithAUserShouldBecomeACleanDeviceIfTokenProviderFails() {
+    val startJob = ServerSyncHandler.start("token-123", emptyList())
+    jobQueue.push(startJob.obj as ServerSyncJob)
+
+    // expect register device
+    mockServer.enqueue(MockResponse().setBody("""{"id": "d-123", "initialInterestSet": []}"""))
+
+    handler.handleMessage(startJob)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(1)))
+
+    // setting the user id now
+    val userId = "alice"
+    handler.tokenProvider = StubTokenProvider()
+
+    val setUserIdJob = ServerSyncHandler.setUserId(userId)
+    jobQueue.push(setUserIdJob.obj as ServerSyncJob)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(1)))
+    assertNull(deviceStateStore.userId)
+
+    // expect set user id
+    mockServer.enqueue(MockResponse().setBody(""))
+
+    handler.handleMessage(setUserIdJob)
+    assertThat(deviceStateStore.userId, `is`(equalTo(userId)))
+
+    // any other set user id
+    handler.tokenProvider = ExceptionalTokenProvider()
+
+    // subscribe to an interest
+    val subJob = ServerSyncHandler.subscribe("hello")
+    jobQueue.push(subJob.obj as ServerSyncJob)
+    deviceStateStore.interests = deviceStateStore.interests.apply { add("hello") }
+
+    // expect subscribe
+    mockServer.enqueue(MockResponse().setBody(""))
+
+    handler.handleMessage(subJob)
+
+    // do set metadata job that will fail with a 404
+    val subJob2 = ServerSyncHandler.subscribe("hello-2")
+    jobQueue.push(subJob2.obj as ServerSyncJob)
+    deviceStateStore.interests = deviceStateStore.interests.apply { add("hello-2") }
+
+    // expect to fail with 404 not found for the sub
+    mockServer.enqueue(MockResponse().setResponseCode(404).setBody(""))
+
+    // expect register device
+    mockServer.enqueue(MockResponse().setBody("""{"id": "d-123", "initialInterestSet": []}"""))
+
+    // expect the set subscriptions after the device recreation
+    mockServer.enqueue(MockResponse().setBody(""))
+
+    // expect the subscribe 2
+    mockServer.enqueue(MockResponse().setBody(""))
+
+    handler.handleMessage(subJob2)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(7)))
+    assertTrue(jobQueue.peek() == null)
+    assertNull(deviceStateStore.userId)
+
+    // the device recreation logic will not clear the previous interests
+    assertThat(deviceStateStore.interests, `is`(equalTo(setOf("hello", "hello-2"))))
   }
 
   @Test
@@ -465,7 +582,7 @@ class ServerSyncProcessHandlerTest {
     val setUserIdJob = ServerSyncHandler.setUserId(userId)
     jobQueue.push(setUserIdJob.obj as ServerSyncJob)
 
-    // Expect set user id
+    // expect set user id
     mockServer.enqueue(MockResponse().setBody(""))
 
     handler.handleMessage(setUserIdJob)
@@ -493,7 +610,7 @@ class ServerSyncProcessHandlerTest {
     // expect register device
     mockServer.enqueue(MockResponse().setBody("""{"id": "d-123", "initialInterestSet": []}"""))
 
-    // Expect set user id
+    // expect set user id
     mockServer.enqueue(MockResponse().setBody(""))
 
     handler.handleMessage(startJob)
@@ -525,7 +642,7 @@ class ServerSyncProcessHandlerTest {
     // expect register device
     mockServer.enqueue(MockResponse().setBody("""{"id": "d-123", "initialInterestSet": []}"""))
 
-    // Expect set user id
+    // expect set user id
     mockServer.enqueue(MockResponse().setBody(""))
 
     handler.handleMessage(startJob)
@@ -560,7 +677,7 @@ class ServerSyncProcessHandlerTest {
     // expect register device
     mockServer.enqueue(MockResponse().setBody("""{"id": "d-123", "initialInterestSet": []}"""))
 
-    // Expect set user id
+    // expect set user id
     mockServer.enqueue(MockResponse().setBody(""))
 
     handler.handleMessage(startJob)
@@ -594,7 +711,7 @@ class ServerSyncProcessHandlerTest {
     // expect register device
     mockServer.enqueue(MockResponse().setBody("""{"id": "d-123", "initialInterestSet": []}"""))
 
-    // Expect set user id
+    // expect set user id
     mockServer.enqueue(MockResponse().setBody(""))
 
     handler.handleMessage(startJob)
@@ -639,7 +756,7 @@ class ServerSyncProcessHandlerTest {
     // expect register device
     mockServer.enqueue(MockResponse().setBody("""{"id": "d-123", "initialInterestSet": []}"""))
 
-    // Expect set user id
+    // expect set user id
     mockServer.enqueue(MockResponse().setBody(""))
 
     handler.handleMessage(startJob)

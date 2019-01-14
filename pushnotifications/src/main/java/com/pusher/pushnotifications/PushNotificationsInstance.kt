@@ -91,6 +91,7 @@ internal class ServerSyncEventHandler private constructor(looper: Looper): Handl
  * @param instanceId the id of the instance
  */
 class PushNotificationsInstance @JvmOverloads constructor(
+// TODO: throw exception if tokenProvider is null but user id is set
     context: Context,
     instanceId: String,
     private val tokenProvider: TokenProvider? = null

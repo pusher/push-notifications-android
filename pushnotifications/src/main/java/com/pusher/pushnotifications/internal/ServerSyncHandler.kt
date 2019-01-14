@@ -138,17 +138,46 @@ class ServerSyncProcessHandler internal constructor(
 
     var localInterests: Set<String> = emptySet()
     synchronized(deviceStateStore) {
-      deviceStateStore.deviceId = registrationResponse.deviceId
-      deviceStateStore.FCMToken = fcmToken
-
       localInterests = deviceStateStore.interests
+
+      deviceStateStore.FCMToken = fcmToken
+      deviceStateStore.serverConfirmedInterestsHash = null
+      deviceStateStore.deviceId = registrationResponse.deviceId
     }
 
     if (localInterests.count() > 0) {
-      api.setSubscriptions(
+      api.setSubscriptions( // TODO: We don't really handle if we get a 400 or 404
           deviceId = registrationResponse.deviceId,
-          interests = deviceStateStore.interests,
+          interests = localInterests,
           retryStrategy = RetryStrategy.WithInfiniteExpBackOff())
+    }
+
+    val storedUserId = deviceStateStore.userId
+    if (storedUserId != null) {
+      val tp = tokenProvider
+      if (tp == null) {
+        throw IllegalStateException("User Id is set but token provider is missing, can't handle device recreation")
+      }
+
+      try {
+        val executor = Executors.newSingleThreadExecutor()
+        val future: Future<String> = executor.submit<String> {
+          tp.fetchToken(storedUserId)
+        }
+        val jwt = future.get(tokenProviderTimeoutSecs, TimeUnit.SECONDS)
+
+        api.setUserId(
+            deviceStateStore.deviceId!!,
+            jwt,
+            RetryStrategy.WithInfiniteExpBackOff())
+      } catch (e: Exception) {
+        // Any failures during this process are equivalent to de-authing the user e.g. setUserId(null)z
+        // If the user session is indeed over, there should be a Stop in the backlog eventually
+
+        log.e("Failed to set the user id due to an unexpected error", e)
+        deviceStateStore.userId = null
+        return
+      }
     }
   }
 
@@ -215,7 +244,7 @@ class ServerSyncProcessHandler internal constructor(
 
     val remoteInterestsWillChange = deviceStateStore.interests != registrationResponse.initialInterests
     if (remoteInterestsWillChange) {
-      api.setSubscriptions(
+      api.setSubscriptions( // TODO: We don't really handle if we get a 400 or 404
           deviceId = registrationResponse.deviceId,
           interests = deviceStateStore.interests,
           retryStrategy = RetryStrategy.WithInfiniteExpBackOff())
@@ -223,7 +252,7 @@ class ServerSyncProcessHandler internal constructor(
 
     log.d("Number of outstanding jobs: ${outstandingJobs.size}")
     outstandingJobs.forEach { j ->
-      processJob(j) // wrong, callbacks are missing
+      processJob(j)
     }
   }
 
