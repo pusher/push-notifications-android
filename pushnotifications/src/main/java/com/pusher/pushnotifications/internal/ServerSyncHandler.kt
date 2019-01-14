@@ -156,7 +156,13 @@ class ServerSyncProcessHandler internal constructor(
     if (storedUserId != null) {
       val tp = tokenProvider
       if (tp == null) {
-        throw IllegalStateException("User Id is set but token provider is missing, can't handle device recreation")
+        // Any failures during this process are equivalent to de-authing the user e.g. setUserId(null)
+        // If the user session is indeed over, there should be a Stop in the backlog eventually
+        // If the user session is still valid, there should be a setUserId in the backlog
+
+        log.w("Failed to set the user id due token provider not being present")
+        deviceStateStore.userId = null
+        return
       }
 
       try {
@@ -171,10 +177,11 @@ class ServerSyncProcessHandler internal constructor(
             jwt,
             RetryStrategy.WithInfiniteExpBackOff())
       } catch (e: Exception) {
-        // Any failures during this process are equivalent to de-authing the user e.g. setUserId(null)z
+        // Any failures during this process are equivalent to de-authing the user e.g. setUserId(null)
         // If the user session is indeed over, there should be a Stop in the backlog eventually
+        // If the user session is still valid, there should be a setUserId in the backlog
 
-        log.e("Failed to set the user id due to an unexpected error", e)
+        log.w("Failed to set the user id due to an unexpected error", e)
         deviceStateStore.userId = null
         return
       }
