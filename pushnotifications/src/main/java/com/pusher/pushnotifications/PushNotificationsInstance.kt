@@ -93,8 +93,7 @@ internal class ServerSyncEventHandler private constructor(looper: Looper): Handl
 class PushNotificationsInstance @JvmOverloads constructor(
 // TODO: throw exception if tokenProvider is null but user id is set
     context: Context,
-    instanceId: String,
-    private val tokenProvider: TokenProvider? = null
+    instanceId: String
 ) {
   private val log = Logger.get(this::class)
 
@@ -112,11 +111,11 @@ class PushNotificationsInstance @JvmOverloads constructor(
         secureFileDir = context.filesDir,
         handleServerSyncEvent = { msg ->
           serverSyncEventHandler.sendMessage(Message.obtain().apply { obj = msg })
+        },
+        getTokenProvider = {
+          PushNotifications.tokenProvider
         }
-    ).also {
-      // obtain caches the server sync handler but we always want to use the latest TokenProvider
-      it.setTokenProvider(tokenProvider)
-    }
+    )
   }()
 
   init {
@@ -309,8 +308,8 @@ class PushNotificationsInstance @JvmOverloads constructor(
    */
   @JvmOverloads
   fun setUserId(userId: String, callback: Callback<Void, PusherCallbackError> = NoopCallback()) {
-    if (tokenProvider == null) {
-      throw IllegalStateException("Token provider was not set on `.start`")
+    if (PushNotifications.tokenProvider == null) {
+      throw IllegalStateException("Token provider missing, please call `PushNotifications.setTokenProvider`")
     }
     if (!startHasBeenCalledThisSession && !deviceStateStore.startJobHasBeenEnqueued) {
       throw IllegalStateException("Start method must be called before setUserId")

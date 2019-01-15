@@ -26,6 +26,7 @@ class ServerSyncHandler private constructor(
     private val deviceStateStore: DeviceStateStore,
     private val jobQueue: PersistentJobQueue<ServerSyncJob>,
     private val handleServerSyncEvent: (ServerSyncEvent) -> Unit,
+    private val getTokenProvider: () -> TokenProvider?,
     looper: Looper
 ): Handler(looper) {
   private val serverSyncProcessHandler = {
@@ -37,6 +38,7 @@ class ServerSyncHandler private constructor(
         deviceStateStore = deviceStateStore,
         jobQueue = jobQueue,
         handleServerSyncEvent = handleServerSyncEvent,
+        getTokenProvider = getTokenProvider,
         looper = handlerThread.looper
     )
   }()
@@ -47,10 +49,6 @@ class ServerSyncHandler private constructor(
     jobQueue.asIterable().forEach { job ->
       serverSyncProcessHandler.sendMessage(Message().also { it.obj = job })
     }
-  }
-
-  fun setTokenProvider(tokenProvider: TokenProvider?) {
-    serverSyncProcessHandler.tokenProvider = tokenProvider
   }
 
   override fun handleMessage(msg: Message) {
@@ -69,8 +67,9 @@ class ServerSyncHandler private constructor(
         api: PushNotificationsAPI,
         deviceStateStore: DeviceStateStore,
         secureFileDir: File,
-        handleServerSyncEvent: (ServerSyncEvent) -> Unit
-    ): ServerSyncHandler {
+        handleServerSyncEvent: (ServerSyncEvent) -> Unit,
+        getTokenProvider: () -> TokenProvider?
+        ): ServerSyncHandler {
       return synchronized(serverSyncHandlers) {
         serverSyncHandlers.getOrPut(instanceId) {
           val handlerThread = HandlerThread("ServerSyncHandler-$instanceId")
@@ -82,6 +81,7 @@ class ServerSyncHandler private constructor(
               deviceStateStore = deviceStateStore,
               jobQueue = jobQueue,
               handleServerSyncEvent = handleServerSyncEvent,
+              getTokenProvider = getTokenProvider,
               looper = handlerThread.looper
           )
         }
@@ -119,11 +119,11 @@ class ServerSyncProcessHandler internal constructor(
     private val deviceStateStore: DeviceStateStore,
     private val jobQueue: PersistentJobQueue<ServerSyncJob>,
     private val handleServerSyncEvent: (ServerSyncEvent) -> Unit,
+    private val getTokenProvider: () -> TokenProvider?,
     looper: Looper
 ): Handler(looper) {
   var tokenProviderTimeoutSecs: Long = 60
 
-  var tokenProvider: TokenProvider? = null
   private val log = Logger.get(this::class)
   private val started: Boolean
   get() = deviceStateStore.deviceId != null
@@ -154,7 +154,7 @@ class ServerSyncProcessHandler internal constructor(
 
     val storedUserId = deviceStateStore.userId
     if (storedUserId != null) {
-      val tp = tokenProvider
+      val tp = getTokenProvider()
       if (tp == null) {
         // Any failures during this process are equivalent to de-authing the user e.g. setUserId(null)
         // If the user session is indeed over, there should be a Stop in the backlog eventually
@@ -328,7 +328,7 @@ class ServerSyncProcessHandler internal constructor(
       }
     }
 
-    val tp = tokenProvider
+    val tp = getTokenProvider()
     if (tp == null) {
       handleServerSyncEvent(
           UserIdSet(
@@ -362,7 +362,7 @@ class ServerSyncProcessHandler internal constructor(
           UserIdSet(
               userId = job.userId,
               pusherCallbackError = PusherCallbackError(
-                  message = "Could not set user id: TokenProvider timed out (> ${tokenProviderTimeoutSecs} seconds)",
+                  message = "Could not set user id: TokenProvider timed out (> $tokenProviderTimeoutSecs seconds)",
                   cause = null
               ))
       )

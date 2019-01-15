@@ -4,6 +4,7 @@ package com.example.pushnotificationsintegrationtests
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
 import com.pusher.pushnotifications.Callback
+import com.pusher.pushnotifications.PushNotifications
 import com.pusher.pushnotifications.PushNotificationsInstance
 import com.pusher.pushnotifications.PusherCallbackError
 import com.pusher.pushnotifications.auth.TokenProvider
@@ -37,7 +38,7 @@ class ClearAllStateTest {
   }
 
   val context = InstrumentationRegistry.getTargetContext()
-  val instanceId = "00000000-1241-08e9-b379-377c32cd1e89"
+  val instanceId = "00000000-1241-08e9-b379-377c32cd1e81"
   val errolClient = ErrolAPI(instanceId, "http://localhost:8080")
 
   companion object {
@@ -59,6 +60,8 @@ class ClearAllStateTest {
     assertNull(deviceStateStore.deviceId)
 
     File(context.filesDir, "$instanceId.jobqueue").delete()
+
+    PushNotifications.setTokenProvider(null)
   }
 
   @Test
@@ -71,7 +74,8 @@ class ClearAllStateTest {
     val tokenProvider = StubTokenProvider(jwt)
 
     // Start the SDK
-    val pni = PushNotificationsInstance(context, instanceId, tokenProvider)
+    PushNotifications.setTokenProvider(tokenProvider)
+    val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
     Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
 

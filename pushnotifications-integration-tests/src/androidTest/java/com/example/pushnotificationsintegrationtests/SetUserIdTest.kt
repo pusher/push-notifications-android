@@ -3,20 +3,14 @@ package com.example.pushnotificationsintegrationtests
 
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
-import com.pusher.pushnotifications.Callback
-import com.pusher.pushnotifications.PushNotificationsInstance
-import com.pusher.pushnotifications.PusherAlreadyRegisteredAnotherUserIdException
-import com.pusher.pushnotifications.PusherCallbackError
+import com.pusher.pushnotifications.*
 import com.pusher.pushnotifications.auth.TokenProvider
 import com.pusher.pushnotifications.internal.DeviceStateStore
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
 import org.hamcrest.CoreMatchers.*
-import org.junit.After
-import org.junit.AfterClass
+import org.junit.*
 import org.junit.Assert.*
-import org.junit.Before
-import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import java.lang.IllegalStateException
@@ -38,7 +32,7 @@ class SetUserIdTest {
   }
 
   val context = InstrumentationRegistry.getTargetContext()
-  val instanceId = "00000000-1241-08e9-b379-377c32cd1e89"
+  val instanceId = "00000000-1241-08e9-b379-377c32cd1e84"
   val userId = "alice"
   val errolClient = ErrolAPI(instanceId, "http://localhost:8080")
 
@@ -63,6 +57,8 @@ class SetUserIdTest {
     assertNull(deviceStateStore.deviceId)
 
     File(context.filesDir, "$instanceId.jobqueue").delete()
+
+    PushNotifications.setTokenProvider(null)
   }
 
   @Test
@@ -72,7 +68,8 @@ class SetUserIdTest {
     val tokenProvider = StubTokenProvider(jwt)
 
     // Start the SDK
-    val pni = PushNotificationsInstance(context, instanceId, tokenProvider)
+    PushNotifications.setTokenProvider(tokenProvider)
+    val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
     Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
 
@@ -100,7 +97,8 @@ class SetUserIdTest {
     val tokenProvider = StubTokenProvider(jwt)
 
     // Start the SDK
-    val pni = PushNotificationsInstance(context, instanceId, tokenProvider)
+    PushNotifications.setTokenProvider(tokenProvider)
+    val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
     Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
 
@@ -137,7 +135,8 @@ class SetUserIdTest {
     val tokenProvider = StubTokenProvider(jwt)
 
     // Start the SDK
-    val pni = PushNotificationsInstance(context, instanceId, tokenProvider)
+    PushNotifications.setTokenProvider(tokenProvider)
+    val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
     Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
 
@@ -186,7 +185,8 @@ class SetUserIdTest {
     val tokenProvider = StubTokenProvider(jwt)
 
     // Start the SDK
-    val pni = PushNotificationsInstance(context, instanceId, tokenProvider)
+    PushNotifications.setTokenProvider(tokenProvider)
+    val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
     Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
 
@@ -222,7 +222,8 @@ class SetUserIdTest {
     val tokenProvider = BrokenTokenProvider()
 
     // Start the SDK
-    val pni = PushNotificationsInstance(context, instanceId, tokenProvider)
+    PushNotifications.setTokenProvider(tokenProvider)
+    val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
     Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
 
@@ -259,7 +260,8 @@ class SetUserIdTest {
     val tokenProvider = StubTokenProvider("")
 
     // Create sdk instance
-    val pni = PushNotificationsInstance(context, instanceId, tokenProvider)
+    PushNotifications.setTokenProvider(tokenProvider)
+    val pni = PushNotificationsInstance(context, instanceId)
 
     // Call setUserId straight away
     pni.setUserId(userId)
@@ -269,6 +271,7 @@ class SetUserIdTest {
   fun setUserIdShouldThrowExceptionIfNoTokenProviderHasBeenGiven() {
     // Create sdk instance
     val pni = PushNotificationsInstance(context, instanceId)
+    pni.start()
 
     // Call setUserId straight away
     pni.setUserId(userId)
@@ -281,7 +284,8 @@ class SetUserIdTest {
     val tokenProvider = StubTokenProvider(jwt)
 
     // Start the SDK
-    val pni = PushNotificationsInstance(context, instanceId, tokenProvider)
+    PushNotifications.setTokenProvider(tokenProvider)
+    val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
     Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
 
@@ -322,7 +326,8 @@ class SetUserIdTest {
     val tokenProvider = StubTokenProvider(jwt)
 
     // Start the SDK
-    val pni = PushNotificationsInstance(context, instanceId, tokenProvider)
+    PushNotifications.setTokenProvider(tokenProvider)
+    val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
 
     // Set a user id

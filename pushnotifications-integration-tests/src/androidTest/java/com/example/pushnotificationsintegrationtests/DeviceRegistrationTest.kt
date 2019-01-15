@@ -3,6 +3,7 @@ package com.example.pushnotificationsintegrationtests
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
 import com.google.firebase.iid.FirebaseInstanceId
+import com.pusher.pushnotifications.PushNotifications
 import com.pusher.pushnotifications.PushNotificationsInstance
 import com.pusher.pushnotifications.SubscriptionsChangedListener
 import com.pusher.pushnotifications.internal.DeviceStateStore
@@ -34,7 +35,7 @@ class DeviceRegistrationTest {
   }
 
   val context = InstrumentationRegistry.getTargetContext()
-  val instanceId = "00000000-1241-08e9-b379-377c32cd1e89"
+  val instanceId = "00000000-1241-08e9-b379-377c32cd1e83"
   val errolClient = ErrolAPI(instanceId, "http://localhost:8080")
   companion object {
     val errol = FakeErrol(8080)
@@ -55,6 +56,8 @@ class DeviceRegistrationTest {
     assertNull(deviceStateStore.deviceId)
 
     File(context.filesDir, "$instanceId.jobqueue").delete()
+
+    PushNotifications.setTokenProvider(null)
   }
 
   @Test

@@ -3,14 +3,18 @@ package com.pusher.pushnotifications;
 import java.util.Set;
 
 import android.app.Activity;
-import android.app.Application;
-import android.app.Fragment;
 import android.content.Context;
 
+import com.pusher.pushnotifications.auth.TokenProvider;
 import com.pusher.pushnotifications.fcm.MessagingService;
 
 public class PushNotifications {
     private static PushNotificationsInstance instance;
+    protected static TokenProvider tokenProvider;
+
+    public static void setTokenProvider(TokenProvider tokenProvider) {
+        PushNotifications.tokenProvider = tokenProvider;
+    }
 
     /**
      * Starts the PushNotification client and synchronizes the FCM device token with
@@ -21,7 +25,7 @@ public class PushNotifications {
      * is deemed better for your project.
      */
     public static PushNotificationsInstance start(Context context, String instanceId) {
-        instance = new PushNotificationsInstance(context, instanceId, null);
+        instance = new PushNotificationsInstance(context, instanceId);
         instance.start();
         return instance;
     }

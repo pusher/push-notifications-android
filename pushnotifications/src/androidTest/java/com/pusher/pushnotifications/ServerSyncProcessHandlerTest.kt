@@ -34,21 +34,23 @@ class ServerSyncProcessHandlerTest {
   }
 
   val instanceId = "000000-c1de-09b9-a8f6-2a22dbdd062a"
-  val mockServer = MockWebServer().apply { start() }
-  val api = PushNotificationsAPI(instanceId, mockServer.url("/").toString())
-  val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
-  val jobQueue = {
+  private val mockServer = MockWebServer().apply { start() }
+  private val api = PushNotificationsAPI(instanceId, mockServer.url("/").toString())
+  private val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
+  private val jobQueue = {
     val tempFile = File.createTempFile("persistentJobQueue-", ".queue")
     tempFile.delete() // QueueFile expects a handle to a non-existent file on first run.
     TapeJobQueue<ServerSyncJob>(tempFile)
   }()
-  val looper = InstrumentationRegistry.getContext().mainLooper
+  private val looper = InstrumentationRegistry.getContext().mainLooper
   private var lastHandleServerSyncEvent: ServerSyncEvent? = null
-  val handler = ServerSyncProcessHandler(
+  private var tokenProvider: TokenProvider? = null
+  private val handler = ServerSyncProcessHandler(
       api = api,
       deviceStateStore = deviceStateStore,
       jobQueue = jobQueue,
       handleServerSyncEvent = { lastHandleServerSyncEvent = it},
+      getTokenProvider = { tokenProvider },
       looper = looper
   )
 
@@ -189,7 +191,7 @@ class ServerSyncProcessHandlerTest {
 
     // setting the user id now
     val userId = "alice"
-    handler.tokenProvider = StubTokenProvider()
+    tokenProvider = StubTokenProvider()
 
     val setUserIdJob = ServerSyncHandler.setUserId(userId)
     jobQueue.push(setUserIdJob.obj as ServerSyncJob)
@@ -238,7 +240,7 @@ class ServerSyncProcessHandlerTest {
 
     // setting the user id now
     val userId = "alice"
-    handler.tokenProvider = StubTokenProvider()
+    tokenProvider = StubTokenProvider()
 
     val setUserIdJob = ServerSyncHandler.setUserId(userId)
     jobQueue.push(setUserIdJob.obj as ServerSyncJob)
@@ -253,7 +255,7 @@ class ServerSyncProcessHandlerTest {
     assertThat(deviceStateStore.userId, `is`(equalTo(userId)))
 
     // any other set user id
-    handler.tokenProvider = ExceptionalTokenProvider()
+    tokenProvider = ExceptionalTokenProvider()
 
     // subscribe to an interest
     val subJob = ServerSyncHandler.subscribe("hello")
@@ -370,7 +372,7 @@ class ServerSyncProcessHandlerTest {
 
     val flakyAPI = PushNotificationsAPI(instanceId, flakyMockServer.url("/").toString())
     val handlerWithBrokenAPI =
-        ServerSyncProcessHandler(flakyAPI, deviceStateStore, jobQueue, { lastHandleServerSyncEvent = it}, looper)
+        ServerSyncProcessHandler(flakyAPI, deviceStateStore, jobQueue, { lastHandleServerSyncEvent = it}, { tokenProvider }, looper)
 
     val startJob = ServerSyncHandler.start("token-123", emptyList())
     jobQueue.push(startJob.obj as ServerSyncJob)
@@ -566,7 +568,7 @@ class ServerSyncProcessHandlerTest {
   @Test
   fun setUserIdAfterStartShouldSetTheUserIdInTheServerAndDeviceStateStore() {
     val userId = "alice"
-    handler.tokenProvider = StubTokenProvider()
+    tokenProvider = StubTokenProvider()
 
     val startJob = ServerSyncHandler.start("token-123", emptyList())
     jobQueue.push(startJob.obj as ServerSyncJob)
@@ -594,7 +596,7 @@ class ServerSyncProcessHandlerTest {
   @Test
   fun setUserIdBeforeStartShouldSetTheUserIdInTheServerAndDeviceStateStore() {
     val userId = "alice"
-    handler.tokenProvider = StubTokenProvider()
+    tokenProvider = StubTokenProvider()
 
     val setUserIdJob = ServerSyncHandler.setUserId(userId)
     jobQueue.push(setUserIdJob.obj as ServerSyncJob)
@@ -626,7 +628,7 @@ class ServerSyncProcessHandlerTest {
   @Test
   fun setUserIdShouldReturnErrorEventIfTokenProviderThrowsAnException() {
     val userId = "alice"
-    handler.tokenProvider = ExceptionalTokenProvider()
+    tokenProvider = ExceptionalTokenProvider()
 
     val setUserIdJob = ServerSyncHandler.setUserId(userId)
     jobQueue.push(setUserIdJob.obj as ServerSyncJob)
@@ -660,7 +662,7 @@ class ServerSyncProcessHandlerTest {
   @Test
   fun setUserIdShouldReturnErrorEventIfTokenProviderTimesOut() {
     val userId = "alice"
-    handler.tokenProvider = SlowTokenProvider(sleepSecs = 2)
+    tokenProvider = SlowTokenProvider(sleepSecs = 2)
     handler.tokenProviderTimeoutSecs = 1
 
     val setUserIdJob = ServerSyncHandler.setUserId(userId)
@@ -695,7 +697,7 @@ class ServerSyncProcessHandlerTest {
   @Test
   fun setUserIdShouldNotCallTheTokenProviderIfAlreadySet() {
     val userId = "alice"
-    handler.tokenProvider = StubTokenProvider()
+    tokenProvider = StubTokenProvider()
 
     val setUserIdJob = ServerSyncHandler.setUserId(userId)
     jobQueue.push(setUserIdJob.obj as ServerSyncJob)
@@ -724,7 +726,7 @@ class ServerSyncProcessHandlerTest {
     assertThat(lastHandleServerSyncEvent!! as UserIdSet, `is`(equalTo(UserIdSet(userId, null))))
 
     lastHandleServerSyncEvent = null
-    handler.tokenProvider = ExceptionalTokenProvider() // making sure this won't be called as it would fail
+    tokenProvider = ExceptionalTokenProvider() // making sure this won't be called as it would fail
     jobQueue.push(setUserIdJob.obj as ServerSyncJob)
 
     handler.handleMessage(setUserIdJob)
@@ -740,7 +742,7 @@ class ServerSyncProcessHandlerTest {
   @Test(expected = IllegalStateException::class)
   fun setUserIdShouldThrowAnExceptionIfSomeoneAttemptsToChangeTheExistingOne() {
     val userId = "alice"
-    handler.tokenProvider = StubTokenProvider()
+    tokenProvider = StubTokenProvider()
 
     val setUserIdJob = ServerSyncHandler.setUserId(userId)
     jobQueue.push(setUserIdJob.obj as ServerSyncJob)
@@ -769,7 +771,7 @@ class ServerSyncProcessHandlerTest {
     assertThat(lastHandleServerSyncEvent!! as UserIdSet, `is`(equalTo(UserIdSet(userId, null))))
 
     lastHandleServerSyncEvent = null
-    handler.tokenProvider = ExceptionalTokenProvider() // making sure this won't be called as it would fail
+    tokenProvider = ExceptionalTokenProvider() // making sure this won't be called as it would fail
     val anotherSetUserIdJob = ServerSyncHandler.setUserId("another-$userId")
     jobQueue.push(anotherSetUserIdJob.obj as ServerSyncJob)
 
