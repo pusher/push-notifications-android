@@ -347,4 +347,9 @@ class PushNotificationsInstance @JvmOverloads constructor(
       }
     }
   }
+
+  fun clearAllState() {
+    stop()
+    start()
+  }
 }
