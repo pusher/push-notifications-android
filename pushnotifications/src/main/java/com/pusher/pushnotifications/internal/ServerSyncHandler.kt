@@ -47,7 +47,15 @@ class ServerSyncHandler private constructor(
     // when the app first launches, we should queue up all of the outstanding
     // jobs in the queue so we can pick up where we have left off
     jobQueue.asIterable().forEach { job ->
-      serverSyncProcessHandler.sendMessage(Message().also { it.obj = job })
+      when (job) {
+        is SetUserIdJob -> {
+          // skipping it. If the user is still supposed to logged in, then
+          // there should be another setUserIdJob being enqueued upon launch
+        }
+        else -> {
+          serverSyncProcessHandler.sendMessage(Message().also { it.obj = job })
+        }
+      }
     }
   }
 
