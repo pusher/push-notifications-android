@@ -303,7 +303,7 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
         val responseErrorBody = response?.errorBody()
         if (responseErrorBody != null) {
           val error = safeExtractJsonError(responseErrorBody.string())
-          throw PushNotificationsAPIBadJWT(error.desc)
+          throw PushNotificationsAPIBadJWT("${error?.error}: ${error?.description}")
         }
 
         throw PushNotificationsAPIBadJWT("Unknown reason")
