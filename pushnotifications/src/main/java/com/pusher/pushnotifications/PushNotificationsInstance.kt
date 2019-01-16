@@ -6,7 +6,6 @@ import android.os.*
 import com.google.firebase.iid.FirebaseInstanceId
 import com.pusher.pushnotifications.api.DeviceMetadata
 import com.pusher.pushnotifications.api.PushNotificationsAPI
-import com.pusher.pushnotifications.auth.TokenProvider
 import com.pusher.pushnotifications.fcm.MessagingService
 import com.pusher.pushnotifications.internal.*
 import com.pusher.pushnotifications.logging.Logger
@@ -85,7 +84,7 @@ internal class ServerSyncEventHandler private constructor(looper: Looper): Handl
 }
 
 /**
- * Interacts with the Pusher service to subscribe and unsubscribe from interests.
+ * The Pusher Beams client.
  *
  * @param context the application context
  * @param instanceId the id of the instance
@@ -331,6 +330,14 @@ class PushNotificationsInstance @JvmOverloads constructor(
     serverSyncHandler.sendMessage(ServerSyncHandler.setUserId(userId))
   }
 
+  /**
+   * Stops the SDK by deleting all state (both locally and remotely).
+   * Calling this will mean the device will cease to receive push notifications.
+   *
+   * `Start` must be called if you want to use the SDK again.
+   *
+   * 🔒 GDPR compliant 🔒.
+   */
   fun stop() {
     synchronized(deviceStateStore) {
       val hadAnyInterests = deviceStateStore.interests.isNotEmpty()
@@ -347,6 +354,11 @@ class PushNotificationsInstance @JvmOverloads constructor(
     }
   }
 
+  /**
+   * Clears all the state in the SDK, leaving it in a empty started state.
+   *
+   * You should call this method when your user logs out of the application.
+   */
   fun clearAllState() {
     stop()
     start()

@@ -8,10 +8,18 @@ import android.content.Context;
 import com.pusher.pushnotifications.auth.TokenProvider;
 import com.pusher.pushnotifications.fcm.MessagingService;
 
+/**
+ * The Pusher Beams static client.
+ */
 public class PushNotifications {
     private static PushNotificationsInstance instance;
     protected static TokenProvider tokenProvider;
 
+    /**
+     * Sets the Token Provider used to authenticate Users with this device.
+     *
+     * @param tokenProvider your server token provider
+     */
     public static void setTokenProvider(TokenProvider tokenProvider) {
         PushNotifications.tokenProvider = tokenProvider;
     }

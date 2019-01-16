@@ -7,12 +7,25 @@ import okhttp3.Request
 import java.io.IOException
 import java.net.URL
 
+/**
+ * Describes the data that will be used in the auth request.
+ *
+ * @param headers the request headers
+ * @param urlParams the request url query params
+ */
 data class AuthData(
     val headers: Map<String, String> = emptyMap(),
     val urlParams: Map<String, String> = emptyMap()
 )
 
+/**
+ * Callback for getting additional data used to authenticate Beams token request.
+ */
 interface AuthDataGetter {
+
+  /**
+   * Returns additional data used to authenticate Beams token request.
+   */
   fun getAuthData(): AuthData
 }
 
@@ -23,10 +36,21 @@ private data class TokenResponse(
     val token: String
 )
 
+/**
+ * Pusher-approved implementation of a TokenProvider that will suit most cases.
+ *
+ * Makes a Get request to the configured `authUrl` with the data provided by the `authDataGetter`,
+ * for example, the user's session token.
+ * Additionally, the `user_id` will be sent as a query param to allow for further validation.
+ *
+ * @param authUrl the endpoint in your server used to generate Beams Tokens
+ * @param authDataGetter the callback for getting additional data used to authenticate
+ *        Beams token request
+ */
 class BeamsTokenProvider(
     private val authUrl: String,
     private val authDataGetter: AuthDataGetter
-) : TokenProvider {
+): TokenProvider {
   override fun fetchToken(userId: String): String {
     val authData = authDataGetter.getAuthData()
 
