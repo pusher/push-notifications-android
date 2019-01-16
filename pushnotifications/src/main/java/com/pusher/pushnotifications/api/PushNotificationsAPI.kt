@@ -292,7 +292,8 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
       retryStrategy: RetryStrategy<Unit>
   ) {
     return retryStrategy.retry(fun() {
-      val response = service.setUserId(instanceId, deviceId, jwt).execute()
+      val authorizationHeader = "Bearer $jwt"
+      val response = service.setUserId(instanceId, deviceId, authorizationHeader).execute()
       if (response.code() == 404) {
         throw PushNotificationsAPIDeviceNotFound()
       }

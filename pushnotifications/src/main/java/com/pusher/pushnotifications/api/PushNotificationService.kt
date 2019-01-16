@@ -61,8 +61,8 @@ interface PushNotificationService {
 }
 
 data class NOKResponse(
-  val error: String,
-  val description: String
+  val error: String?,
+  val description: String?
 ): RuntimeException() {
   override val message: String?
     get() = this.toString()
