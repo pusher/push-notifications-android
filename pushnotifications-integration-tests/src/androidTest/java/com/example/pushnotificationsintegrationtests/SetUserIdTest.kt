@@ -69,7 +69,7 @@ class SetUserIdTest {
 
     // Start the SDK
     PushNotifications.setTokenProvider(tokenProvider)
-    val pni = PushNotificationsInstance(context, instanceId)
+    val pni = PushNotificationsInstance(context, "00000000-1241-08e9-b379-377c32cd1e00")
     pni.start()
     Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
 

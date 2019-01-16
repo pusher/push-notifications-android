@@ -20,7 +20,7 @@ import org.junit.Assert.*
 import org.junit.Before
 import java.io.File
 
-const val DEVICE_REGISTRATION_WAIT_MS: Long = 7000 // We need to wait for FCM to register the device etc.
+const val DEVICE_REGISTRATION_WAIT_MS: Long = 9000 // We need to wait for FCM to register the device etc.
 
 /**
  * Instrumented test, which will execute on an Android device.
