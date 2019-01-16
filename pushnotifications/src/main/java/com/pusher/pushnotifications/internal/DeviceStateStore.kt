@@ -3,6 +3,18 @@ package com.pusher.pushnotifications.internal
 import android.content.Context
 
 class DeviceStateStore(context: Context) {
+  companion object {
+    private val deviceStateStores = mutableMapOf<String, DeviceStateStore>()
+
+    internal fun obtain(instanceId: String, context: Context): DeviceStateStore {
+      return synchronized(deviceStateStores) {
+        deviceStateStores.getOrPut(instanceId) {
+          DeviceStateStore(context)
+        }
+      }
+    }
+  }
+
   private val preferencesDeviceIdKey = "deviceId"
   private val preferencesUserIdKey = "userId"
   private val preferencesFCMTokenKey = "fcmToken"

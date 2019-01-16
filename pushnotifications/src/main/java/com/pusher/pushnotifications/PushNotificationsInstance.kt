@@ -98,7 +98,7 @@ class PushNotificationsInstance @JvmOverloads constructor(
   private val log = Logger.get(this::class)
 
   private val sdkConfig = SDKConfiguration(context)
-  private val deviceStateStore = DeviceStateStore(context)
+  private val deviceStateStore = DeviceStateStore.obtain(instanceId, context)
   private val oldSDKDeviceStateStore = OldSDKDeviceStateStore(context)
 
   private val serverSyncEventHandler = ServerSyncEventHandler.obtain(instanceId, context.mainLooper)
@@ -311,7 +311,7 @@ class PushNotificationsInstance @JvmOverloads constructor(
     if (PushNotifications.tokenProvider == null) {
       throw IllegalStateException("Token provider missing, please call `PushNotifications.setTokenProvider`")
     }
-    if (!startHasBeenCalledThisSession && !deviceStateStore.startJobHasBeenEnqueued) {
+    if (!startHasBeenCalledThisSession) {
       throw IllegalStateException("Start method must be called before setUserId")
     }
 
