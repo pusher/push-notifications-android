@@ -433,10 +433,14 @@ class ServerSyncProcessHandler internal constructor(
               RetryStrategy.WithInfiniteExpBackOff())
         }
         is RefreshTokenJob -> {
-          api.refreshToken(
-              deviceStateStore.deviceId!!,
-              job.newToken,
-              RetryStrategy.WithInfiniteExpBackOff())
+          if (deviceStateStore.FCMToken != job.newToken) {
+            api.refreshToken(
+                deviceStateStore.deviceId!!,
+                job.newToken,
+                RetryStrategy.WithInfiniteExpBackOff())
+
+            deviceStateStore.FCMToken = job.newToken
+          }
         }
         is SetUserIdJob -> {
           processSetUserIdJob(job)

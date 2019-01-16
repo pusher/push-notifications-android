@@ -777,6 +777,54 @@ class ServerSyncProcessHandlerTest {
 
     handler.handleMessage(anotherSetUserIdJob)
   }
+
+  @Test(timeout = 5000)
+  fun refreshTokenShouldNotContactTheServerIfTheTokenIsUnchanged() {
+    val startJob = ServerSyncHandler.start("token-123", emptyList())
+    jobQueue.push(startJob.obj as ServerSyncJob)
+
+    // expect register device
+    mockServer.enqueue(MockResponse().setBody("""{"id": "d-123", "initialInterestSet": []}"""))
+
+    handler.handleMessage(startJob)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(1)))
+
+    val refreshTokenJob = ServerSyncHandler.refreshToken("token-123")
+    jobQueue.push(refreshTokenJob.obj as ServerSyncJob)
+
+    // no server call is expected
+
+    handler.handleMessage(refreshTokenJob)
+    assertThat(mockServer.requestCount, `is`(equalTo(1)))
+
+    assertTrue(jobQueue.peek() == null)
+  }
+
+  @Test
+  fun refreshTokenShouldUpdateTheLocalStorage() {
+    val startJob = ServerSyncHandler.start("token-123", emptyList())
+    jobQueue.push(startJob.obj as ServerSyncJob)
+
+    // expect register device
+    mockServer.enqueue(MockResponse().setBody("""{"id": "d-123", "initialInterestSet": []}"""))
+
+    handler.handleMessage(startJob)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(1)))
+    assertThat(deviceStateStore.FCMToken, `is`(equalTo("token-123")))
+
+    val refreshTokenJob = ServerSyncHandler.refreshToken("new-token")
+    jobQueue.push(refreshTokenJob.obj as ServerSyncJob)
+
+    mockServer.enqueue(MockResponse())
+
+    handler.handleMessage(refreshTokenJob)
+    assertThat(mockServer.requestCount, `is`(equalTo(2)))
+
+    assertTrue(jobQueue.peek() == null)
+    assertThat(deviceStateStore.FCMToken, `is`(equalTo("new-token")))
+  }
 }
 
 private class StubTokenProvider(): TokenProvider {
