@@ -3,14 +3,14 @@ package com.example.pushnotificationsintegrationtests
 
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
-import com.pusher.pushnotifications.Callback
 import com.pusher.pushnotifications.PushNotifications
 import com.pusher.pushnotifications.PushNotificationsInstance
-import com.pusher.pushnotifications.PusherCallbackError
 import com.pusher.pushnotifications.auth.TokenProvider
 import com.pusher.pushnotifications.internal.DeviceStateStore
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilNotNull
 import org.hamcrest.CoreMatchers.*
 import org.junit.*
 
@@ -18,11 +18,11 @@ import org.junit.runner.RunWith
 
 import org.junit.Assert.*
 import java.io.File
-import java.lang.Exception
 import java.lang.IllegalStateException
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 /**
  * Instrumented test, which will execute on an Android device.
@@ -113,6 +113,32 @@ class MultipleClassInstancesTests {
 
     assertThat(pni1.getSubscriptions().size, `is`(equalTo(100)))
     assertThat(pni2.getSubscriptions().size, `is`(equalTo(100)))
+  }
+
+  @Test
+  fun multipleInstantiationsOfPushNotificationsInstanceAreSupported() {
+    val pni1 = PushNotificationsInstance(context, instanceId)
+    val pni2 = PushNotificationsInstance(context, instanceId)
+    pni1.start()
+
+    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
+      getStoredDeviceId()
+    }
+
+    (0..5).forEach { n ->
+      pni1.subscribe("hell-$n")
+      pni2.unsubscribe("hell-$n")
+    }
+
+    assertThat(pni1.getSubscriptions(), `is`(emptySet()))
+    assertThat(pni2.getSubscriptions(), `is`(emptySet()))
+
+    val storedDeviceId = getStoredDeviceId()
+    assertNotNull(storedDeviceId)
+
+    Thread.sleep(1000)
+    val interestsOnServer = errolClient.getDeviceInterests(storedDeviceId!!)
+    assertThat(interestsOnServer, `is`(emptySet()))
   }
 
   private class StubTokenProvider(var jwt: String): TokenProvider {

@@ -282,30 +282,4 @@ class DeviceRegistrationTest {
     val mainThread = InstrumentationRegistry.getTargetContext().mainLooper.thread
     assertThat(lastSetOnSubscriptionsChangedListenerCalledThread, `is`(equalTo(mainThread)))
   }
-
-  @Test
-  fun multipleInstantiationsOfPushNotificationsInstanceAreSupported() {
-    val pni1 = PushNotificationsInstance(context, instanceId)
-    val pni2 = PushNotificationsInstance(context, instanceId)
-    pni1.start()
-
-    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
-      getStoredDeviceId()
-    }
-
-    (0..5).forEach { n ->
-      pni1.subscribe("hell-$n")
-      pni2.unsubscribe("hell-$n")
-    }
-
-    assertThat(pni1.getSubscriptions(), `is`(emptySet()))
-    assertThat(pni2.getSubscriptions(), `is`(emptySet()))
-
-    val storedDeviceId = getStoredDeviceId()
-    assertNotNull(storedDeviceId)
-
-    Thread.sleep(1000)
-    val interestsOnServer = errolClient.getDeviceInterests(storedDeviceId!!)
-    assertThat(interestsOnServer, `is`(emptySet()))
-  }
 }
