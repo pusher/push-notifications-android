@@ -128,4 +128,62 @@ public class PushNotifications {
     public static void setOnSubscriptionsChangedListener(SubscriptionsChangedListener listener) {
         instance.setOnSubscriptionsChangedListener(listener);
     }
+
+    /**
+     * Sets the user id that is associated with this device.
+     * <i>Note: This method can only be called after start. Once a user id has been set for the device
+     * it cannot be changed until stop is called.</i>
+     * <br>
+     * For example:
+     * <pre>{@code pushNotifications.setUserId("bob");}</pre>
+     * @param userId the id of the user you would like to associate with the device
+     */
+    public static void setUserId(String userId) {
+        setUserId(userId, new NoopCallback<Void, PusherCallbackError>());
+    }
+
+    /**
+     * Sets the user id that is associated with this device.
+     * <i>Note: This method can only be called after start. Once a user id has been set for the device
+     * it cannot be changed until stop is called.</i>
+     * <br>
+     * For example:
+     * <pre>{@code pushNotifications.setUserId("bob");}</pre>
+     * @param userId the id of the user you would like to associate with the device
+     * @param callback callback used to indicate whether the user association process has succeeded
+     */
+    public static void setUserId(String userId, Callback<Void, PusherCallbackError> callback) {
+        if (instance == null) {
+            throw new IllegalStateException("PushNotifications.start must have been called before");
+        }
+
+        instance.setUserId(userId, callback);
+    }
+
+    /**
+     * Stops the SDK by deleting all state (both locally and remotely).
+     * Calling this will mean the device will cease to receive push notifications.
+     *
+     * `Start` must be called if you want to use the SDK again.
+     */
+    public static void stop() {
+        if (instance == null) {
+            throw new IllegalStateException("PushNotifications.start must have been called before");
+        }
+
+        instance.stop();
+    }
+
+    /**
+     * Clears all the state in the SDK, leaving it in a empty started state.
+     *
+     * You should call this method when your user logs out of the application.
+     */
+    public static void clearAllState() {
+        if (instance == null) {
+            throw new IllegalStateException("PushNotifications.start must have been called before");
+        }
+
+        instance.clearAllState();
+    }
 }

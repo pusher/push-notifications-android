@@ -335,8 +335,6 @@ class PushNotificationsInstance @JvmOverloads constructor(
    * Calling this will mean the device will cease to receive push notifications.
    *
    * `Start` must be called if you want to use the SDK again.
-   *
-   * 🔒 GDPR compliant 🔒.
    */
   fun stop() {
     synchronized(deviceStateStore) {
