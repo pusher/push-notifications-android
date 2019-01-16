@@ -50,6 +50,9 @@ dependencies {
     implementation "com.google.firebase:firebase-core:16.0.1"
     implementation "com.google.firebase:firebase-messaging:17.1.0"
 
+    androidTestImplementation 'org.awaitility:awaitility:3.1.5'
+    androidTestImplementation 'org.awaitility:awaitility-kotlin:3.1.5'
+
     api 'io.jsonwebtoken:jjwt-api:0.10.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.10.5'
     runtimeOnly('io.jsonwebtoken:jjwt-orgjson:0.10.5') {

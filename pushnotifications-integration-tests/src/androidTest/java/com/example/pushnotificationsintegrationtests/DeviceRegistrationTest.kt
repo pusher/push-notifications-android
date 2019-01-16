@@ -7,6 +7,9 @@ import com.pusher.pushnotifications.PushNotifications
 import com.pusher.pushnotifications.PushNotificationsInstance
 import com.pusher.pushnotifications.SubscriptionsChangedListener
 import com.pusher.pushnotifications.internal.DeviceStateStore
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilNotNull
+import org.awaitility.kotlin.until
 import org.hamcrest.CoreMatchers.`is`
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.CoreMatchers.not
@@ -19,8 +22,9 @@ import org.junit.runner.RunWith
 import org.junit.Assert.*
 import org.junit.Before
 import java.io.File
+import java.util.concurrent.TimeUnit
 
-const val DEVICE_REGISTRATION_WAIT_MS: Long = 9000 // We need to wait for FCM to register the device etc.
+const val DEVICE_REGISTRATION_WAIT_SECS: Long = 15 // We need to wait for FCM to register the device etc.
 
 /**
  * Instrumented test, which will execute on an Android device.
@@ -64,7 +68,10 @@ class DeviceRegistrationTest {
   fun registerDeviceUponFreshStart() {
     // Start the SDK
     PushNotificationsInstance(context, instanceId).start()
-    Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
+
+    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
+      getStoredDeviceId()
+    }
 
     // A device ID should have been stored
     val storedDeviceId = getStoredDeviceId()
@@ -79,7 +86,10 @@ class DeviceRegistrationTest {
   fun subscribeToInterestsAfterStart() {
     // Start the SDK
     val pni = PushNotificationsInstance(context, instanceId).start()
-    Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
+
+    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
+      getStoredDeviceId()
+    }
     val storedDeviceId = getStoredDeviceId()
     assertNotNull(storedDeviceId)
 
@@ -117,7 +127,10 @@ class DeviceRegistrationTest {
 
     // Start the SDK
     pni.start()
-    Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
+
+    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
+      getStoredDeviceId()
+    }
     val storedDeviceId = getStoredDeviceId()
     assertNotNull(storedDeviceId)
 
@@ -132,7 +145,10 @@ class DeviceRegistrationTest {
   fun refreshTokenAfterStart() {
     // Start the SDK
     val pni = PushNotificationsInstance(context, instanceId).start()
-    Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
+
+    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
+      getStoredDeviceId()
+    }
 
     // A device ID should have been stored
     val storedDeviceId = getStoredDeviceId()
@@ -146,12 +162,12 @@ class DeviceRegistrationTest {
     assertThat(oldToken, `is`(not(equalTo(""))))
 
     FirebaseInstanceId.getInstance().deleteInstanceId()
-    Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
 
-    // The server should have the new token now
-    val newToken = errol.storage.devices[storedDeviceId]?.token
-    assertThat(newToken, `is`(not(equalTo(""))))
-    assertThat(newToken, `is`(not(equalTo(oldToken))))
+    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) until {
+      // The server should have the new token now
+      val newToken = errol.storage.devices[storedDeviceId]?.token
+      newToken == oldToken && newToken != ""
+    }
   }
 
   @Test
@@ -160,7 +176,10 @@ class DeviceRegistrationTest {
     val pni = PushNotificationsInstance(context, instanceId)
     pni.subscribe("hello")
     pni.start()
-    Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
+
+    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
+      getStoredDeviceId()
+    }
 
     // A device ID should have been stored
     val storedDeviceId = getStoredDeviceId()
@@ -230,7 +249,10 @@ class DeviceRegistrationTest {
   fun onSubscriptionsChangedListenerShouldBeCalledIfInterestsChangeDuringDeviceRegistration() {
     val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
-    Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
+
+    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
+      getStoredDeviceId()
+    }
 
     pni.subscribe("hello")
 
@@ -266,7 +288,10 @@ class DeviceRegistrationTest {
     val pni1 = PushNotificationsInstance(context, instanceId)
     val pni2 = PushNotificationsInstance(context, instanceId)
     pni1.start()
-    Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
+
+    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
+      getStoredDeviceId()
+    }
 
     (0..5).forEach { n ->
       pni1.subscribe("hell-$n")

@@ -8,6 +8,8 @@ import com.pusher.pushnotifications.auth.TokenProvider
 import com.pusher.pushnotifications.internal.DeviceStateStore
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilNotNull
 import org.hamcrest.CoreMatchers.*
 import org.junit.*
 import org.junit.Assert.*
@@ -18,6 +20,7 @@ import java.lang.RuntimeException
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 /**
  * Instrumented test, which will execute on an Android device.
@@ -71,7 +74,10 @@ class SetUserIdTest {
     PushNotifications.setTokenProvider(tokenProvider)
     val pni = PushNotificationsInstance(context, "00000000-1241-08e9-b379-377c32cd1e00")
     pni.start()
-    Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
+
+    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
+      getStoredDeviceId()
+    }
 
     // A device ID should have been stored
     val storedDeviceId = getStoredDeviceId()
@@ -100,7 +106,10 @@ class SetUserIdTest {
     PushNotifications.setTokenProvider(tokenProvider)
     val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
-    Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
+
+    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
+      getStoredDeviceId()
+    }
 
     // A device ID should have been stored
     val storedDeviceId = getStoredDeviceId()
@@ -138,7 +147,10 @@ class SetUserIdTest {
     PushNotifications.setTokenProvider(tokenProvider)
     val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
-    Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
+
+    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
+      getStoredDeviceId()
+    }
 
     // A device ID should have been stored
     val storedDeviceId = getStoredDeviceId()
@@ -188,7 +200,10 @@ class SetUserIdTest {
     PushNotifications.setTokenProvider(tokenProvider)
     val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
-    Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
+
+    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
+      getStoredDeviceId()
+    }
 
     // A device ID should have been stored
     val storedDeviceId = getStoredDeviceId()
@@ -225,7 +240,10 @@ class SetUserIdTest {
     PushNotifications.setTokenProvider(tokenProvider)
     val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
-    Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
+
+    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
+      getStoredDeviceId()
+    }
 
     // A device ID should have been stored
     val storedDeviceId = getStoredDeviceId()
@@ -287,7 +305,10 @@ class SetUserIdTest {
     PushNotifications.setTokenProvider(tokenProvider)
     val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
-    Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
+
+    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
+      getStoredDeviceId()
+    }
 
     // A device ID should have been stored
     val storedDeviceId = getStoredDeviceId()

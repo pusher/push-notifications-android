@@ -6,6 +6,9 @@ import android.support.test.runner.AndroidJUnit4
 import com.pusher.pushnotifications.PushNotifications
 import com.pusher.pushnotifications.PushNotificationsInstance
 import com.pusher.pushnotifications.internal.DeviceStateStore
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilNotNull
+import org.awaitility.kotlin.untilNull
 import org.hamcrest.CoreMatchers.*
 import org.junit.After
 import org.junit.AfterClass
@@ -16,6 +19,7 @@ import org.junit.runner.RunWith
 import org.junit.Assert.*
 import org.junit.Before
 import java.io.File
+import java.util.concurrent.TimeUnit
 
 /**
  * Instrumented test, which will execute on an Android device.
@@ -61,7 +65,10 @@ class StopTest {
     // Start the SDK
     val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
-    Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
+
+    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
+      getStoredDeviceId()
+    }
 
     // A device ID should have been stored
     val storedDeviceId = getStoredDeviceId()
@@ -72,10 +79,10 @@ class StopTest {
 
     pni.stop()
 
-    Thread.sleep(1000)
-
-    // and now the server should not have this device anymore
-    assertNull(errolClient.getDevice(storedDeviceId!!))
+    await.atMost(3, TimeUnit.SECONDS) untilNull {
+      // and now the server should not have this device anymore
+      errolClient.getDevice(storedDeviceId!!)
+    }
   }
 
   @Test
@@ -84,7 +91,10 @@ class StopTest {
     val pni = PushNotificationsInstance(context, instanceId)
     pni.subscribe("potato")
     pni.start()
-    Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
+
+    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
+      getStoredDeviceId()
+    }
 
     // A device ID should have been stored
     val storedDeviceId = getStoredDeviceId()
@@ -103,7 +113,10 @@ class StopTest {
     // Start the SDK
     val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
-    Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
+
+    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
+      getStoredDeviceId()
+    }
 
     // A device ID should have been stored
     val storedDeviceId = getStoredDeviceId()
@@ -114,13 +127,16 @@ class StopTest {
 
     pni.stop()
 
-    Thread.sleep(1000)
-
-    // and now the server should not have this device anymore
-    assertNull(errolClient.getDevice(storedDeviceId!!))
+    await.atMost(3, TimeUnit.SECONDS) untilNull {
+      // and now the server should not have this device anymore
+      errolClient.getDevice(storedDeviceId!!)
+    }
 
     pni.start()
-    Thread.sleep(DEVICE_REGISTRATION_WAIT_MS)
+
+    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
+      getStoredDeviceId()
+    }
 
     // A device ID should have been stored
     val newStoredDeviceId = getStoredDeviceId()
