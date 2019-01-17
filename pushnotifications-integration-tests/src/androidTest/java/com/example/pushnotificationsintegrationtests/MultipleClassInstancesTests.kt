@@ -6,10 +6,13 @@ import android.support.test.runner.AndroidJUnit4
 import com.pusher.pushnotifications.PushNotifications
 import com.pusher.pushnotifications.PushNotificationsInstance
 import com.pusher.pushnotifications.auth.TokenProvider
+import com.pusher.pushnotifications.fcm.MessagingService
 import com.pusher.pushnotifications.internal.DeviceStateStore
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
+import org.awaitility.core.ConditionTimeoutException
 import org.awaitility.kotlin.await
+import org.awaitility.kotlin.until
 import org.awaitility.kotlin.untilNotNull
 import org.hamcrest.CoreMatchers.*
 import org.junit.*
@@ -55,17 +58,35 @@ class MultipleClassInstancesTests {
   @After
   fun wipeLocalState() {
     val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
-    assertTrue(deviceStateStore.clear())
-    assertThat(deviceStateStore.interests.size, `is`(equalTo(0)))
-    assertNull(deviceStateStore.deviceId)
+
+    await.atMost(1, TimeUnit.SECONDS) until {
+      assertTrue(deviceStateStore.clear())
+
+      deviceStateStore.interests.size == 0 && deviceStateStore.deviceId == null
+    }
 
     File(context.filesDir, "$instanceId.jobqueue").delete()
 
     PushNotifications.setTokenProvider(null)
   }
 
+  private fun assertStoredDeviceIdIsNotNull() {
+    try {
+      await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
+        getStoredDeviceId()
+      }
+    } catch (e: ConditionTimeoutException) {
+      // Maybe FCM is complaining in CI, so let's pretend to have a token now
+      MessagingService.onRefreshToken!!("fake-fcm-token")
+
+      await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
+        getStoredDeviceId()
+      }
+    }
+  }
+
   @Test
-  fun setUserIdShoudlThrowExceptionIfCalledOnAnyInstanceBeforeStart() {
+  fun setUserIdShouldThrowExceptionIfCalledOnAnyInstanceBeforeStart() {
     // Create token provider
     val jwt = makeJWT(instanceId, secretKey, "alice")
     val tokenProvider = StubTokenProvider(jwt)
@@ -79,6 +100,10 @@ class MultipleClassInstancesTests {
     pni.setUserId("alice")
 
     // no exception here
+
+    // test hack: we are deliberately waiting for a device id here before finishing the test
+    // so it doesn't interfere with others
+    assertStoredDeviceIdIsNotNull()
 
     val pni2 = PushNotificationsInstance(context, instanceId)
 
@@ -117,13 +142,14 @@ class MultipleClassInstancesTests {
 
   @Test
   fun multipleInstantiationsOfPushNotificationsInstanceAreSupported() {
-    val pni1 = PushNotificationsInstance(context, instanceId)
-    val pni2 = PushNotificationsInstance(context, instanceId)
+    val pni1 = PushNotificationsInstance(context, "00000000-1241-08e9-b379-377c32cd1e01")
+    val pni2 = PushNotificationsInstance(context, "00000000-1241-08e9-b379-377c32cd1e01")
     pni1.start()
 
-    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
-      getStoredDeviceId()
-    }
+    assertStoredDeviceIdIsNotNull()
+
+    assertThat(pni1.getSubscriptions(), `is`(emptySet()))
+    assertThat(pni2.getSubscriptions(), `is`(emptySet()))
 
     (0..5).forEach { n ->
       pni1.subscribe("hell-$n")

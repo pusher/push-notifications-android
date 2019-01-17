@@ -5,10 +5,13 @@ import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
 import com.pusher.pushnotifications.*
 import com.pusher.pushnotifications.auth.TokenProvider
+import com.pusher.pushnotifications.fcm.MessagingService
 import com.pusher.pushnotifications.internal.DeviceStateStore
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
+import org.awaitility.core.ConditionTimeoutException
 import org.awaitility.kotlin.await
+import org.awaitility.kotlin.until
 import org.awaitility.kotlin.untilNotNull
 import org.hamcrest.CoreMatchers.*
 import org.junit.*
@@ -55,13 +58,31 @@ class SetUserIdTest {
   @After
   fun wipeLocalState() {
     val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
-    assertTrue(deviceStateStore.clear())
-    assertThat(deviceStateStore.interests.size, `is`(equalTo(0)))
-    assertNull(deviceStateStore.deviceId)
+
+    await.atMost(1, TimeUnit.SECONDS) until {
+      assertTrue(deviceStateStore.clear())
+
+      deviceStateStore.interests.size == 0 && deviceStateStore.deviceId == null
+    }
 
     File(context.filesDir, "$instanceId.jobqueue").delete()
 
     PushNotifications.setTokenProvider(null)
+  }
+
+  private fun assertStoredDeviceIdIsNotNull() {
+    try {
+      await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
+        getStoredDeviceId()
+      }
+    } catch (e: ConditionTimeoutException) {
+      // Maybe FCM is complaining in CI, so let's pretend to have a token now
+      MessagingService.onRefreshToken!!("fake-fcm-token")
+
+      await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
+        getStoredDeviceId()
+      }
+    }
   }
 
   @Test
@@ -75,13 +96,9 @@ class SetUserIdTest {
     val pni = PushNotificationsInstance(context, "00000000-1241-08e9-b379-377c32cd1e00")
     pni.start()
 
-    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
-      getStoredDeviceId()
-    }
-
     // A device ID should have been stored
+    assertStoredDeviceIdIsNotNull()
     val storedDeviceId = getStoredDeviceId()
-    assertNotNull(storedDeviceId)
 
     // and the stored id should match the server one
     assertNotNull(errolClient.getDevice(storedDeviceId!!))
@@ -107,13 +124,9 @@ class SetUserIdTest {
     val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
 
-    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
-      getStoredDeviceId()
-    }
-
     // A device ID should have been stored
+    assertStoredDeviceIdIsNotNull()
     val storedDeviceId = getStoredDeviceId()
-    assertNotNull(storedDeviceId)
 
     // and the stored id should match the server one
     assertNotNull(errolClient.getDevice(storedDeviceId!!))
@@ -148,20 +161,16 @@ class SetUserIdTest {
     val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
 
-    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
-      getStoredDeviceId()
-    }
-
     // A device ID should have been stored
+    assertStoredDeviceIdIsNotNull()
     val storedDeviceId = getStoredDeviceId()
-    assertNotNull(storedDeviceId)
 
     // and the stored id should match the server one
     assertNotNull(errolClient.getDevice(storedDeviceId!!))
 
     // set the user id
     pni.setUserId(userId)
-    Thread.sleep(1000)
+    Thread.sleep(2000)
 
     // Assert that the correct user id has been set for the device on the server
     val getDeviceResponse = errolClient.getDevice(storedDeviceId!!)
@@ -179,8 +188,8 @@ class SetUserIdTest {
     Thread.sleep(1000)
 
     // A new device ID should have been stored
+    assertStoredDeviceIdIsNotNull()
     val newStoredDeviceId = getStoredDeviceId()
-    assertNotNull(newStoredDeviceId)
     assertThat(newStoredDeviceId, `is`(not(equalTo(storedDeviceId))))
 
     // Assert that the correct user id has been set for the device on the server
@@ -201,13 +210,9 @@ class SetUserIdTest {
     val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
 
-    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
-      getStoredDeviceId()
-    }
-
     // A device ID should have been stored
+    assertStoredDeviceIdIsNotNull()
     val storedDeviceId = getStoredDeviceId()
-    assertNotNull(storedDeviceId)
 
     // and the stored id should match the server one
     assertNotNull(errolClient.getDevice(storedDeviceId!!))
@@ -241,13 +246,9 @@ class SetUserIdTest {
     val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
 
-    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
-      getStoredDeviceId()
-    }
-
     // A device ID should have been stored
+    assertStoredDeviceIdIsNotNull()
     val storedDeviceId = getStoredDeviceId()
-    assertNotNull(storedDeviceId)
 
     // and the stored id should match the server one
     assertNotNull(errolClient.getDevice(storedDeviceId!!))
@@ -306,13 +307,9 @@ class SetUserIdTest {
     val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
 
-    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
-      getStoredDeviceId()
-    }
-
     // A device ID should have been stored
+    assertStoredDeviceIdIsNotNull()
     val storedDeviceId = getStoredDeviceId()
-    assertNotNull(storedDeviceId)
 
     // and the stored id should match the server one
     assertNotNull(errolClient.getDevice(storedDeviceId!!))

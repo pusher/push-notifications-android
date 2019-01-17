@@ -5,12 +5,15 @@ import android.support.test.runner.AndroidJUnit4
 import com.pusher.pushnotifications.PushNotifications
 import com.pusher.pushnotifications.PushNotificationsInstance
 import com.pusher.pushnotifications.auth.TokenProvider
+import com.pusher.pushnotifications.fcm.MessagingService
 import com.pusher.pushnotifications.internal.DeviceStateStore
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
+import org.awaitility.core.ConditionTimeoutException
 import org.hamcrest.CoreMatchers.*
 import org.junit.After
 import org.awaitility.kotlin.await
+import org.awaitility.kotlin.until
 import org.awaitility.kotlin.untilNotNull
 import org.junit.AfterClass
 
@@ -55,13 +58,31 @@ class ClearAllStateTest {
   @After
   fun wipeLocalState() {
     val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
-    assertTrue(deviceStateStore.clear())
-    assertThat(deviceStateStore.interests.size, `is`(equalTo(0)))
-    assertNull(deviceStateStore.deviceId)
+
+    await.atMost(1, TimeUnit.SECONDS) until {
+      assertTrue(deviceStateStore.clear())
+
+      deviceStateStore.interests.size == 0 && deviceStateStore.deviceId == null
+    }
 
     File(context.filesDir, "$instanceId.jobqueue").delete()
 
     PushNotifications.setTokenProvider(null)
+  }
+
+  private fun assertStoredDeviceIdIsNotNull() {
+    try {
+      await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
+        getStoredDeviceId()
+      }
+    } catch (e: ConditionTimeoutException) {
+      // Maybe FCM is complaining in CI, so let's pretend to have a token now
+      MessagingService.onRefreshToken!!("fake-fcm-token")
+
+      await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
+        getStoredDeviceId()
+      }
+    }
   }
 
   @Test
@@ -78,9 +99,7 @@ class ClearAllStateTest {
     val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
 
-    await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) untilNotNull {
-      getStoredDeviceId()
-    }
+    assertStoredDeviceIdIsNotNull()
 
     // A device ID should have been stored
     val storedDeviceId = getStoredDeviceId()
@@ -108,9 +127,8 @@ class ClearAllStateTest {
     Thread.sleep(1000)
 
     // A new device ID should have been stored
+    assertStoredDeviceIdIsNotNull()
     val newStoredDeviceId = getStoredDeviceId()
-    assertNotNull(newStoredDeviceId)
-    assertThat(newStoredDeviceId, `is`(not(equalTo(storedDeviceId))))
 
     // The device should not have a user ID
     getDeviceResponse = errolClient.getDevice(newStoredDeviceId!!)
