@@ -19,18 +19,19 @@ class MainActivity : AppCompatActivity() {
 
     PushNotifications.start(applicationContext, instanceId)
 
-    PushNotifications.setOnSubscriptionsChangedListener(object: SubscriptionsChangedListener {
+    PushNotifications.setOnDeviceInterestsChangedListener(object: SubscriptionsChangedListener {
       override fun onSubscriptionsChanged(interests: Set<String>) {
         Log.i("MainActivity", "Interests: ${interests.toString()}")
       }
     })
 
-    PushNotifications.subscribe("hello")
-    PushNotifications.subscribe("donuts")
-    PushNotifications.subscribe("hello-donuts")
+    PushNotifications.addDeviceInterest("hello")
+    PushNotifications.addDeviceInterest("hello")
+    PushNotifications.addDeviceInterest("donuts")
+    PushNotifications.addDeviceInterest("hello-donuts")
 
     Log.i("MainActivity", "Current subscriptions are:")
-    PushNotifications.getSubscriptions().forEach { interest ->
+    PushNotifications.getDeviceInterests().forEach { interest ->
       Log.i("MainActivity", "\t$interest")
     }
   }

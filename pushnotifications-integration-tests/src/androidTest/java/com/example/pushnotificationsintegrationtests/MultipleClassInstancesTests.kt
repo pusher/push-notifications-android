@@ -124,20 +124,20 @@ class MultipleClassInstancesTests {
 
       Thread {
       for (i in 1..50) {
-        pni1.subscribe("a-$i")
+        pni1.addDeviceInterest("a-$i")
       }
     }.start()
 
     Thread {
       for (i in 1..50) {
-        pni2.subscribe("b-$i")
+        pni2.addDeviceInterest("b-$i")
       }
     }.start()
 
     Thread.sleep(1000)
 
-    assertThat(pni1.getSubscriptions().size, `is`(equalTo(100)))
-    assertThat(pni2.getSubscriptions().size, `is`(equalTo(100)))
+    assertThat(pni1.getDeviceInterests().size, `is`(equalTo(100)))
+    assertThat(pni2.getDeviceInterests().size, `is`(equalTo(100)))
   }
 
   @Test
@@ -148,16 +148,16 @@ class MultipleClassInstancesTests {
 
     assertStoredDeviceIdIsNotNull()
 
-    assertThat(pni1.getSubscriptions(), `is`(emptySet()))
-    assertThat(pni2.getSubscriptions(), `is`(emptySet()))
+    assertThat(pni1.getDeviceInterests(), `is`(emptySet()))
+    assertThat(pni2.getDeviceInterests(), `is`(emptySet()))
 
     (0..5).forEach { n ->
-      pni1.subscribe("hell-$n")
-      pni2.unsubscribe("hell-$n")
+      pni1.addDeviceInterest("hell-$n")
+      pni2.removeDeviceInterest("hell-$n")
     }
 
-    assertThat(pni1.getSubscriptions(), `is`(emptySet()))
-    assertThat(pni2.getSubscriptions(), `is`(emptySet()))
+    assertThat(pni1.getDeviceInterests(), `is`(emptySet()))
+    assertThat(pni2.getDeviceInterests(), `is`(emptySet()))
 
     val storedDeviceId = getStoredDeviceId()
     assertNotNull(storedDeviceId)

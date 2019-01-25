@@ -106,22 +106,22 @@ class DeviceRegistrationTest {
     val storedDeviceId = getStoredDeviceId()
 
     // The SDK should have no interests
-    assertThat(pni.getSubscriptions(), `is`(emptySet()))
+    assertThat(pni.getDeviceInterests(), `is`(emptySet()))
 
     // The server should have no interests for this device
     val interestsOnServer = errolClient.getDeviceInterests(storedDeviceId!!)
-    assertThat(interestsOnServer, `is`(equalTo(pni.getSubscriptions())))
+    assertThat(interestsOnServer, `is`(equalTo(pni.getDeviceInterests())))
 
     // Subscribe to an interest
-    pni.subscribe("peanuts")
+    pni.addDeviceInterest("peanuts")
 
     // The device should have that interest stored locally
-    assertThat(pni.getSubscriptions(), `is`(equalTo(setOf("peanuts"))))
+    assertThat(pni.getDeviceInterests(), `is`(equalTo(setOf("peanuts"))))
 
     // The server should have the interest too
     Thread.sleep(1000)
     val interestsOnServer2 = errolClient.getDeviceInterests(storedDeviceId!!)
-    assertThat(interestsOnServer2, `is`(equalTo(pni.getSubscriptions())))
+    assertThat(interestsOnServer2, `is`(equalTo(pni.getDeviceInterests())))
   }
 
   @Test
@@ -129,13 +129,13 @@ class DeviceRegistrationTest {
     val pni = PushNotificationsInstance(context, instanceId)
 
     // The SDK should have no interests
-    assertThat(pni.getSubscriptions(), `is`(emptySet()))
+    assertThat(pni.getDeviceInterests(), `is`(emptySet()))
 
     // Subscribe to an interest
-    pni.subscribe("peanuts")
+    pni.addDeviceInterest("peanuts")
 
     // The device should have that interest stored locally
-    assertThat(pni.getSubscriptions(), `is`(equalTo(setOf("peanuts"))))
+    assertThat(pni.getDeviceInterests(), `is`(equalTo(setOf("peanuts"))))
 
     // Start the SDK
     pni.start()
@@ -146,7 +146,7 @@ class DeviceRegistrationTest {
     // The server should have the interest too
     Thread.sleep(1000)
     val interestsOnServer2 = errolClient.getDeviceInterests(storedDeviceId!!)
-    assertThat(interestsOnServer2, `is`(equalTo(pni.getSubscriptions())))
+    assertThat(interestsOnServer2, `is`(equalTo(pni.getDeviceInterests())))
   }
 
   //@SkipIfProductionErrol
@@ -181,7 +181,7 @@ class DeviceRegistrationTest {
   fun startDoSomeOperationsWhileHandlingUnexpectedDeviceDeletionCorrectly() {
     // Start the SDK
     val pni = PushNotificationsInstance(context, instanceId)
-    pni.subscribe("hello")
+    pni.addDeviceInterest("hello")
     pni.start()
 
     assertStoredDeviceIdIsNotNull()
@@ -196,7 +196,7 @@ class DeviceRegistrationTest {
 
     errolClient.deleteDevice(storedDeviceId)
 
-    pni.subscribe("potato")
+    pni.addDeviceInterest("potato")
 
     Thread.sleep(1000)
 
@@ -204,7 +204,7 @@ class DeviceRegistrationTest {
     val newStoredDeviceId = getStoredDeviceId()
     assertThat(newStoredDeviceId, `is`(not(equalTo(storedDeviceId))))
 
-    assertThat(pni.getSubscriptions(), `is`(equalTo(setOf("hello", "potato"))))
+    assertThat(pni.getDeviceInterests(), `is`(equalTo(setOf("hello", "potato"))))
     val interestsOnServer = errolClient.getDeviceInterests(newStoredDeviceId!!)
     assertThat(interestsOnServer, `is`(equalTo(setOf("hello", "potato"))))
   }
@@ -214,39 +214,39 @@ class DeviceRegistrationTest {
     val pni = PushNotificationsInstance(context, instanceId)
     var setOnSubscriptionsChangedListenerCalledCount = 0
     var lastSetOnSubscriptionsChangedListenerCalledWithInterests: Set<String>? = null
-    pni.setOnSubscriptionsChangedListener(object: SubscriptionsChangedListener {
+    pni.setOnDeviceInterestsChangedListener(object : SubscriptionsChangedListener {
       override fun onSubscriptionsChanged(interests: Set<String>) {
         setOnSubscriptionsChangedListenerCalledCount++
         lastSetOnSubscriptionsChangedListenerCalledWithInterests = interests
       }
     })
 
-    pni.subscribe("hello")
+    pni.addDeviceInterest("hello")
     assertThat(setOnSubscriptionsChangedListenerCalledCount, `is`(equalTo(1)))
     assertThat(lastSetOnSubscriptionsChangedListenerCalledWithInterests, `is`(equalTo(setOf("hello"))))
 
-    pni.subscribe("hello")
+    pni.addDeviceInterest("hello")
     assertThat(setOnSubscriptionsChangedListenerCalledCount, `is`(equalTo(1)))
 
-    pni.unsubscribe("hello")
+    pni.removeDeviceInterest("hello")
     assertThat(setOnSubscriptionsChangedListenerCalledCount, `is`(equalTo(2)))
     assertThat(lastSetOnSubscriptionsChangedListenerCalledWithInterests, `is`(equalTo(setOf())))
 
-    pni.unsubscribe("hello")
+    pni.removeDeviceInterest("hello")
     assertThat(setOnSubscriptionsChangedListenerCalledCount, `is`(equalTo(2)))
 
-    pni.setSubscriptions(setOf("hello", "panda"))
+    pni.setDeviceInterests(setOf("hello", "panda"))
     assertThat(setOnSubscriptionsChangedListenerCalledCount, `is`(equalTo(3)))
     assertThat(lastSetOnSubscriptionsChangedListenerCalledWithInterests, `is`(equalTo(setOf("hello", "panda"))))
 
-    pni.setSubscriptions(setOf("hello", "panda"))
+    pni.setDeviceInterests(setOf("hello", "panda"))
     assertThat(setOnSubscriptionsChangedListenerCalledCount, `is`(equalTo(3)))
 
-    pni.unsubscribeAll()
+    pni.clearDeviceInterests()
     assertThat(setOnSubscriptionsChangedListenerCalledCount, `is`(equalTo(4)))
     assertThat(lastSetOnSubscriptionsChangedListenerCalledWithInterests, `is`(equalTo(setOf())))
 
-    pni.unsubscribeAll()
+    pni.clearDeviceInterests()
     assertThat(setOnSubscriptionsChangedListenerCalledCount, `is`(equalTo(4)))
   }
 
@@ -258,7 +258,7 @@ class DeviceRegistrationTest {
 
     assertStoredDeviceIdIsNotNull()
 
-    pni.subscribe("hello")
+    pni.addDeviceInterest("hello")
 
     // force a fresh state locally, but keep the device in the server
     wipeLocalState()
@@ -266,7 +266,7 @@ class DeviceRegistrationTest {
     var setOnSubscriptionsChangedListenerCalledCount = 0
     var lastSetOnSubscriptionsChangedListenerCalledWithInterests: Set<String>? = null
     var lastSetOnSubscriptionsChangedListenerCalledThread: Thread? = null
-    pni.setOnSubscriptionsChangedListener(object : SubscriptionsChangedListener {
+    pni.setOnDeviceInterestsChangedListener(object : SubscriptionsChangedListener {
       override fun onSubscriptionsChanged(interests: Set<String>) {
         setOnSubscriptionsChangedListenerCalledCount++
         lastSetOnSubscriptionsChangedListenerCalledWithInterests = interests

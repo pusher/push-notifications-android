@@ -21,7 +21,6 @@ import org.junit.runner.RunWith
 import org.junit.Assert.*
 import org.junit.Before
 import java.io.File
-import java.lang.IllegalStateException
 import java.util.concurrent.TimeUnit
 
 /**
@@ -106,7 +105,7 @@ class StopTest {
   fun stopShouldDeleteLocalInterests() {
     // Start the SDK
     val pni = PushNotificationsInstance(context, instanceId)
-    pni.subscribe("potato")
+    pni.addDeviceInterest("potato")
     pni.start()
 
     // A device ID should have been stored
@@ -118,7 +117,7 @@ class StopTest {
     assertNotNull(getDeviceResponse)
 
     pni.stop()
-    assertThat(pni.getSubscriptions(), `is`(emptySet()))
+    assertThat(pni.getDeviceInterests(), `is`(emptySet()))
   }
 
   @Test

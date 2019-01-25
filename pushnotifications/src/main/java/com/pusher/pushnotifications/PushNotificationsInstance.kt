@@ -203,8 +203,19 @@ class PushNotificationsInstance @JvmOverloads constructor(
    * Subscribes the device to an interest. For example:
    * <pre>{@code pushNotifications.subscribe("hello");}</pre>
    * @param interest the name of the interest
+   * @deprecated use addDeviceInterest instead
    */
+  @Deprecated("use addDeviceInterest instead", ReplaceWith("addDeviceInterest(interest)"))
   fun subscribe(interest: String) {
+    addDeviceInterest(interest)
+  }
+
+  /**
+   * Subscribes the device to an interest. For example:
+   * <pre>{@code pushNotifications.addDeviceInterest("hello");}</pre>
+   * @param interest the name of the interest
+   */
+  fun addDeviceInterest(interest: String) {
     if (!interest.matches(validInterestRegex)) {
       throw IllegalArgumentException(
           "Interest `$interest` is not valid. It can only contain up to 164 characters " +
@@ -224,8 +235,19 @@ class PushNotificationsInstance @JvmOverloads constructor(
    * Unsubscribes the device from an interest. For example:
    * <pre>{@code pushNotifications.unsubscribe("hello");}</pre>
    * @param interest the name of the interest
+   * @deprecated use removeDeviceInterest instead
    */
+  @Deprecated("use removeDeviceInterest instead", ReplaceWith("removeDeviceInterest(interest)"))
   fun unsubscribe(interest: String) {
+    removeDeviceInterest(interest)
+  }
+
+  /**
+   * Unsubscribes the device from an interest. For example:
+   * <pre>{@code pushNotifications.removeDeviceInterest("hello");}</pre>
+   * @param interest the name of the interest
+   */
+  fun removeDeviceInterest(interest: String) {
     synchronized(deviceStateStore) {
       val haveInterestsChanged = removeInterestFromStore(interest)
 
@@ -239,9 +261,19 @@ class PushNotificationsInstance @JvmOverloads constructor(
   /**
    * Unsubscribes the device from all the interests. For example:
    * <pre>{@code pushNotifications.unsubscribeAll();}</pre>
+   * @deprecated use clearDeviceInterests instead
    */
+  @Deprecated("use clearDeviceInterests instead", ReplaceWith("clearDeviceInterests()"))
   fun unsubscribeAll() {
-    setSubscriptions(emptySet())
+    clearDeviceInterests()
+  }
+
+  /**
+   * Unsubscribes the device from all the interests. For example:
+   * <pre>{@code pushNotifications.clearDeviceInterests();}</pre>
+   */
+  fun clearDeviceInterests() {
+    setDeviceInterests(emptySet())
   }
 
   /**
@@ -251,8 +283,22 @@ class PushNotificationsInstance @JvmOverloads constructor(
    * For example:
    * <pre>{@code pushNotifications.setSubscriptions(Arrays.asList("hello", "donuts").toSet());}</pre>
    * @param interests the new set of interests
+   * @deprecated use setDeviceInterests instead
    */
+  @Deprecated("use setDeviceInterests instead", ReplaceWith("setDeviceInterests(interests)"))
   fun setSubscriptions(interests: Set<String>) {
+    setDeviceInterests(interests)
+  }
+
+  /**
+   * Sets the subscriptions state for the device. Any interests not in the set will be
+   * unsubscribed from, so this will replace the interest set by the one provided.
+   * <br>
+   * For example:
+   * <pre>{@code pushNotifications.setDeviceInterests(Arrays.asList("hello", "donuts").toSet());}</pre>
+   * @param interests the new set of interests
+   */
+  fun setDeviceInterests(interests: Set<String>) {
     interests.find {
       !it.matches(validInterestRegex)
     }?.let {
@@ -273,8 +319,17 @@ class PushNotificationsInstance @JvmOverloads constructor(
 
   /**
    * @return the set of subscriptions that the device is currently subscribed to
+   * @deprecated use getDeviceInterests instead
    */
+  @Deprecated("use getDeviceInterests instead", ReplaceWith("getDeviceInterests()"))
   fun getSubscriptions(): Set<String> {
+    return getDeviceInterests()
+  }
+
+  /**
+   * @return the set of subscriptions that the device is currently subscribed to
+   */
+  fun getDeviceInterests(): Set<String> {
     synchronized(deviceStateStore) {
       return deviceStateStore.interests
     }
@@ -284,8 +339,19 @@ class PushNotificationsInstance @JvmOverloads constructor(
    * Registers a listener for when subscriptions have changed
    *
    * @param listener - the listener object
+   * @deprecated use setOnDeviceInterestsChangedListener instead
    */
+  @Deprecated("use setOnDeviceInterestsChangedListener instead", ReplaceWith("setOnDeviceInterestsChangedListener(listener)"))
   fun setOnSubscriptionsChangedListener(listener: SubscriptionsChangedListener) {
+    setOnDeviceInterestsChangedListener(listener)
+  }
+
+  /**
+   * Registers a listener for when subscriptions have changed
+   *
+   * @param listener - the listener object
+   */
+  fun setOnDeviceInterestsChangedListener(listener: SubscriptionsChangedListener) {
     serverSyncEventHandler.onSubscriptionsChangedListener = listener
   }
 

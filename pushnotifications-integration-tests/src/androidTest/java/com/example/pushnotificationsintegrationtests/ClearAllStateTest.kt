@@ -118,10 +118,10 @@ class ClearAllStateTest {
     assertThat(getDeviceResponse!!.userId, `is`(equalTo(userId)))
 
     // Subscribe to an interest
-    pni.subscribe("peanuts")
+    pni.addDeviceInterest("peanuts")
 
     // The device should have that interest stored locally
-    assertThat(pni.getSubscriptions(), `is`(equalTo(setOf("peanuts"))))
+    assertThat(pni.getDeviceInterests(), `is`(equalTo(setOf("peanuts"))))
 
     pni.clearAllState()
     Thread.sleep(1000)
@@ -136,7 +136,7 @@ class ClearAllStateTest {
     assertNull(getDeviceResponse!!.userId)
 
     // The device should have no interests
-    assertThat(pni.getSubscriptions(), `is`(emptySet()))
+    assertThat(pni.getDeviceInterests(), `is`(emptySet()))
   }
 
   private class StubTokenProvider(var jwt: String): TokenProvider {

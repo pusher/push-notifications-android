@@ -42,8 +42,19 @@ public class PushNotifications {
      * Subscribes the device to an Interest. For example:
      * <pre>{@code PushNotifications.subscribe("hello");}</pre>
      * @param interest the name of the Interest
+     * @deprecated use addDeviceInterest instead
      */
+    @Deprecated
     public static void subscribe(String interest) {
+        addDeviceInterest(interest);
+    }
+
+    /**
+     * Subscribes the device to an Interest. For example:
+     * <pre>{@code PushNotifications.addDeviceInterest("hello");}</pre>
+     * @param interest the name of the Interest
+     */
+    public static void addDeviceInterest(String interest) {
         if (instance == null) {
             throw new IllegalStateException("PushNotifications.start must have been called before");
         }
@@ -55,8 +66,19 @@ public class PushNotifications {
      * Unsubscribes the device from the Interest. For example:
      * <pre>{@code PushNotifications.unsubscribe("hello");}</pre>
      * @param interest the name of the Interest
+     * @deprecated use removeDeviceInterest instead
      */
+    @Deprecated
     public static void unsubscribe(String interest) {
+        removeDeviceInterest(interest);
+    }
+
+    /**
+     * Unsubscribes the device from the Interest. For example:
+     * <pre>{@code PushNotifications.removeDeviceInterest("hello");}</pre>
+     * @param interest the name of the Interest
+     */
+    public static void removeDeviceInterest(String interest) {
         if (instance == null) {
             throw new IllegalStateException("PushNotifications.start must have been called before");
         }
@@ -67,8 +89,18 @@ public class PushNotifications {
     /**
      * Unsubscribes the device from all the Interests. For example:
      * <pre>{@code PushNotifications.unsubscribeAll();}</pre>
+     * @deprecated use clearDeviceInterests instead
      */
+    @Deprecated
     public static void unsubscribeAll() {
+        clearDeviceInterests();
+    }
+
+    /**
+     * Unsubscribes the device from all the Interests. For example:
+     * <pre>{@code PushNotifications.unsubscribeAll();}</pre>
+     */
+    public static void clearDeviceInterests() {
         if (instance == null) {
             throw new IllegalStateException("PushNotifications.start must have been called before");
         }
@@ -83,8 +115,22 @@ public class PushNotifications {
      * For example:
      * <pre>{@code PushNotifications.setSubscriptions(Arrays.asList("hello", "donuts").toSet());}</pre>
      * @param interests the new set of interests
+     * @deprecated use setDeviceInterests instead
      */
+    @Deprecated
     public static void setSubscriptions(Set<String> interests) {
+        setDeviceInterests(interests);
+    }
+
+    /**
+     * Sets the subscriptions state for the device. Any interests not in the set will be
+     * unsubscribed from, so this will replace the Interest set by the one provided.
+     * <br>
+     * For example:
+     * <pre>{@code PushNotifications.setSubscriptions(Arrays.asList("hello", "donuts").toSet());}</pre>
+     * @param interests the new set of interests
+     */
+    public static void setDeviceInterests(Set<String> interests) {
         if (instance == null) {
             throw new IllegalStateException("PushNotifications.start must have been called before");
         }
@@ -94,8 +140,17 @@ public class PushNotifications {
 
     /**
      * @return the Interest subscriptions that the device is currently subscribed to
+     * @deprecated use getDeviceInterests instead
      */
+    @Deprecated
     public static Set<String> getSubscriptions() {
+        return getDeviceInterests();
+    }
+
+    /**
+     * @return the Interest subscriptions that the device is currently subscribed to
+     */
+    public static Set<String> getDeviceInterests() {
         if (instance == null) {
             throw new IllegalStateException("PushNotifications.start must have been called before");
         }
@@ -124,8 +179,21 @@ public class PushNotifications {
      * You can use this method to update your UI.
      *
      * @param listener the listener to handle Interest subscription change
+     * @deprecated use setOnDeviceInterestsChangedListener instead
      */
+    @Deprecated
     public static void setOnSubscriptionsChangedListener(SubscriptionsChangedListener listener) {
+        setOnDeviceInterestsChangedListener(listener);
+    }
+
+    /**
+     * Configures the listener that handles a change the device's Interest subscriptions
+     *
+     * You can use this method to update your UI.
+     *
+     * @param listener the listener to handle Interest subscription change
+     */
+    public static void setOnDeviceInterestsChangedListener(SubscriptionsChangedListener listener) {
         instance.setOnSubscriptionsChangedListener(listener);
     }
 
