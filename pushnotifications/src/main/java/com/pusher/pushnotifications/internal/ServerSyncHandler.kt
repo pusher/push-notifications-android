@@ -360,7 +360,7 @@ class ServerSyncProcessHandler internal constructor(
           UserIdSet(
               userId = job.userId,
               pusherCallbackError = PusherCallbackError(
-                  message = "Could not set user id: ${e.cause?.message ?: "Unknown reason"}",
+                  message = "Could not set user id: An error has occurred when using the TokenProvider: ${e.cause?.message ?: "Unknown reason"}",
                   cause = e.cause
               ))
       )
@@ -370,7 +370,7 @@ class ServerSyncProcessHandler internal constructor(
           UserIdSet(
               userId = job.userId,
               pusherCallbackError = PusherCallbackError(
-                  message = "Could not set user id: TokenProvider timed out (> $tokenProviderTimeoutSecs seconds)",
+                  message = "Could not set user id: TokenProvider timed out when reaching customer service (> $tokenProviderTimeoutSecs seconds)",
                   cause = null
               ))
       )
@@ -380,7 +380,7 @@ class ServerSyncProcessHandler internal constructor(
           UserIdSet(
               userId = job.userId,
               pusherCallbackError = PusherCallbackError(
-                  message = "Could not set user id: An unexpected error occurred. Please contact support@pusher.com",
+                  message = "Could not set user id: An unexpected error occurred when using the TokenProvider. Please contact support@pusher.com",
                   cause = e
               ))
       )
