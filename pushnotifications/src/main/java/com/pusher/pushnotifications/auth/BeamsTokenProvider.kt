@@ -11,11 +11,11 @@ import java.net.URL
  * Describes the data that will be used in the auth request.
  *
  * @param headers the request headers
- * @param urlParams the request url query params
+ * @param queryParams the request url query params
  */
 data class AuthData(
     val headers: Map<String, String> = emptyMap(),
-    val urlParams: Map<String, String> = emptyMap()
+    val queryParams: Map<String, String> = emptyMap()
 )
 
 /**
@@ -64,7 +64,7 @@ class BeamsTokenProvider(
 
     // always setting the `userId` as a query param by default
     targetUrl.addQueryParameter("user_id", userId)
-    authData.urlParams.forEach { (k, v) ->
+    authData.queryParams.forEach { (k, v) ->
       targetUrl.addQueryParameter(k, v)
     }
 
