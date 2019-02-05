@@ -1,6 +1,5 @@
 package com.example.pushnotificationsintegrationtests
 
-
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
 import com.pusher.pushnotifications.*
@@ -66,8 +65,6 @@ class SetUserIdTest {
     }
 
     File(context.filesDir, "$instanceId.jobqueue").delete()
-
-    PushNotifications.setTokenProvider(null)
   }
 
   private fun assertStoredDeviceIdIsNotNull() {
@@ -92,7 +89,6 @@ class SetUserIdTest {
     val tokenProvider = StubTokenProvider(jwt)
 
     // Start the SDK
-    PushNotifications.setTokenProvider(tokenProvider)
     val pni = PushNotificationsInstance(context, "00000000-1241-08e9-b379-377c32cd1e00")
     pni.start()
 
@@ -104,7 +100,7 @@ class SetUserIdTest {
     assertNotNull(errolClient.getDevice(storedDeviceId!!))
 
     // set the user id
-    pni.setUserId(userId)
+    pni.setUserId(userId, tokenProvider)
     Thread.sleep(1000)
 
     // Assert that the correct user id has been set for the device on the server
@@ -120,7 +116,6 @@ class SetUserIdTest {
     val tokenProvider = StubTokenProvider(jwt)
 
     // Start the SDK
-    PushNotifications.setTokenProvider(tokenProvider)
     val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
 
@@ -134,7 +129,7 @@ class SetUserIdTest {
     // set the user id
     var successWasCalled = false
     var failureWasCalled = false
-    pni.setUserId(userId, object: Callback<Void, PusherCallbackError> {
+    pni.setUserId(userId, tokenProvider, object: Callback<Void, PusherCallbackError> {
       override fun onSuccess(vararg values: Void) {
         successWasCalled = true
       }
@@ -157,7 +152,6 @@ class SetUserIdTest {
     val tokenProvider = StubTokenProvider(jwt)
 
     // Start the SDK
-    PushNotifications.setTokenProvider(tokenProvider)
     val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
 
@@ -169,7 +163,7 @@ class SetUserIdTest {
     assertNotNull(errolClient.getDevice(storedDeviceId!!))
 
     // set the user id
-    pni.setUserId(userId)
+    pni.setUserId(userId, tokenProvider)
     Thread.sleep(2000)
 
     // Assert that the correct user id has been set for the device on the server
@@ -184,7 +178,7 @@ class SetUserIdTest {
     pni.start()
 
     // Set a different user id
-    pni.setUserId("another-$userId")
+    pni.setUserId("another-$userId", tokenProvider)
     Thread.sleep(1000)
 
     // A new device ID should have been stored
@@ -206,7 +200,6 @@ class SetUserIdTest {
     val tokenProvider = StubTokenProvider(jwt)
 
     // Start the SDK
-    PushNotifications.setTokenProvider(tokenProvider)
     val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
 
@@ -220,7 +213,7 @@ class SetUserIdTest {
     // set the user id
     var successWasCalled = false
     var failureWasCalled = false
-    pni.setUserId(userId, object: Callback<Void, PusherCallbackError> {
+    pni.setUserId(userId, tokenProvider, object: Callback<Void, PusherCallbackError> {
       override fun onSuccess(vararg values: Void) {
         successWasCalled = true
       }
@@ -242,7 +235,6 @@ class SetUserIdTest {
     val tokenProvider = BrokenTokenProvider()
 
     // Start the SDK
-    PushNotifications.setTokenProvider(tokenProvider)
     val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
 
@@ -256,7 +248,7 @@ class SetUserIdTest {
     // set the user id
     var successWasCalled = false
     var failureWasCalled = false
-    pni.setUserId(userId, object: Callback<Void, PusherCallbackError> {
+    pni.setUserId(userId, tokenProvider, object: Callback<Void, PusherCallbackError> {
       override fun onSuccess(vararg values: Void) {
         successWasCalled = true
       }
@@ -279,21 +271,21 @@ class SetUserIdTest {
     val tokenProvider = StubTokenProvider("")
 
     // Create sdk instance
-    PushNotifications.setTokenProvider(tokenProvider)
     val pni = PushNotificationsInstance(context, instanceId)
 
     // Call setUserId straight away
-    pni.setUserId(userId)
+    pni.setUserId(userId, tokenProvider)
   }
 
   @Test(expected = IllegalStateException::class)
-  fun setUserIdShouldThrowExceptionIfNoTokenProviderHasBeenGiven() {
+  fun setUserIdShouldThrowExceptionIfANullTokenProviderWasGiven() {
     // Create sdk instance
     val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
 
     // Call setUserId straight away
-    pni.setUserId(userId)
+
+    pni.setUserId(userId, JavaNull.getNullTokenProvider())
   }
 
   @Test(expected = PusherAlreadyRegisteredAnotherUserIdException::class)
@@ -303,7 +295,6 @@ class SetUserIdTest {
     val tokenProvider = StubTokenProvider(jwt)
 
     // Start the SDK
-    PushNotifications.setTokenProvider(tokenProvider)
     val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
 
@@ -317,7 +308,7 @@ class SetUserIdTest {
     // set the user id
     var successWasCalled = false
     var failureWasCalled = false
-    pni.setUserId(userId, object: Callback<Void, PusherCallbackError> {
+    pni.setUserId(userId, tokenProvider, object: Callback<Void, PusherCallbackError> {
       override fun onSuccess(vararg values: Void) {
         successWasCalled = true
       }
@@ -334,7 +325,7 @@ class SetUserIdTest {
     assertFalse(failureWasCalled)
 
     // Try setting another user id
-    pni.setUserId("another-user-id")
+    pni.setUserId("another-user-id", tokenProvider)
   }
 
   @Test(expected = PusherAlreadyRegisteredAnotherUserIdException::class)
@@ -344,15 +335,14 @@ class SetUserIdTest {
     val tokenProvider = StubTokenProvider(jwt)
 
     // Start the SDK
-    PushNotifications.setTokenProvider(tokenProvider)
     val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
 
     // Set a user id
-    pni.setUserId(userId)
+    pni.setUserId(userId, tokenProvider)
 
     // Try setting another user id
-    pni.setUserId("another-user-id")
+    pni.setUserId("another-user-id", tokenProvider)
   }
 
   private class BrokenTokenProvider: TokenProvider {

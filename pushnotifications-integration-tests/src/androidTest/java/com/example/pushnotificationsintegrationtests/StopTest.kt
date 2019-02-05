@@ -61,8 +61,6 @@ class StopTest {
     }
 
     File(context.filesDir, "$instanceId.jobqueue").delete()
-
-    PushNotifications.setTokenProvider(null)
   }
 
   private fun assertStoredDeviceIdIsNotNull() {

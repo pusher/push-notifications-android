@@ -16,15 +16,6 @@ public class PushNotifications {
     protected static TokenProvider tokenProvider;
 
     /**
-     * Sets the Token Provider used to authenticate Users with this device.
-     *
-     * @param tokenProvider your server token provider
-     */
-    public static void setTokenProvider(TokenProvider tokenProvider) {
-        PushNotifications.tokenProvider = tokenProvider;
-    }
-
-    /**
      * Starts the PushNotification client and synchronizes the FCM device token with
      * the Pusher services.
      * @param context the application context
@@ -206,8 +197,8 @@ public class PushNotifications {
      * <pre>{@code pushNotifications.setUserId("bob");}</pre>
      * @param userId the id of the user you would like to associate with the device
      */
-    public static void setUserId(String userId) {
-        setUserId(userId, new NoopCallback<Void, PusherCallbackError>());
+    public static void setUserId(String userId, TokenProvider tokenProvider) {
+        setUserId(userId, tokenProvider, new NoopCallback<Void, PusherCallbackError>());
     }
 
     /**
@@ -220,12 +211,12 @@ public class PushNotifications {
      * @param userId the id of the user you would like to associate with the device
      * @param callback callback used to indicate whether the user association process has succeeded
      */
-    public static void setUserId(String userId, Callback<Void, PusherCallbackError> callback) {
+    public static void setUserId(String userId, TokenProvider tokenProvider, Callback<Void, PusherCallbackError> callback) {
         if (instance == null) {
             throw new IllegalStateException("PushNotifications.start must have been called before");
         }
 
-        instance.setUserId(userId, callback);
+        instance.setUserId(userId, tokenProvider, callback);
     }
 
     /**

@@ -2,7 +2,6 @@ package com.example.pushnotificationsintegrationtests
 
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
-import com.pusher.pushnotifications.PushNotifications
 import com.pusher.pushnotifications.PushNotificationsInstance
 import com.pusher.pushnotifications.auth.TokenProvider
 import com.pusher.pushnotifications.fcm.MessagingService
@@ -66,8 +65,6 @@ class ClearAllStateTest {
     }
 
     File(context.filesDir, "$instanceId.jobqueue").delete()
-
-    PushNotifications.setTokenProvider(null)
   }
 
   private fun assertStoredDeviceIdIsNotNull() {
@@ -95,7 +92,6 @@ class ClearAllStateTest {
     val tokenProvider = StubTokenProvider(jwt)
 
     // Start the SDK
-    PushNotifications.setTokenProvider(tokenProvider)
     val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
 
@@ -109,7 +105,7 @@ class ClearAllStateTest {
     assertNotNull(errolClient.getDevice(storedDeviceId!!))
 
     // set the user id
-    pni.setUserId(userId)
+    pni.setUserId(userId, tokenProvider)
     Thread.sleep(1000)
 
     // Assert that the correct user id has been set for the device on the server

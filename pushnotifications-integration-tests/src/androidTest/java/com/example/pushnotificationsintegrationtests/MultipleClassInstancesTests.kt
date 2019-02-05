@@ -3,7 +3,6 @@ package com.example.pushnotificationsintegrationtests
 
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
-import com.pusher.pushnotifications.PushNotifications
 import com.pusher.pushnotifications.PushNotificationsInstance
 import com.pusher.pushnotifications.auth.TokenProvider
 import com.pusher.pushnotifications.fcm.MessagingService
@@ -66,8 +65,6 @@ class MultipleClassInstancesTests {
     }
 
     File(context.filesDir, "$instanceId.jobqueue").delete()
-
-    PushNotifications.setTokenProvider(null)
   }
 
   private fun assertStoredDeviceIdIsNotNull() {
@@ -92,12 +89,11 @@ class MultipleClassInstancesTests {
     val tokenProvider = StubTokenProvider(jwt)
 
     // Start the SDK
-    PushNotifications.setTokenProvider(tokenProvider)
     val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
 
     // Set a user id
-    pni.setUserId("alice")
+    pni.setUserId("alice", tokenProvider)
 
     // no exception here
 
@@ -109,7 +105,7 @@ class MultipleClassInstancesTests {
 
     // immediately calling `setUserId`
     try {
-      pni2.setUserId("alice")
+      pni2.setUserId("alice", tokenProvider)
 
       Assert.fail("No exception was triggered")
     } catch (e: IllegalStateException) {

@@ -6,6 +6,7 @@ import android.os.*
 import com.google.firebase.iid.FirebaseInstanceId
 import com.pusher.pushnotifications.api.DeviceMetadata
 import com.pusher.pushnotifications.api.PushNotificationsAPI
+import com.pusher.pushnotifications.auth.TokenProvider
 import com.pusher.pushnotifications.fcm.MessagingService
 import com.pusher.pushnotifications.internal.*
 import com.pusher.pushnotifications.logging.Logger
@@ -90,7 +91,6 @@ internal class ServerSyncEventHandler private constructor(looper: Looper): Handl
  * @param instanceId the id of the instance
  */
 class PushNotificationsInstance @JvmOverloads constructor(
-// TODO: throw exception if tokenProvider is null but user id is set
     context: Context,
     instanceId: String
 ) {
@@ -372,10 +372,12 @@ class PushNotificationsInstance @JvmOverloads constructor(
    * @param callback callback used to indicate whether the user association process has succeeded
    */
   @JvmOverloads
-  fun setUserId(userId: String, callback: Callback<Void, PusherCallbackError> = NoopCallback()) {
-    if (PushNotifications.tokenProvider == null) {
-      throw IllegalStateException("Token provider missing, please call `PushNotifications.setTokenProvider`")
+  fun setUserId(userId: String, tokenProvider: TokenProvider, callback: Callback<Void, PusherCallbackError> = NoopCallback()) {
+    if (tokenProvider == null) { // this can happen when using Java
+      throw IllegalStateException("Token provider can't be null")
     }
+    PushNotifications.tokenProvider = tokenProvider
+
     if (!startHasBeenCalledThisSession) {
       throw IllegalStateException("Start method must be called before setUserId")
     }
