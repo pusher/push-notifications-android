@@ -1,5 +1,6 @@
 package com.example.pushnotificationsintegrationtests
 
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import fi.iki.elonen.NanoHTTPD
@@ -82,6 +83,8 @@ abstract class NanoHTTPDRouter(val port: Int): NanoHTTPD(port) {
           }
           val buffer = ByteArray(contentLength)
           session.inputStream.read(buffer, 0, contentLength)
+
+          Log.i("FakeErrol", "$method: ${session.uri}")
           f(Request(session, extractedParms, buffer))
         }
       }

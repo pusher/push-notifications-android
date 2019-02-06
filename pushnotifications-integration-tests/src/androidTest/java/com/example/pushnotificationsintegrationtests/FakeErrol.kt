@@ -1,16 +1,22 @@
 package com.example.pushnotificationsintegrationtests
 
 import fi.iki.elonen.NanoHTTPD
+import io.jsonwebtoken.Jwts
 import java.util.*
 
 data class FakeErrolDevice(
   val id: String,
   val token: String,
-  val interests: MutableSet<String>
+  val interests: MutableSet<String>,
+  val userId: String? = null
 ) {
   companion object {
     fun New(token: String, interests: MutableSet<String>): FakeErrolDevice {
-      return FakeErrolDevice(UUID.randomUUID().toString(), token, interests)
+      return FakeErrolDevice(
+          id = UUID.randomUUID().toString(),
+          token = token,
+          interests = interests
+      )
     }
   }
 }
@@ -32,7 +38,7 @@ data class SetSubscriptionsRequest(
     val interests: Set<String>
 )
 
-class FakeErrol(port: Int): NanoHTTPDRouter(port) {
+class FakeErrol(port: Int, private val clusterKey: String = ""): NanoHTTPDRouter(port) {
   val storage = FakeErrolStorage(mutableMapOf())
 
   init {
@@ -67,7 +73,7 @@ class FakeErrol(port: Int): NanoHTTPDRouter(port) {
     get("/instances/{instanceId}/devices/fcm/{deviceId}") {
       val device = storage.devices[params["deviceId"]]
       if (device != null) {
-        complete(Response.Status.OK, GetDeviceResponse(id = device.id, deviceMetadata = DeviceMetadata("", "")))
+        complete(Response.Status.OK, GetDeviceResponse(id = device.id, userId = device.userId, deviceMetadata = DeviceMetadata("", "")))
       } else {
         complete(Response.Status.NOT_FOUND)
       }
@@ -82,6 +88,29 @@ class FakeErrol(port: Int): NanoHTTPDRouter(port) {
         complete(Response.Status.OK)
       }
     }
+
+    put("/instances/{instanceId}/devices/fcm/{deviceId}/user", fun NanoHTTPDRouter.Request.(): NanoHTTPD.Response {
+      val device = storage.devices[params["deviceId"]]
+      if (device == null) {
+        return complete(Response.Status.NOT_FOUND)
+      }
+
+      val authHeader = session.headers["authorization"]
+      if (authHeader == null) {
+        return complete(Response.Status.BAD_REQUEST)
+      }
+
+      val jwt = authHeader.removePrefix("Bearer ")
+      return try {
+        val claims = Jwts.parser()
+            .setSigningKey(Base64.getEncoder().encode(clusterKey.toByteArray()))
+            .parseClaimsJws(jwt)
+        storage.devices[params["deviceId"]!!] = device.copy(userId = claims.body.subject)
+        complete(Response.Status.OK)
+      } catch (e: Exception) {
+        complete(Response.Status.BAD_REQUEST)
+      }
+    })
 
     get("/instances/{instanceId}/devices/fcm/{deviceId}/interests") {
       val device = storage.devices[params["deviceId"]]

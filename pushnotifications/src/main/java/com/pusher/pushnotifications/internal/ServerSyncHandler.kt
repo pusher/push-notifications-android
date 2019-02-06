@@ -1,16 +1,15 @@
 package com.pusher.pushnotifications.internal
 
-import android.os.Handler
-import android.os.HandlerThread
-import android.os.Looper
-import android.os.Message
-import com.pusher.pushnotifications.SubscriptionsChangedListener
+import android.os.*
+import com.pusher.pushnotifications.*
 import com.pusher.pushnotifications.api.*
+import com.pusher.pushnotifications.auth.TokenProvider
 import com.pusher.pushnotifications.logging.Logger
 import java.io.File
 import java.io.Serializable
 import java.math.BigInteger
 import java.security.MessageDigest
+import java.util.concurrent.*
 
 sealed class ServerSyncJob: Serializable
 data class StartJob(val fcmToken: String, val knownPreviousClientIds: List<String>): ServerSyncJob()
@@ -19,31 +18,45 @@ data class SubscribeJob(val interest: String): ServerSyncJob()
 data class UnsubscribeJob(val interest: String): ServerSyncJob()
 data class SetSubscriptionsJob(val interests: Set<String>): ServerSyncJob()
 data class ApplicationStartJob(val deviceMetadata: DeviceMetadata): ServerSyncJob()
+data class SetUserIdJob(val userId: String): ServerSyncJob()
 class StopJob: ServerSyncJob()
 
 class ServerSyncHandler private constructor(
     private val api: PushNotificationsAPI,
     private val deviceStateStore: DeviceStateStore,
     private val jobQueue: PersistentJobQueue<ServerSyncJob>,
+    private val handleServerSyncEvent: (ServerSyncEvent) -> Unit,
+    private val getTokenProvider: () -> TokenProvider?,
     looper: Looper
 ): Handler(looper) {
   private val serverSyncProcessHandler = {
     val handlerThread = HandlerThread(looper.thread.name + "-inner-worker")
     handlerThread.start()
 
-    ServerSyncProcessHandler(api, deviceStateStore, jobQueue, handlerThread.looper)
+    ServerSyncProcessHandler(
+        api = api,
+        deviceStateStore = deviceStateStore,
+        jobQueue = jobQueue,
+        handleServerSyncEvent = handleServerSyncEvent,
+        getTokenProvider = getTokenProvider,
+        looper = handlerThread.looper
+    )
   }()
 
   init {
     // when the app first launches, we should queue up all of the outstanding
     // jobs in the queue so we can pick up where we have left off
     jobQueue.asIterable().forEach { job ->
-      serverSyncProcessHandler.sendMessage(Message().also { it.obj = job })
+      when (job) {
+        is SetUserIdJob -> {
+          // skipping it. If the user is still supposed to logged in, then
+          // there should be another setUserIdJob being enqueued upon launch
+        }
+        else -> {
+          serverSyncProcessHandler.sendMessage(Message().also { it.obj = job })
+        }
+      }
     }
-  }
-
-  fun setOnSubscriptionsChangedListener(onSubscriptionsChangedListener: SubscriptionsChangedListener) {
-    serverSyncProcessHandler.onSubscriptionsChangedListener = onSubscriptionsChangedListener
   }
 
   override fun handleMessage(msg: Message) {
@@ -57,19 +70,28 @@ class ServerSyncHandler private constructor(
   companion object {
     private val serverSyncHandlers = mutableMapOf<String, ServerSyncHandler>()
 
-    fun obtain(
+    internal fun obtain(
         instanceId: String,
         api: PushNotificationsAPI,
         deviceStateStore: DeviceStateStore,
-        secureFileDir: File
-    ): ServerSyncHandler {
+        secureFileDir: File,
+        handleServerSyncEvent: (ServerSyncEvent) -> Unit,
+        getTokenProvider: () -> TokenProvider?
+        ): ServerSyncHandler {
       return synchronized(serverSyncHandlers) {
         serverSyncHandlers.getOrPut(instanceId) {
           val handlerThread = HandlerThread("ServerSyncHandler-$instanceId")
           handlerThread.start()
 
           val jobQueue = TapeJobQueue<ServerSyncJob>(File(secureFileDir, "$instanceId.jobqueue"))
-          ServerSyncHandler(api, deviceStateStore, jobQueue, handlerThread.looper)
+          ServerSyncHandler(
+              api = api,
+              deviceStateStore = deviceStateStore,
+              jobQueue = jobQueue,
+              handleServerSyncEvent = handleServerSyncEvent,
+              getTokenProvider = getTokenProvider,
+              looper = handlerThread.looper
+          )
         }
       }
     }
@@ -92,6 +114,9 @@ class ServerSyncHandler private constructor(
     fun applicationStart(deviceMetadata: DeviceMetadata): Message =
         Message.obtain().apply { obj = ApplicationStartJob(deviceMetadata) }
 
+    fun setUserId(userId: String): Message =
+        Message.obtain().apply { obj = SetUserIdJob(userId) }
+
     fun stop(): Message =
         Message.obtain().apply { obj = StopJob() }
   }
@@ -101,13 +126,15 @@ class ServerSyncProcessHandler internal constructor(
     private val api: PushNotificationsAPI,
     private val deviceStateStore: DeviceStateStore,
     private val jobQueue: PersistentJobQueue<ServerSyncJob>,
+    private val handleServerSyncEvent: (ServerSyncEvent) -> Unit,
+    private val getTokenProvider: () -> TokenProvider?,
     looper: Looper
 ): Handler(looper) {
+  var tokenProviderTimeoutSecs: Long = 60
+
   private val log = Logger.get(this::class)
   private val started: Boolean
   get() = deviceStateStore.deviceId != null
-
-  internal var onSubscriptionsChangedListener: SubscriptionsChangedListener? = null
 
   private fun recreateDevice(fcmToken: String) {
     // Register device with Errol
@@ -119,17 +146,53 @@ class ServerSyncProcessHandler internal constructor(
 
     var localInterests: Set<String> = emptySet()
     synchronized(deviceStateStore) {
-      deviceStateStore.deviceId = registrationResponse.deviceId
-      deviceStateStore.FCMToken = fcmToken
-
       localInterests = deviceStateStore.interests
+
+      deviceStateStore.FCMToken = fcmToken
+      deviceStateStore.serverConfirmedInterestsHash = null
+      deviceStateStore.deviceId = registrationResponse.deviceId
     }
 
     if (localInterests.count() > 0) {
-      api.setSubscriptions(
+      api.setSubscriptions( // TODO: We don't really handle if we get a 400 or 404
           deviceId = registrationResponse.deviceId,
-          interests = deviceStateStore.interests,
+          interests = localInterests,
           retryStrategy = RetryStrategy.WithInfiniteExpBackOff())
+    }
+
+    val storedUserId = deviceStateStore.userId
+    if (storedUserId != null) {
+      val tp = getTokenProvider()
+      if (tp == null) {
+        // Any failures during this process are equivalent to de-authing the user e.g. setUserId(null)
+        // If the user session is indeed over, there should be a Stop in the backlog eventually
+        // If the user session is still valid, there should be a setUserId in the backlog
+
+        log.w("Failed to set the user id due token provider not being present")
+        deviceStateStore.userId = null
+        return
+      }
+
+      try {
+        val executor = Executors.newSingleThreadExecutor()
+        val future: Future<String> = executor.submit<String> {
+          tp.fetchToken(storedUserId)
+        }
+        val jwt = future.get(tokenProviderTimeoutSecs, TimeUnit.SECONDS)
+
+        api.setUserId(
+            deviceStateStore.deviceId!!,
+            jwt,
+            RetryStrategy.WithInfiniteExpBackOff())
+      } catch (e: Exception) {
+        // Any failures during this process are equivalent to de-authing the user e.g. setUserId(null)
+        // If the user session is indeed over, there should be a Stop in the backlog eventually
+        // If the user session is still valid, there should be a setUserId in the backlog
+
+        log.w("Failed to set the user id due to an unexpected error", e)
+        deviceStateStore.userId = null
+        return
+      }
     }
   }
 
@@ -141,6 +204,7 @@ class ServerSyncProcessHandler internal constructor(
             knownPreviousClientIds = startJob.knownPreviousClientIds,
             retryStrategy = RetryStrategy.WithInfiniteExpBackOff())
 
+    val outstandingJobs = mutableListOf<ServerSyncJob>()
     synchronized(deviceStateStore) {
       // Replay sub/unsub/setsub operations in job queue over initial interest set
       val interests = registrationResponse.initialInterests.toMutableSet()
@@ -160,10 +224,23 @@ class ServerSyncProcessHandler internal constructor(
             interests.addAll(j.interests)
           }
           is StopJob -> {
+            outstandingJobs.clear()
             // Any subscriptions changes done at this point are just discarded,
             // and we need to assume the initial interest set as the starting point again
             interests.clear()
             interests.addAll(registrationResponse.initialInterests)
+          }
+          is SetUserIdJob -> {
+            outstandingJobs.add(j)
+          }
+          is ApplicationStartJob -> {
+            // ignoring it as we are already going to sync the state anyway
+          }
+          is RefreshTokenJob -> {
+            outstandingJobs.add(j)
+          }
+          else -> {
+            throw IllegalStateException("Job $j unexpected during SDK start")
           }
         }
       }
@@ -173,30 +250,24 @@ class ServerSyncProcessHandler internal constructor(
       // Replace interests with the result
       if (localInterestWillChange) {
         deviceStateStore.interests = interests
-        onSubscriptionsChangedListener?.let { listener ->
-          // always using the UI thread
-          Handler(Looper.getMainLooper()).post {
-            listener.onSubscriptionsChanged(interests.toSet())
-          }
-        }
+        handleServerSyncEvent(InterestsChangedEvent(interests))
       }
     }
 
     deviceStateStore.deviceId = registrationResponse.deviceId
     deviceStateStore.FCMToken = startJob.fcmToken
 
-    // Clear queue up to the start job
-    while (jobQueue.peek() !is StartJob) {
-      jobQueue.pop()
-    }
-    jobQueue.pop() // Also remove start job
-
     val remoteInterestsWillChange = deviceStateStore.interests != registrationResponse.initialInterests
     if (remoteInterestsWillChange) {
-      api.setSubscriptions(
+      api.setSubscriptions( // TODO: We don't really handle if we get a 400 or 404
           deviceId = registrationResponse.deviceId,
           interests = deviceStateStore.interests,
           retryStrategy = RetryStrategy.WithInfiniteExpBackOff())
+    }
+
+    log.d("Number of outstanding jobs: ${outstandingJobs.size}")
+    outstandingJobs.forEach { j ->
+      processJob(j)
     }
   }
 
@@ -205,9 +276,8 @@ class ServerSyncProcessHandler internal constructor(
         deviceStateStore.deviceId!!,
         RetryStrategy.WithInfiniteExpBackOff())
 
-    jobQueue.pop()
-
     deviceStateStore.deviceId = null
+    deviceStateStore.userId = null
     deviceStateStore.FCMToken = null
     deviceStateStore.osVersion = null
     deviceStateStore.sdkVersion = null
@@ -250,6 +320,105 @@ class ServerSyncProcessHandler internal constructor(
     }
   }
 
+  private fun processSetUserIdJob(job: SetUserIdJob) {
+    synchronized(deviceStateStore) {
+      val storedUserId = deviceStateStore.userId
+      if (storedUserId != null) {
+        if (storedUserId == job.userId) {
+          // cool.
+
+          handleServerSyncEvent(
+              UserIdSet(userId = job.userId, pusherCallbackError = null))
+          return
+        } else {
+          throw IllegalStateException("This device has already been registered to another user id.")
+        }
+      }
+    }
+
+    val tp = getTokenProvider()
+    if (tp == null) {
+      handleServerSyncEvent(
+          UserIdSet(
+              userId = job.userId,
+              pusherCallbackError = PusherCallbackError(
+                  message = "Could not set user id: TokenProvider is missing. Have you called start?",
+                  cause = null
+              ))
+      )
+      return
+    }
+
+    val jwt = try {
+      val executor = Executors.newSingleThreadExecutor()
+      val future: Future<String> = executor.submit<String> {
+        tp.fetchToken(job.userId)
+      }
+      future.get(tokenProviderTimeoutSecs, TimeUnit.SECONDS)
+    } catch (e: ExecutionException) {
+      handleServerSyncEvent(
+          UserIdSet(
+              userId = job.userId,
+              pusherCallbackError = PusherCallbackError(
+                  message = "Could not set user id: An error has occurred when using the TokenProvider: ${e.cause?.message ?: "Unknown reason"}",
+                  cause = e.cause
+              ))
+      )
+      return
+    } catch (e: TimeoutException) {
+      handleServerSyncEvent(
+          UserIdSet(
+              userId = job.userId,
+              pusherCallbackError = PusherCallbackError(
+                  message = "Could not set user id: TokenProvider timed out when reaching customer service (> $tokenProviderTimeoutSecs seconds)",
+                  cause = null
+              ))
+      )
+      return
+    } catch (e: Exception) {
+      handleServerSyncEvent(
+          UserIdSet(
+              userId = job.userId,
+              pusherCallbackError = PusherCallbackError(
+                  message = "Could not set user id: An unexpected error occurred when using the TokenProvider. Please contact support@pusher.com",
+                  cause = e
+              ))
+      )
+      return
+    }
+
+    try {
+      api.setUserId(
+          deviceStateStore.deviceId!!,
+          jwt,
+          RetryStrategy.WithInfiniteExpBackOff())
+
+      deviceStateStore.userId = job.userId
+
+      handleServerSyncEvent(
+          UserIdSet(userId = job.userId, pusherCallbackError = null))
+    } catch (e: PushNotificationsAPIBadJWT) {
+      handleServerSyncEvent(
+          UserIdSet(
+              userId = job.userId,
+              pusherCallbackError = PusherCallbackError(
+                message = "Could not set user id, jwt rejected: ${e.reason}",
+                cause = null // Not forwarding `e` because it is internal
+            ))
+          )
+    } catch (e: PushNotificationsAPIBadRequest) {
+      handleServerSyncEvent(
+          UserIdSet(
+            userId = job.userId,
+            pusherCallbackError = PusherCallbackError(
+                message = "Something went wrong. Please contact support@pusher.com.",
+                cause = e
+            ))
+      )
+      throw e
+    }
+  }
+
   private fun processJob(job: ServerSyncJob) {
     try {
       when(job) {
@@ -272,21 +441,26 @@ class ServerSyncProcessHandler internal constructor(
               RetryStrategy.WithInfiniteExpBackOff())
         }
         is RefreshTokenJob -> {
-          api.refreshToken(
-              deviceStateStore.deviceId!!,
-              job.newToken,
-              RetryStrategy.WithInfiniteExpBackOff())
+          if (deviceStateStore.FCMToken != job.newToken) {
+            api.refreshToken(
+                deviceStateStore.deviceId!!,
+                job.newToken,
+                RetryStrategy.WithInfiniteExpBackOff())
+
+            deviceStateStore.FCMToken = job.newToken
+          }
+        }
+        is SetUserIdJob -> {
+          processSetUserIdJob(job)
         }
         is ApplicationStartJob -> {
           processApplicationStartJob(job)
         }
       }
-      jobQueue.pop()
     } catch (e: PushNotificationsAPIBadRequest) {
       // not really recoverable, so log it here and also monitor 400s closely on our backend
       // (this really shouldn't happen)
       log.e("Fail to make a valid request to the server for job ($job), skipping it", e)
-      jobQueue.pop()
     } catch (e: PushNotificationsAPIDeviceNotFound) {
       // server has forgotten about this device, it needs to be recreated
       recreateDevice(deviceStateStore.FCMToken!!)
@@ -304,9 +478,23 @@ class ServerSyncProcessHandler internal constructor(
     }
 
     when (job) {
-      is StartJob -> processStartJob(job)
-      is StopJob -> processStopJob()
-      else -> processJob(job)
+      is StartJob -> {
+        processStartJob(job)
+
+        // Clear queue up to the start job
+        while (jobQueue.peek() !is StartJob) {
+          jobQueue.pop()
+        }
+        jobQueue.pop() // Also remove start job
+      }
+      is StopJob -> {
+        processStopJob()
+        jobQueue.pop()
+      }
+      else -> {
+        processJob(job)
+        jobQueue.pop()
+      }
     }
   }
 }

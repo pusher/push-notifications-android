@@ -2,17 +2,18 @@ package com.example.pushnotificationsintegrationtests
 
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
-import com.pusher.pushnotifications.PushNotifications
 import com.pusher.pushnotifications.PushNotificationsInstance
+import com.pusher.pushnotifications.auth.TokenProvider
 import com.pusher.pushnotifications.fcm.MessagingService
 import com.pusher.pushnotifications.internal.DeviceStateStore
+import io.jsonwebtoken.Jwts
+import io.jsonwebtoken.SignatureAlgorithm
 import org.awaitility.core.ConditionTimeoutException
-import org.awaitility.kotlin.await
-import org.awaitility.kotlin.untilNotNull
-import org.awaitility.kotlin.untilNull
-import org.awaitility.kotlin.until
 import org.hamcrest.CoreMatchers.*
 import org.junit.After
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.until
+import org.awaitility.kotlin.untilNotNull
 import org.junit.AfterClass
 
 import org.junit.Test
@@ -21,6 +22,9 @@ import org.junit.runner.RunWith
 import org.junit.Assert.*
 import org.junit.Before
 import java.io.File
+import java.time.LocalDateTime
+import java.time.ZoneOffset
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 /**
@@ -29,18 +33,18 @@ import java.util.concurrent.TimeUnit
  * See [testing documentation](http://d.android.com/tools/testing).
  */
 @RunWith(AndroidJUnit4::class)
-class StopTest {
+class ClearAllStateTest {
   fun getStoredDeviceId(): String? {
     val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
     return deviceStateStore.deviceId
   }
 
   val context = InstrumentationRegistry.getTargetContext()
-  val instanceId = "00000000-1241-08e9-b379-377c32cd1e80"
+  val instanceId = "00000000-1241-08e9-b379-377c32cd1e81"
   val errolClient = ErrolAPI(instanceId, "http://localhost:8080")
 
   companion object {
-    val errol = FakeErrol(8080)
+    val errol = FakeErrol(8080, "a-really-long-secret-key-that-ends-with-hunter2")
 
     @AfterClass
     @JvmStatic
@@ -79,74 +83,75 @@ class StopTest {
   }
 
   @Test
-  fun stopShouldDeleteADeviceInTheServer() {
+  fun clearAllStateShouldClearAllState() {
+    val userId = "alice"
+    val secretKey = "a-really-long-secret-key-that-ends-with-hunter2"
+
+    // Create token provider
+    val jwt = makeJWT(instanceId, secretKey, userId)
+    val tokenProvider = StubTokenProvider(jwt)
+
     // Start the SDK
     val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
 
-    // A device ID should have been stored
     assertStoredDeviceIdIsNotNull()
-    val storedDeviceId = getStoredDeviceId()
-
-    // and the stored id should match the server one
-    assertNotNull(errolClient.getDevice(storedDeviceId!!))
-
-    pni.stop()
-
-    await.atMost(3, TimeUnit.SECONDS) untilNull {
-      // and now the server should not have this device anymore
-      errolClient.getDevice(storedDeviceId!!)
-    }
-  }
-
-  @Test
-  fun stopShouldDeleteLocalInterests() {
-    // Start the SDK
-    val pni = PushNotificationsInstance(context, instanceId)
-    pni.addDeviceInterest("potato")
-    pni.start()
 
     // A device ID should have been stored
-    assertStoredDeviceIdIsNotNull()
-    val storedDeviceId = getStoredDeviceId()
-
-    // and the stored id should match the server one
-    val getDeviceResponse = errolClient.getDevice(storedDeviceId!!)
-    assertNotNull(getDeviceResponse)
-
-    pni.stop()
-    assertThat(pni.getDeviceInterests(), `is`(emptySet()))
-  }
-
-  @Test
-  fun afterStoppingStartShouldBePossible() {
-    // Start the SDK
-    val pni = PushNotificationsInstance(context, instanceId)
-    pni.start()
-
-    // A device ID should have been stored
-    assertStoredDeviceIdIsNotNull()
     val storedDeviceId = getStoredDeviceId()
     assertNotNull(storedDeviceId)
 
     // and the stored id should match the server one
     assertNotNull(errolClient.getDevice(storedDeviceId!!))
 
-    pni.stop()
+    // set the user id
+    pni.setUserId(userId, tokenProvider)
+    Thread.sleep(1000)
 
-    await.atMost(3, TimeUnit.SECONDS) untilNull {
-      // and now the server should not have this device anymore
-      errolClient.getDevice(storedDeviceId!!)
-    }
+    // Assert that the correct user id has been set for the device on the server
+    var getDeviceResponse = errolClient.getDevice(storedDeviceId!!)
+    assertNotNull(getDeviceResponse)
+    assertThat(getDeviceResponse!!.userId, `is`(equalTo(userId)))
 
-    pni.start()
+    // Subscribe to an interest
+    pni.addDeviceInterest("peanuts")
 
-    assertStoredDeviceIdIsNotNull()
+    // The device should have that interest stored locally
+    assertThat(pni.getDeviceInterests(), `is`(equalTo(setOf("peanuts"))))
 
-    // A device ID should have been stored
+    pni.clearAllState()
+    Thread.sleep(1000)
+
+    // A new device ID should have been stored
     assertStoredDeviceIdIsNotNull()
     val newStoredDeviceId = getStoredDeviceId()
-    assertNotNull(errolClient.getDevice(newStoredDeviceId!!))
-    assertThat(newStoredDeviceId, `is`(not(equalTo(storedDeviceId))))
+
+    // The device should not have a user ID
+    getDeviceResponse = errolClient.getDevice(newStoredDeviceId!!)
+    assertNotNull(getDeviceResponse)
+    assertNull(getDeviceResponse!!.userId)
+
+    // The device should have no interests
+    assertThat(pni.getDeviceInterests(), `is`(emptySet()))
+  }
+
+  private class StubTokenProvider(var jwt: String): TokenProvider {
+    override fun fetchToken(userId: String): String {
+      return jwt
+    }
+  }
+
+  private fun makeJWT(instanceId: String, secretKey: String, userId: String): String {
+    val iss = "https://$instanceId.pushnotifications.pusher.com"
+    val exp = LocalDateTime.now().plusDays(1)
+
+    val b64SecretKey = Base64.getEncoder().encode(secretKey.toByteArray())
+
+    return Jwts.builder()
+        .setSubject(userId)
+        .setIssuer(iss)
+        .setExpiration(Date.from(exp.toInstant(ZoneOffset.UTC)))
+        .signWith(SignatureAlgorithm.HS256, b64SecretKey)
+        .compact()
   }
 }
