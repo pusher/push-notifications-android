@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.2.0] - 2018-02-06
+
+### Added
+ - Support for [Authenticated Users](https://docs.pusher.com/beams/concepts/authenticated-users):
+ `setUserId` and `clearAllState` functions were added
+
+### Changed
+ - Renamed interests methods to clarify that they are device interests
+
 ## [1.1.0] - 2018-12-20
 
 ### Changed
