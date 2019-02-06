@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [1.2.0] - 2018-02-06
+## [1.2.0] - 2019-02-06
 
 ### Added
  - Support for [Authenticated Users](https://docs.pusher.com/beams/concepts/authenticated-users):
