@@ -26,7 +26,7 @@ class PusherAlreadyRegisteredException(message: String) : RuntimeException(messa
 class PusherAlreadyRegisteredAnotherUserIdException(message: String) : IllegalStateException(message)
 
 /**
- * Returned by com.pusher.pushnotifications.Callback when an async operation fails.
+ * Returned by com.pusher.pushnotifications.PusherCallback when an async operation fails.
  *
  * @param message Error message to be shown
  * @param cause Throwable that cause the async operation to fail (optional)
@@ -39,9 +39,9 @@ internal data class UserIdSet(val userId: String, val pusherCallbackError: Pushe
 
 internal class ServerSyncEventHandler private constructor(looper: Looper): Handler(looper) {
   var onSubscriptionsChangedListener: SubscriptionsChangedListener? = null
-  var userIdToCallbacks: MutableMap<String, MutableList<com.pusher.pushnotifications.Callback<Void, PusherCallbackError>>> = mutableMapOf()
+  var userIdToCallbacks: MutableMap<String, MutableList<PusherCallback<Void, PusherCallbackError>>> = mutableMapOf()
 
-  fun addUserIdCallback(userId: String, callback: com.pusher.pushnotifications.Callback<Void, PusherCallbackError>) {
+  fun addUserIdCallback(userId: String, callback: PusherCallback<Void, PusherCallbackError>) {
     synchronized(userIdToCallbacks) {
       val callbacks = userIdToCallbacks.getOrPut(userId) { mutableListOf() }
 
@@ -372,7 +372,7 @@ class PushNotificationsInstance @JvmOverloads constructor(
    * @param callback callback used to indicate whether the user association process has succeeded
    */
   @JvmOverloads
-  fun setUserId(userId: String, tokenProvider: TokenProvider, callback: Callback<Void, PusherCallbackError> = NoopCallback()) {
+  fun setUserId(userId: String, tokenProvider: TokenProvider, callback: PusherCallback<Void, PusherCallbackError> = NoopPusherCallback()) {
     if (tokenProvider == null) { // this can happen when using Java
       throw IllegalStateException("Token provider can't be null")
     }
