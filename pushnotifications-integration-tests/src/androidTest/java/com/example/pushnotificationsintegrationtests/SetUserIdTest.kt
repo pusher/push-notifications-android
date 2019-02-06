@@ -129,7 +129,7 @@ class SetUserIdTest {
     // set the user id
     var successWasCalled = false
     var failureWasCalled = false
-    pni.setUserId(userId, tokenProvider, object: Callback<Void, PusherCallbackError> {
+    pni.setUserId(userId, tokenProvider, object: BeamsCallback<Void, PusherCallbackError> {
       override fun onSuccess(vararg values: Void) {
         successWasCalled = true
       }
@@ -213,7 +213,7 @@ class SetUserIdTest {
     // set the user id
     var successWasCalled = false
     var failureWasCalled = false
-    pni.setUserId(userId, tokenProvider, object: Callback<Void, PusherCallbackError> {
+    pni.setUserId(userId, tokenProvider, object: BeamsCallback<Void, PusherCallbackError> {
       override fun onSuccess(vararg values: Void) {
         successWasCalled = true
       }
@@ -248,7 +248,7 @@ class SetUserIdTest {
     // set the user id
     var successWasCalled = false
     var failureWasCalled = false
-    pni.setUserId(userId, tokenProvider, object: Callback<Void, PusherCallbackError> {
+    pni.setUserId(userId, tokenProvider, object: BeamsCallback<Void, PusherCallbackError> {
       override fun onSuccess(vararg values: Void) {
         successWasCalled = true
       }
@@ -308,7 +308,7 @@ class SetUserIdTest {
     // set the user id
     var successWasCalled = false
     var failureWasCalled = false
-    pni.setUserId(userId, tokenProvider, object: Callback<Void, PusherCallbackError> {
+    pni.setUserId(userId, tokenProvider, object: BeamsCallback<Void, PusherCallbackError> {
       override fun onSuccess(vararg values: Void) {
         successWasCalled = true
       }

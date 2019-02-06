@@ -198,7 +198,7 @@ public class PushNotifications {
      * @param userId the id of the user you would like to associate with the device
      */
     public static void setUserId(String userId, TokenProvider tokenProvider) {
-        setUserId(userId, tokenProvider, new NoopCallback<Void, PusherCallbackError>());
+        setUserId(userId, tokenProvider, new NoopBeamsCallback<Void, PusherCallbackError>());
     }
 
     /**
@@ -211,7 +211,7 @@ public class PushNotifications {
      * @param userId the id of the user you would like to associate with the device
      * @param callback callback used to indicate whether the user association process has succeeded
      */
-    public static void setUserId(String userId, TokenProvider tokenProvider, Callback<Void, PusherCallbackError> callback) {
+    public static void setUserId(String userId, TokenProvider tokenProvider, BeamsCallback<Void, PusherCallbackError> callback) {
         if (instance == null) {
             throw new IllegalStateException("PushNotifications.start must have been called before");
         }
