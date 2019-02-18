@@ -1,29 +1,26 @@
 package com.pusher.pushnotifications.internal
 
 import java.lang.ref.WeakReference
-import java.math.BigInteger
-import java.security.MessageDigest
 import android.app.Activity
 import android.app.Application
+import android.arch.lifecycle.*
 import android.content.ContentProvider
 import android.content.ContentValues
 import android.database.Cursor
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import com.pusher.pushnotifications.BuildConfig
 import com.pusher.pushnotifications.PushNotificationsInstance
-import com.pusher.pushnotifications.api.DeviceMetadata
-import com.pusher.pushnotifications.api.OperationCallbackNoArgs
-import com.pusher.pushnotifications.api.PushNotificationsAPI
 import com.pusher.pushnotifications.logging.Logger
 
 class AppActivityLifecycleCallbacks: Application.ActivityLifecycleCallbacks {
 
   companion object {
-    var startedCount = 0
-    var stoppedCount = 0
-    fun appInBackground(): Boolean = startedCount <= stoppedCount
+    // Calculates the background status by checking if we are in the `RESUMED` state
+    // which will be true if this function isn't called from
+    // `onCreate`, `onStart` and `onResume`. If a new activity is created the process
+    // lifecycle is still deemed to be in a `RESUMED` state.
+    fun appInBackground(): Boolean =
+        !ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
 
     internal var currentActivity: WeakReference<Activity>? = null
   }
@@ -33,7 +30,6 @@ class AppActivityLifecycleCallbacks: Application.ActivityLifecycleCallbacks {
   }
 
   override fun onActivityStarted(activity: Activity) {
-    startedCount += 1
     currentActivity = WeakReference(activity)
   }
 
@@ -42,12 +38,10 @@ class AppActivityLifecycleCallbacks: Application.ActivityLifecycleCallbacks {
   }
 
   override fun onActivityPaused(activity: Activity) {
-    stoppedCount +=1
     currentActivity = null
   }
 
   override fun onActivityStopped(activity: Activity) {
-    stoppedCount +=1
     if (currentActivity?.get() == activity) { // an activity may get stopped after a new one is resumed
         currentActivity = null
     }
