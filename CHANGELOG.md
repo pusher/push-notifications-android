@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+ - Sometimes notifications were being marked as delivered with the app being in background.
+
 ## [1.2.0] - 2019-02-06
 
 ### Added

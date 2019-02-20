@@ -9,8 +9,6 @@ import com.google.gson.JsonSyntaxException
 import com.pusher.pushnotifications.internal.DeviceStateStore
 import com.pusher.pushnotifications.logging.Logger
 import com.pusher.pushnotifications.reporting.api.OpenEvent
-import com.pusher.pushnotifications.reporting.api.ReportEvent
-import com.pusher.pushnotifications.reporting.api.ReportEventType
 
 /*
  * This activity will be opened when a user taps a notification sent by the Pusher push notifications
