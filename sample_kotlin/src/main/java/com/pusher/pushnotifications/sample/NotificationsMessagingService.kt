@@ -7,7 +7,8 @@ import com.pusher.pushnotifications.fcm.MessagingService
 class NotificationsMessagingService : MessagingService() {
   override fun onNewToken(token: String) {
     Log.i("NotificationsService", "Token was updated 🔒")
-    // TODO: Do something useful here
+    // Overriding this method is optional.
+    // You can use this token to integrate with other push notification services
   }
 
   override fun onMessageReceived(remoteMessage: RemoteMessage) {
