@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.3.0] - 2019-02-28
+
+### Added
+ - onNewToken method to MessagingService to allow for easier integration with
+   other push notification services
+
 ## [1.2.1] - 2019-02-20
 
 ### Fixed
