@@ -40,7 +40,9 @@ abstract class MessagingService: Service() {
 
   private class WrappedFirebaseMessagingService(
       val context: () -> Context,
-      val onMessageReceivedHandler: (RemoteMessage) -> Unit): FirebaseMessagingService() {
+      val onMessageReceivedHandler: (RemoteMessage) -> Unit,
+      val onNewTokenHandler: (String) -> Unit
+  ): FirebaseMessagingService() {
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
       onMessageReceivedHandler(remoteMessage)
@@ -49,6 +51,7 @@ abstract class MessagingService: Service() {
     override fun onNewToken(token: String) {
       MessagingService.log.d("Got new or refreshed FCM token: $token")
       MessagingService.onRefreshToken?.let { it(token) }
+      onNewTokenHandler(token)
     }
 
     override fun getApplicationContext(): Context {
@@ -57,26 +60,30 @@ abstract class MessagingService: Service() {
   }
 
   private val underlyingService: FirebaseMessagingService =
-      WrappedFirebaseMessagingService({ applicationContext }, { remoteMessage: RemoteMessage ->
-        if (remoteMessage.data["pusherTokenValidation"] == "true") {
-          log.d("Received blank message from Pusher to perform token validation")
-        } else {
-          log.d("Received from FCM: $remoteMessage")
-          log.d("Received from FCM TITLE: " + remoteMessage.notification?.title)
-          log.d("Received from FCM BODY: " + remoteMessage.notification?.body)
+      WrappedFirebaseMessagingService(
+          { applicationContext },
+          { remoteMessage: RemoteMessage ->
+            if (remoteMessage.data["pusherTokenValidation"] == "true") {
+              log.d("Received blank message from Pusher to perform token validation")
+            } else {
+              log.d("Received from FCM: $remoteMessage")
+              log.d("Received from FCM TITLE: " + remoteMessage.notification?.title)
+              log.d("Received from FCM BODY: " + remoteMessage.notification?.body)
 
-          val listenerActivity = listenerActivity?.get()
-          val currentActivity = AppActivityLifecycleCallbacks.currentActivity?.get()
-          when {
-            listenerActivity == null -> log.v("Missing listener activity")
-            currentActivity == null -> log.v("No active activity")
-            listenerActivity != currentActivity -> log.v("Listener activity and current activity don't match")
-            else ->listener?.onMessageReceived(remoteMessage)
-          }
+              val listenerActivity = listenerActivity?.get()
+              val currentActivity = AppActivityLifecycleCallbacks.currentActivity?.get()
+              when {
+                listenerActivity == null -> log.v("Missing listener activity")
+                currentActivity == null -> log.v("No active activity")
+                listenerActivity != currentActivity -> log.v("Listener activity and current activity don't match")
+                else ->listener?.onMessageReceived(remoteMessage)
+              }
 
-          this.onMessageReceived(remoteMessage)
-        }
-      })
+              this.onMessageReceived(remoteMessage)
+            }
+          },
+          { token: String -> this.onNewToken(token) }
+      )
 
   override fun onBind(i: Intent?): IBinder = underlyingService.onBind(i)
 
@@ -84,10 +91,15 @@ abstract class MessagingService: Service() {
       underlyingService.onStartCommand(intent, flags, startId)
 
   abstract fun onMessageReceived(remoteMessage: RemoteMessage)
+
+  open fun onNewToken(token: String) {
+    // Do nothing by default
+  }
 }
 
 class EmptyMessagingService: MessagingService() {
   override fun onMessageReceived(remoteMessage: RemoteMessage) {
     // Doesn't do anything; manifest will default to this one
   }
+  
 }
