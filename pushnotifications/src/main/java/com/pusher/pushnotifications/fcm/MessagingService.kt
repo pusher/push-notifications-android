@@ -101,8 +101,5 @@ class EmptyMessagingService: MessagingService() {
   override fun onMessageReceived(remoteMessage: RemoteMessage) {
     // Doesn't do anything; manifest will default to this one
   }
-
-  override fun onNewToken(token: String) {
-    // Doesn't do anything; manifest will default to this one
-  }
+  
 }
