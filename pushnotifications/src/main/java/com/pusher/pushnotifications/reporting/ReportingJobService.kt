@@ -6,12 +6,12 @@ import com.firebase.jobdispatcher.JobService
 import com.google.gson.annotations.SerializedName
 import com.pusher.pushnotifications.logging.Logger
 import com.pusher.pushnotifications.PushNotificationsInstance
-import com.pusher.pushnotifications.api.OperationCallback
 import com.pusher.pushnotifications.api.OperationCallbackNoArgs
 import com.pusher.pushnotifications.reporting.api.*
 
 data class PusherMetadata(
   val publishId: String,
+  val userId: String?,
   val clickAction: String?,
   @SerializedName("hasDisplayableContent") private val _hasDisplayableContent: Boolean?,
   @SerializedName("hasData") private val _hasData: Boolean?
@@ -21,13 +21,13 @@ data class PusherMetadata(
 
   val hasData: Boolean
     get() = _hasData ?: false
-
 }
 
 class ReportingJobService: JobService() {
   companion object {
     private const val BUNDLE_EVENT_TYPE_KEY = "ReportEventType"
     private const val BUNDLE_DEVICE_ID_KEY = "DeviceId"
+    private const val BUNDLE_USER_ID_KEY = "UserId"
     private const val BUNDLE_PUBLISH_ID_KEY = "PublishId"
     private const val BUNDLE_TIMESTAMP_KEY = "Timestamp"
     private const val BUNDLE_APP_IN_BACKGROUND_KEY = "AppInBackground"
@@ -40,6 +40,7 @@ class ReportingJobService: JobService() {
         is DeliveryEvent -> {
           b.putString(BUNDLE_EVENT_TYPE_KEY, reportEvent.event.toString())
           b.putString(BUNDLE_DEVICE_ID_KEY, reportEvent.deviceId)
+          b.putString(BUNDLE_USER_ID_KEY, reportEvent.userId)
           b.putString(BUNDLE_PUBLISH_ID_KEY, reportEvent.publishId)
           b.putLong(BUNDLE_TIMESTAMP_KEY, reportEvent.timestampSecs)
           b.putBoolean(BUNDLE_APP_IN_BACKGROUND_KEY, reportEvent.appInBackground!!)
@@ -50,6 +51,7 @@ class ReportingJobService: JobService() {
         is OpenEvent -> {
           b.putString(BUNDLE_EVENT_TYPE_KEY, reportEvent.event.toString())
           b.putString(BUNDLE_DEVICE_ID_KEY, reportEvent.deviceId)
+          b.putString(BUNDLE_USER_ID_KEY, reportEvent.userId)
           b.putString(BUNDLE_PUBLISH_ID_KEY, reportEvent.publishId)
           b.putLong(BUNDLE_TIMESTAMP_KEY, reportEvent.timestampSecs)
         }
@@ -64,6 +66,7 @@ class ReportingJobService: JobService() {
         ReportEventType.Delivery -> {
           return DeliveryEvent(
             deviceId = bundle.getString(BUNDLE_DEVICE_ID_KEY),
+            userId = bundle.getString(BUNDLE_USER_ID_KEY),
             publishId = bundle.getString(BUNDLE_PUBLISH_ID_KEY),
             timestampSecs = bundle.getLong(BUNDLE_TIMESTAMP_KEY),
             appInBackground = bundle.getBoolean(BUNDLE_APP_IN_BACKGROUND_KEY),
@@ -74,6 +77,7 @@ class ReportingJobService: JobService() {
         ReportEventType.Open -> {
           return OpenEvent(
             deviceId = bundle.getString(BUNDLE_DEVICE_ID_KEY),
+            userId = bundle.getString(BUNDLE_USER_ID_KEY),
             publishId = bundle.getString(BUNDLE_PUBLISH_ID_KEY),
             timestampSecs = bundle.getLong(BUNDLE_TIMESTAMP_KEY)
           )

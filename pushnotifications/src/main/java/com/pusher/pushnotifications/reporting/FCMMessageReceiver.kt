@@ -12,8 +12,6 @@ import com.pusher.pushnotifications.internal.AppActivityLifecycleCallbacks
 import com.pusher.pushnotifications.internal.DeviceStateStore
 import com.pusher.pushnotifications.logging.Logger
 import com.pusher.pushnotifications.reporting.api.DeliveryEvent
-import com.pusher.pushnotifications.reporting.api.ReportEvent
-import com.pusher.pushnotifications.reporting.api.ReportEventType
 
 class FCMMessageReceiver : WakefulBroadcastReceiver() {
   private val gson = Gson()
@@ -43,7 +41,8 @@ class FCMMessageReceiver : WakefulBroadcastReceiver() {
 
         val reportEvent = DeliveryEvent(
           publishId = pusherData.publishId,
-          deviceId =   deviceId,
+          deviceId = deviceId,
+          userId = pusherData.userId,
           timestampSecs = Math.round(System.currentTimeMillis() / 1000.0),
           appInBackground = AppActivityLifecycleCallbacks.appInBackground(),
           hasDisplayableContent = pusherData.hasDisplayableContent,

@@ -62,6 +62,7 @@ class OpenNotificationActivity: Activity() {
                 val reportEvent = OpenEvent(
                    publishId = pusherData.publishId,
                    deviceId = deviceId,
+                   userId = pusherData.userId,
                    timestampSecs = System.currentTimeMillis() / 1000
                 )
 
