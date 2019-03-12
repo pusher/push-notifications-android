@@ -11,7 +11,6 @@ import com.pusher.pushnotifications.reporting.api.*
 
 data class PusherMetadata(
   val publishId: String,
-  val userId: String?,
   val clickAction: String?,
   @SerializedName("hasDisplayableContent") private val _hasDisplayableContent: Boolean?,
   @SerializedName("hasData") private val _hasData: Boolean?
