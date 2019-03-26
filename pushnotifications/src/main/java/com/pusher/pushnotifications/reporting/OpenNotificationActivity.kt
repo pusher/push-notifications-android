@@ -48,11 +48,12 @@ class OpenNotificationActivity: Activity() {
 
         intent?.getStringExtra("pusher")?.let { pusherDataJson ->
             try {
+                val deviceStateStore = DeviceStateStore(applicationContext)
                 val gson = Gson()
                 val pusherData = gson.fromJson(pusherDataJson, PusherMetadata::class.java)
                 log.i("Got a valid pusher message.")
 
-                val deviceId = DeviceStateStore(applicationContext).deviceId
+                val deviceId = deviceStateStore.deviceId
                 if (deviceId == null) {
                     log.e("Failed to get device ID (device ID not stored) - Skipping open tracking.")
                     startIntent(intent.extras)
@@ -62,6 +63,7 @@ class OpenNotificationActivity: Activity() {
                 val reportEvent = OpenEvent(
                    publishId = pusherData.publishId,
                    deviceId = deviceId,
+                   userId = deviceStateStore.userId,
                    timestampSecs = System.currentTimeMillis() / 1000
                 )
 

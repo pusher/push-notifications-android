@@ -12,8 +12,6 @@ import com.pusher.pushnotifications.internal.AppActivityLifecycleCallbacks
 import com.pusher.pushnotifications.internal.DeviceStateStore
 import com.pusher.pushnotifications.logging.Logger
 import com.pusher.pushnotifications.reporting.api.DeliveryEvent
-import com.pusher.pushnotifications.reporting.api.ReportEvent
-import com.pusher.pushnotifications.reporting.api.ReportEventType
 
 class FCMMessageReceiver : WakefulBroadcastReceiver() {
   private val gson = Gson()
@@ -35,7 +33,9 @@ class FCMMessageReceiver : WakefulBroadcastReceiver() {
           return
         }
 
-        val deviceId = DeviceStateStore(context).deviceId
+        val deviceStateStore = DeviceStateStore(context)
+
+        val deviceId = deviceStateStore.deviceId
         if (deviceId == null) {
           log.w("Failed to get device ID (device ID not stored) - Skipping delivery tracking.")
           return
@@ -43,7 +43,8 @@ class FCMMessageReceiver : WakefulBroadcastReceiver() {
 
         val reportEvent = DeliveryEvent(
           publishId = pusherData.publishId,
-          deviceId =   deviceId,
+          deviceId = deviceId,
+          userId = deviceStateStore.userId,
           timestampSecs = Math.round(System.currentTimeMillis() / 1000.0),
           appInBackground = AppActivityLifecycleCallbacks.appInBackground(),
           hasDisplayableContent = pusherData.hasDisplayableContent,
