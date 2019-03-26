@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.4.0] - 2019-03-26
+
+### Added
+ - Added support for open/delivery acknowledgement webhooks for Authenticated
+   Users
+
 ## [1.3.0] - 2019-02-28
 
 ### Added
