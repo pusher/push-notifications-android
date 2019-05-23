@@ -37,9 +37,18 @@ abstract class MessagingService: Service() {
       listener = messageReceivedListener
     }
   }
+    
+  override fun attachBaseContext(base: Context) {
+    super.attachBaseContext(base)
+    underlyingService.attachContext(base)
+  }
 
+  /**
+   * We do this for two reasons:
+   * 1. we want to handle the notifications Pusher can send to check if a device is still online silently
+   * 2. we want to support `setOnMessageReceivedListenerForVisibleActivity`
+   */
   private class WrappedFirebaseMessagingService(
-      val context: () -> Context,
       val onMessageReceivedHandler: (RemoteMessage) -> Unit,
       val onNewTokenHandler: (String) -> Unit
   ): FirebaseMessagingService() {
@@ -54,14 +63,13 @@ abstract class MessagingService: Service() {
       onNewTokenHandler(token)
     }
 
-    override fun getApplicationContext(): Context {
-      return context()
+    fun attachContext(context: Context){
+      super.attachBaseContext(context)
     }
   }
 
-  private val underlyingService: FirebaseMessagingService =
+  private val underlyingService =
       WrappedFirebaseMessagingService(
-          { applicationContext },
           { remoteMessage: RemoteMessage ->
             if (remoteMessage.data["pusherTokenValidation"] == "true") {
               log.d("Received blank message from Pusher to perform token validation")
