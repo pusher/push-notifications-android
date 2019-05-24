@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- Increased support for future versions of Firebase
 
 ## [1.4.0] - 2019-03-26
 
@@ -82,7 +83,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
  - Support for initial interest set, which enables migration from 3rd-party services
  - Implemented `setOnSubscriptionsChangedListener` which allows user to register a callback when subscriptions change
- 
+
 
 ## [0.10.0] - 2018-04-23
 

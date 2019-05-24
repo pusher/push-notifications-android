@@ -192,7 +192,7 @@ class PushNotificationsInstance @JvmOverloads constructor(
       if (!task.isSuccessful) {
         log.w("Failed to get the token from FCM", task.exception)
       } else {
-        handleFcmToken(task.result.token)
+        task.result?.let { handleFcmToken(it.token) }
       }
     }
 
