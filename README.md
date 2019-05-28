@@ -40,6 +40,10 @@ dependencies {
 apply plugin: 'com.google.gms.google-services'
 ```
 
+## Release Process
+
+Available for Pusher folks only: Search on the manual for Beams SDK Release Process
+
 ## Documentation
 
 You can find our up-to-date documentation in [here](https://docs.pusher.com/beams/).
