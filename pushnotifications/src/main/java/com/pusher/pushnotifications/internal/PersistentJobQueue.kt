@@ -40,7 +40,7 @@ class TapeJobQueue<T: Serializable>(file: File): PersistentJobQueue<T> {
       @Suppress("unchecked_cast")
       return objectInputStream.readObject() as T
     } catch (e: InvalidClassException){
-       log.w("Failed to read data from tape ")
+       log.w("Failed to read data from tape")
     }
 
     return null
@@ -57,7 +57,7 @@ class TapeJobQueue<T: Serializable>(file: File): PersistentJobQueue<T> {
       queueFile.clear()
     }
   }
-  
+
   override fun asIterable(): Iterable<T> {
     return synchronized(queueFile) {
       queueFile.asIterable().map { jobBytes ->
@@ -68,7 +68,7 @@ class TapeJobQueue<T: Serializable>(file: File): PersistentJobQueue<T> {
           @Suppress("unchecked_cast")
           objectInputStream.readObject() as T
         } catch (e: InvalidClassException) {
-          log.w("Failed to read data from tape ")
+          log.w("Failed to read data from tape")
           null
         }
 
