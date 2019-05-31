@@ -39,8 +39,8 @@ class TapeJobQueue<T: Serializable>(file: File): PersistentJobQueue<T> {
      try {
       @Suppress("unchecked_cast")
       return objectInputStream.readObject() as T
-    } catch (e: InvalidClassException){
-       log.w("Failed to read data from tape")
+    } catch (e: InvalidClassException) {
+       log.w("Failed to read data from tape. Continuing without this data.")
     }
 
     return null
@@ -68,7 +68,7 @@ class TapeJobQueue<T: Serializable>(file: File): PersistentJobQueue<T> {
           @Suppress("unchecked_cast")
           objectInputStream.readObject() as T
         } catch (e: InvalidClassException) {
-          log.w("Failed to read data from tape")
+          log.w("Failed to read data from tape. Continuing without this data.")
           null
         }
 
