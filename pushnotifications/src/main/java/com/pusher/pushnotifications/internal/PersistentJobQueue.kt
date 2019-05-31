@@ -1,5 +1,6 @@
 package com.pusher.pushnotifications.internal
 
+import com.pusher.pushnotifications.logging.Logger
 import com.squareup.tape2.QueueFile
 import java.io.*
 
@@ -13,6 +14,7 @@ interface PersistentJobQueue<T: Serializable> {
 
 class TapeJobQueue<T: Serializable>(file: File): PersistentJobQueue<T> {
   private val queueFile = QueueFile.Builder(file).build()
+  private val log = Logger.get(this::class)
 
   override fun push(job: T) {
     val byteOutputStream = ByteArrayOutputStream()
@@ -26,7 +28,6 @@ class TapeJobQueue<T: Serializable>(file: File): PersistentJobQueue<T> {
     }
   }
 
-  @Suppress("unchecked_cast")
   override fun peek(): T? {
     val jobBytes = synchronized(queueFile) {
       queueFile.peek() ?: return null
@@ -35,7 +36,14 @@ class TapeJobQueue<T: Serializable>(file: File): PersistentJobQueue<T> {
     val byteInputStream = ByteArrayInputStream(jobBytes)
     val objectInputStream = ObjectInputStream(byteInputStream)
 
-    return objectInputStream.readObject() as T
+     try {
+      @Suppress("unchecked_cast")
+      return objectInputStream.readObject() as T
+    } catch (e: InvalidClassException) {
+       log.w("Failed to read data from tape. Continuing without this data.")
+    }
+
+    return null
   }
 
   override fun pop() {
@@ -50,15 +58,21 @@ class TapeJobQueue<T: Serializable>(file: File): PersistentJobQueue<T> {
     }
   }
 
-  @Suppress("unchecked_cast")
   override fun asIterable(): Iterable<T> {
     return synchronized(queueFile) {
       queueFile.asIterable().map { jobBytes ->
         val byteInputStream = ByteArrayInputStream(jobBytes)
         val objectInputStream = ObjectInputStream(byteInputStream)
 
-        objectInputStream.readObject() as T
-      }.toList() // forcing the list to be computed here in its entirety
+        try {
+          @Suppress("unchecked_cast")
+          objectInputStream.readObject() as T
+        } catch (e: InvalidClassException) {
+          log.w("Failed to read data from tape. Continuing without this data.")
+          null
+        }
+
+      }.filterNotNull().toList() // forcing the list to be computed here in its entirety
     }
   }
 }
