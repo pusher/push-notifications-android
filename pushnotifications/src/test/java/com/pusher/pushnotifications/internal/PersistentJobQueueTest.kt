@@ -65,4 +65,20 @@ class PersistentJobQueueTest {
 
     Assert.assertThat(queue.peek(), `is`(nullValue()))
   }
+
+  @Test
+  fun `iterables returns an an Iterable of items stored`() {
+    val queueElement = "Cabbage"
+    val otherQueueElement = "Avocado"
+
+    val queue: PersistentJobQueue<String> = TapeJobQueue(tempFile)
+    queue.push(queueElement)
+    queue.push(otherQueueElement)
+
+    val returnedIterable = queue.asIterable()
+
+    Assert.assertThat(returnedIterable, `is`(not(nullValue())))
+    Assert.assertThat(returnedIterable.toList().size, `is`(2))
+  }
+
 }
