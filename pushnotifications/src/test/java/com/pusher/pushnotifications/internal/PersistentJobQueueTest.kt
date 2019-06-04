@@ -1,16 +1,27 @@
 package com.pusher.pushnotifications.internal
 
 import com.pusher.pushnotifications.api.DeviceMetadata
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertNotNull
-import org.hamcrest.CoreMatchers.*
-import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 import java.io.File
 
 class PersistentJobQueueTest {
   lateinit var tempFile: File
+  val moshiPolymorphicJsonAdapterFactory = PolymorphicJsonAdapterFactory.of(ServerSyncJob::class.java, "ServerSyncJob")
+          .withSubtype(StartJob::class.java, "StartJob")
+          .withSubtype(RefreshTokenJob::class.java, "RefreshTokenJob")
+          .withSubtype(SubscribeJob::class.java, "SubscribeJob")
+          .withSubtype(UnsubscribeJob::class.java, "UnsubscribeJob")
+          .withSubtype(SetSubscriptionsJob::class.java, "SetSubscriptionsJob")
+          .withSubtype(ApplicationStartJob::class.java, "ApplicationStartJob")
+          .withSubtype(SetUserIdJob::class.java, "SetUserIdJob")
+          .withSubtype(StopJob::class.java, "StopJob")
+  val moshi = Moshi.Builder().add(moshiPolymorphicJsonAdapterFactory).build()
+  val converter = MoshiConverter(moshi.adapter(ServerSyncJob::class.java))
 
   @Before
   fun before() {
@@ -19,74 +30,8 @@ class PersistentJobQueueTest {
   }
 
   @Test
-  fun `that calling peek returns the head element`() {
-    val queueElement = "Cabbage"
-    val otherQueueElement = "Avocado"
-
-    val queue: PersistentJobQueue<String> = TapeJobQueue(tempFile)
-    Assert.assertThat(queue.peek(), `is`(nullValue()))
-
-    queue.push(queueElement)
-    Assert.assertThat(queue.peek(), `is`(equalTo(queueElement)))
-
-    queue.push(otherQueueElement)
-    Assert.assertThat(queue.peek(), `is`(equalTo(queueElement)))
-  }
-
-  @Test
-  fun `that calling pop removes items from the queue`() {
-    val queueElement = "Cabbage"
-    val queue: PersistentJobQueue<String> = TapeJobQueue(tempFile)
-
-    queue.push(queueElement)
-    queue.pop()
-
-    Assert.assertThat(queue.peek(), `is`(nullValue()))
-  }
-
-  @Test
-  fun `queue is persistent (not in memory)`() {
-    val queueElement = "Radish"
-
-    val queue1: PersistentJobQueue<String> = TapeJobQueue(tempFile)
-    queue1.push(queueElement)
-
-    val queue2: PersistentJobQueue<String> = TapeJobQueue(tempFile)
-
-    Assert.assertThat(queue2.peek(), `is`(equalTo(queueElement)))
-  }
-
-  @Test
-  fun `clear removes all elements`() {
-    val queueElement = "Cabbage"
-    val otherQueueElement = "Avocado"
-
-    val queue: PersistentJobQueue<String> = TapeJobQueue(tempFile)
-    queue.push(queueElement)
-    queue.push(otherQueueElement)
-    queue.clear()
-
-    Assert.assertThat(queue.peek(), `is`(nullValue()))
-  }
-
-  @Test
-  fun `iterables returns an an Iterable of items stored`() {
-    val queueElement = "Cabbage"
-    val otherQueueElement = "Avocado"
-
-    val queue: PersistentJobQueue<String> = TapeJobQueue(tempFile)
-    queue.push(queueElement)
-    queue.push(otherQueueElement)
-
-    val returnedIterable = queue.asIterable()
-
-    Assert.assertThat(returnedIterable, `is`(not(nullValue())))
-    Assert.assertThat(returnedIterable.toList().size, `is`(2))
-  }
-
-  @Test
   fun `iterables returns correct Start Job`() {
-    val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile)
+    val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile, converter)
     queue.push(StartJob("fcm_token", arrayListOf("one", "two")))
 
     val returnedList = queue.asIterable().toList()
@@ -104,7 +49,7 @@ class PersistentJobQueueTest {
 
   @Test
   fun `iterables returns correct Refresh Token Job`() {
-    val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile)
+    val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile, converter)
     queue.push(RefreshTokenJob("new_token"))
 
     val returnedList = queue.asIterable().toList()
@@ -119,7 +64,7 @@ class PersistentJobQueueTest {
 
   @Test
   fun `iterables returns correct Subscribe Job`() {
-    val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile)
+    val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile, converter)
     queue.push(SubscribeJob("interest_subscribe"))
 
     val returnedList = queue.asIterable().toList()
@@ -134,7 +79,7 @@ class PersistentJobQueueTest {
 
   @Test
   fun `iterables returns correct Unsubscribe Job`() {
-    val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile)
+    val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile, converter)
     queue.push(UnsubscribeJob("interest_unsubscribe"))
 
     val returnedList = queue.asIterable().toList()
@@ -149,7 +94,7 @@ class PersistentJobQueueTest {
 
   @Test
   fun `iterables returns correct Set Subscriptions Job`() {
-    val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile)
+    val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile, converter)
     queue.push(SetSubscriptionsJob(setOf("subscribe_one", "subscribe_two")))
 
     val returnedList = queue.asIterable().toList()
@@ -165,7 +110,7 @@ class PersistentJobQueueTest {
 
   @Test
   fun `iterables returns correct Application Start Job`() {
-    val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile)
+    val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile, converter)
     queue.push(ApplicationStartJob(
             DeviceMetadata("sdk_version", "android_version")))
 
@@ -182,7 +127,7 @@ class PersistentJobQueueTest {
 
   @Test
   fun `iterables returns correct Application Set User Id Job`() {
-    val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile)
+    val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile, converter)
     queue.push(SetUserIdJob("user_id"))
 
     val returnedList = queue.asIterable().toList()
@@ -197,7 +142,8 @@ class PersistentJobQueueTest {
 
   @Test
   fun `iterables returns correct Server Sync Job Types`() {
-    val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile)
+
+    val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile, converter)
 
     queue.push(StartJob("fcm_token", arrayListOf("one", "two")))
     queue.push(RefreshTokenJob("new_token"))
@@ -207,11 +153,12 @@ class PersistentJobQueueTest {
     queue.push(ApplicationStartJob(
             DeviceMetadata("sdk_version", "android_version")))
     queue.push(SetUserIdJob("user_id"))
+    queue.push(StopJob())
 
     val returnedList = queue.asIterable().toList()
 
     assertNotNull(returnedList)
-    assertEquals(7, returnedList.size)
+    assertEquals(8, returnedList.size)
 
     assertEquals(StartJob::class.java, returnedList[0].javaClass)
     assertEquals(RefreshTokenJob::class.java, returnedList[1].javaClass)
@@ -220,6 +167,7 @@ class PersistentJobQueueTest {
     assertEquals(SetSubscriptionsJob::class.java, returnedList[4].javaClass)
     assertEquals(ApplicationStartJob::class.java, returnedList[5].javaClass)
     assertEquals(SetUserIdJob::class.java, returnedList[6].javaClass)
+    assertEquals(StopJob::class.java, returnedList[7].javaClass)
 
   }
 
