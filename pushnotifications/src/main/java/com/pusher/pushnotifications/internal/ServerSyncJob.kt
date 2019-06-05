@@ -15,6 +15,8 @@ data class ApplicationStartJob(val deviceMetadata: DeviceMetadata): ServerSyncJo
 data class SetUserIdJob(val userId: String): ServerSyncJob()
 class StopJob: ServerSyncJob()
 
+// the following is required for the Persistent Job Queue to read and write data correctly.
+// if you add another ServerSyncJob above, you must also add it below here too!
 class ServerSyncJsonAdapters {
 
     companion object {
