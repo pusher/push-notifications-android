@@ -80,7 +80,7 @@ class PersistentJobQueueTest {
     assertEquals(1, returnedList.size)
 
     assertEquals(StartJob::class.java, returnedList[0].javaClass)
-    val startJob:StartJob = returnedList[0] as StartJob
+    val startJob = returnedList[0] as StartJob
     assertEquals("fcm_token", startJob.fcmToken)
     assertEquals(2, startJob.knownPreviousClientIds.size)
     assertEquals("one", startJob.knownPreviousClientIds[0])
@@ -98,7 +98,7 @@ class PersistentJobQueueTest {
     assertEquals(1, returnedList.size)
 
     assertEquals(RefreshTokenJob::class.java, returnedList[0].javaClass)
-    val refreshTokenJob:RefreshTokenJob = returnedList[0] as RefreshTokenJob
+    val refreshTokenJob = returnedList[0] as RefreshTokenJob
     assertEquals("new_token", refreshTokenJob.newToken)
   }
 
@@ -113,7 +113,7 @@ class PersistentJobQueueTest {
     assertEquals(1, returnedList.size)
 
     assertEquals(SubscribeJob::class.java, returnedList[0].javaClass)
-    val subscribeJob:SubscribeJob = returnedList[0] as SubscribeJob
+    val subscribeJob = returnedList[0] as SubscribeJob
     assertEquals("interest_subscribe", subscribeJob.interest)
   }
 
@@ -128,7 +128,7 @@ class PersistentJobQueueTest {
     assertEquals(1, returnedList.size)
 
     assertEquals(UnsubscribeJob::class.java, returnedList[0].javaClass)
-    val unsubscribeJob:UnsubscribeJob = returnedList[0] as UnsubscribeJob
+    val unsubscribeJob = returnedList[0] as UnsubscribeJob
     assertEquals("interest_unsubscribe", unsubscribeJob.interest)
   }
 
@@ -143,7 +143,7 @@ class PersistentJobQueueTest {
     assertEquals(1, returnedList.size)
 
     assertEquals(SetSubscriptionsJob::class.java, returnedList[0].javaClass)
-    val unsubscribeJob:SetSubscriptionsJob = returnedList[0] as SetSubscriptionsJob
+    val unsubscribeJob = returnedList[0] as SetSubscriptionsJob
     assertEquals("subscribe_one", unsubscribeJob.interests.first())
     assertEquals("subscribe_two", unsubscribeJob.interests.last())
   }
@@ -160,7 +160,7 @@ class PersistentJobQueueTest {
     assertEquals(1, returnedList.size)
 
     assertEquals(ApplicationStartJob::class.java, returnedList[0].javaClass)
-    val applicationStartJob:ApplicationStartJob = returnedList[0] as ApplicationStartJob
+    val applicationStartJob = returnedList[0] as ApplicationStartJob
     assertEquals("sdk_version", applicationStartJob.deviceMetadata.sdkVersion)
     assertEquals("android_version", applicationStartJob.deviceMetadata.androidVersion)
   }
@@ -176,15 +176,13 @@ class PersistentJobQueueTest {
     assertEquals(1, returnedList.size)
 
     assertEquals(SetUserIdJob::class.java, returnedList[0].javaClass)
-    val setUserIdJob:SetUserIdJob = returnedList[0] as SetUserIdJob
+    val setUserIdJob = returnedList[0] as SetUserIdJob
     assertEquals("user_id", setUserIdJob.userId)
   }
 
   @Test
   fun `iterables returns correct Server Sync Job Types`() {
-
     val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile, converter)
-
     queue.push(StartJob("fcm_token", arrayListOf("one", "two")))
     queue.push(RefreshTokenJob("new_token"))
     queue.push(SubscribeJob("interest_subscribe"))
@@ -195,19 +193,19 @@ class PersistentJobQueueTest {
     queue.push(SetUserIdJob("user_id"))
     queue.push(StopJob())
 
-    val returnedList = queue.asIterable().toList()
+    val retrievedElements = queue.asIterable().toList()
 
-    assertNotNull(returnedList)
-    assertEquals(8, returnedList.size)
+    assertNotNull(retrievedElements)
+    assertEquals(8, retrievedElements.size)
 
-    assertEquals(StartJob::class.java, returnedList[0].javaClass)
-    assertEquals(RefreshTokenJob::class.java, returnedList[1].javaClass)
-    assertEquals(SubscribeJob::class.java, returnedList[2].javaClass)
-    assertEquals(UnsubscribeJob::class.java, returnedList[3].javaClass)
-    assertEquals(SetSubscriptionsJob::class.java, returnedList[4].javaClass)
-    assertEquals(ApplicationStartJob::class.java, returnedList[5].javaClass)
-    assertEquals(SetUserIdJob::class.java, returnedList[6].javaClass)
-    assertEquals(StopJob::class.java, returnedList[7].javaClass)
+    assertTrue(retrievedElements[0] is StartJob)
+    assertTrue(retrievedElements[1] is RefreshTokenJob)
+    assertTrue(retrievedElements[2] is SubscribeJob)
+    assertTrue(retrievedElements[3] is UnsubscribeJob)
+    assertTrue(retrievedElements[4] is SetSubscriptionsJob)
+    assertTrue(retrievedElements[5] is ApplicationStartJob)
+    assertTrue(retrievedElements[6] is SetUserIdJob)
+    assertTrue(retrievedElements[7] is StopJob)
   }
 
 }
