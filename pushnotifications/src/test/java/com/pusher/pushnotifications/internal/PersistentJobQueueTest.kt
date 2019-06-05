@@ -9,7 +9,7 @@ import java.io.File
 
 class PersistentJobQueueTest {
   lateinit var tempFile: File
-  private val moshi = Moshi.Builder().add(ServerSyncJsonAdapters.polymorphicJsonAdapterFactory).build()
+  private val moshi = Moshi.Builder().add(ServerSyncJob.polymorphicJsonAdapterFactory).build()
   private val converter = MoshiConverter(moshi.adapter(ServerSyncJob::class.java))
 
   @Before
