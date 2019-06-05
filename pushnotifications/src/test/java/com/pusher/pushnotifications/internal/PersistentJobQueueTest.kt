@@ -2,8 +2,7 @@ package com.pusher.pushnotifications.internal
 
 import com.pusher.pushnotifications.api.DeviceMetadata
 import com.squareup.moshi.Moshi
-import junit.framework.Assert.assertEquals
-import junit.framework.Assert.assertNotNull
+import junit.framework.Assert.*
 import org.junit.Before
 import org.junit.Test
 import java.io.File
@@ -17,6 +16,57 @@ class PersistentJobQueueTest {
   fun before() {
     tempFile = File.createTempFile("persistentJobQueue-", ".queue")
     tempFile.delete() // QueueFile expects a handle to a non-existent file on first run.
+  }
+
+  @Test
+  fun `that calling peek returns the head element`() {
+    val queueElement = SubscribeJob("Cabbage")
+    val otherQueueElement = SubscribeJob("Avocado")
+
+    val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile, converter)
+    assertNull(queue.peek())
+
+    queue.push(queueElement)
+    assertEquals(queueElement, queue.peek())
+
+    queue.push(otherQueueElement)
+    assertEquals(queueElement, queue.peek())
+  }
+
+  @Test
+  fun `that calling pop removes items from the queue`() {
+    val queueElement = SubscribeJob("Cabbage")
+    val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile, converter)
+
+    queue.push(queueElement)
+    assertNotNull(queue.peek())
+    queue.pop()
+    assertNull(queue.peek())
+  }
+
+  @Test
+  fun `queue is persistent (not in memory)`() {
+    val queueElement = SubscribeJob("Radish")
+
+    val queue1: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile, converter)
+    queue1.push(queueElement)
+
+    val queue2: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile, converter)
+
+    assertEquals(queueElement, queue2.peek())
+  }
+
+  @Test
+  fun `clear removes all elements`() {
+    val queueElement = SubscribeJob("Cabbage")
+    val otherQueueElement = SubscribeJob("Avocado")
+
+    val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile, converter)
+    queue.push(queueElement)
+    queue.push(otherQueueElement)
+    queue.clear()
+
+    assertNull(queue.peek())
   }
 
   @Test
@@ -158,7 +208,6 @@ class PersistentJobQueueTest {
     assertEquals(ApplicationStartJob::class.java, returnedList[5].javaClass)
     assertEquals(SetUserIdJob::class.java, returnedList[6].javaClass)
     assertEquals(StopJob::class.java, returnedList[7].javaClass)
-
   }
 
 }
