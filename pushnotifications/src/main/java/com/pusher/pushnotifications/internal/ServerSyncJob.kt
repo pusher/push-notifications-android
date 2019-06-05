@@ -1,8 +1,6 @@
 package com.pusher.pushnotifications.internal
 
 import com.pusher.pushnotifications.api.DeviceMetadata
-import com.squareup.moshi.FromJson
-import com.squareup.moshi.ToJson
 import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import java.io.Serializable
 
@@ -17,12 +15,18 @@ data class ApplicationStartJob(val deviceMetadata: DeviceMetadata): ServerSyncJo
 data class SetUserIdJob(val userId: String): ServerSyncJob()
 class StopJob: ServerSyncJob()
 
-val polymorphicJsonAdapterFactory = PolymorphicJsonAdapterFactory.of(ServerSyncJob::class.java, "ServerSyncJob")
-        .withSubtype(StartJob::class.java, "StartJob")
-        .withSubtype(RefreshTokenJob::class.java, "RefreshTokenJob")
-        .withSubtype(SubscribeJob::class.java, "SubscribeJob")
-        .withSubtype(UnsubscribeJob::class.java, "UnsubscribeJob")
-        .withSubtype(SetSubscriptionsJob::class.java, "SetSubscriptionsJob")
-        .withSubtype(ApplicationStartJob::class.java, "ApplicationStartJob")
-        .withSubtype(SetUserIdJob::class.java, "SetUserIdJob")
-        .withSubtype(StopJob::class.java, "StopJob")
+class ServerSyncJsonAdapters {
+
+    companion object {
+        val polymorphicJsonAdapterFactory: PolymorphicJsonAdapterFactory<ServerSyncJob> = PolymorphicJsonAdapterFactory.of(ServerSyncJob::class.java, "ServerSyncJob")
+                .withSubtype(StartJob::class.java, "StartJob")
+                .withSubtype(RefreshTokenJob::class.java, "RefreshTokenJob")
+                .withSubtype(SubscribeJob::class.java, "SubscribeJob")
+                .withSubtype(UnsubscribeJob::class.java, "UnsubscribeJob")
+                .withSubtype(SetSubscriptionsJob::class.java, "SetSubscriptionsJob")
+                .withSubtype(ApplicationStartJob::class.java, "ApplicationStartJob")
+                .withSubtype(SetUserIdJob::class.java, "SetUserIdJob")
+                .withSubtype(StopJob::class.java, "StopJob")
+    }
+
+}

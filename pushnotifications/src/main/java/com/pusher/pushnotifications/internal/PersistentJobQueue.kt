@@ -13,7 +13,7 @@ interface PersistentJobQueue<T: Serializable> {
 }
 
 class TapeJobQueue<T: Serializable>(file: File, converter: ObjectQueue.Converter<T>): PersistentJobQueue<T> {
-  var queue = ObjectQueue.create( QueueFile.Builder(file).build(), converter )
+  private var queue = ObjectQueue.create( QueueFile.Builder(file).build(), converter )
 
   @Synchronized override fun push(job: T) {
     queue.add(job)

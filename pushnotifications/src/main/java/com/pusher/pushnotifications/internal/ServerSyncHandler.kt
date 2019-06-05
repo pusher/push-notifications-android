@@ -6,9 +6,7 @@ import com.pusher.pushnotifications.api.*
 import com.pusher.pushnotifications.auth.TokenProvider
 import com.pusher.pushnotifications.logging.Logger
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import java.io.File
-import java.io.Serializable
 import java.math.BigInteger
 import java.security.MessageDigest
 import java.util.concurrent.*
@@ -75,16 +73,7 @@ class ServerSyncHandler private constructor(
           val handlerThread = HandlerThread("ServerSyncHandler-$instanceId")
           handlerThread.start()
 
-          val moshiPolymorphicJsonAdapterFactory = PolymorphicJsonAdapterFactory.of(ServerSyncJob::class.java, "ServerSyncJob")
-                  .withSubtype(StartJob::class.java, "StartJob")
-                  .withSubtype(RefreshTokenJob::class.java, "RefreshTokenJob")
-                  .withSubtype(SubscribeJob::class.java, "SubscribeJob")
-                  .withSubtype(UnsubscribeJob::class.java, "UnsubscribeJob")
-                  .withSubtype(SetSubscriptionsJob::class.java, "SetSubscriptionsJob")
-                  .withSubtype(ApplicationStartJob::class.java, "ApplicationStartJob")
-                  .withSubtype(SetUserIdJob::class.java, "SetUserIdJob")
-                  .withSubtype(StopJob::class.java, "StopJob")
-          val moshi = Moshi.Builder().add(moshiPolymorphicJsonAdapterFactory).build()
+          val moshi = Moshi.Builder().add(ServerSyncJsonAdapters.polymorphicJsonAdapterFactory).build()
           val converter = MoshiConverter(moshi.adapter(ServerSyncJob::class.java))
 
           val jobQueue = TapeJobQueue<ServerSyncJob>(File(secureFileDir, "$instanceId.jobqueue"), converter )

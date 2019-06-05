@@ -2,7 +2,6 @@ package com.pusher.pushnotifications.internal
 
 import com.pusher.pushnotifications.api.DeviceMetadata
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertNotNull
 import org.junit.Before
@@ -11,17 +10,8 @@ import java.io.File
 
 class PersistentJobQueueTest {
   lateinit var tempFile: File
-  val moshiPolymorphicJsonAdapterFactory = PolymorphicJsonAdapterFactory.of(ServerSyncJob::class.java, "ServerSyncJob")
-          .withSubtype(StartJob::class.java, "StartJob")
-          .withSubtype(RefreshTokenJob::class.java, "RefreshTokenJob")
-          .withSubtype(SubscribeJob::class.java, "SubscribeJob")
-          .withSubtype(UnsubscribeJob::class.java, "UnsubscribeJob")
-          .withSubtype(SetSubscriptionsJob::class.java, "SetSubscriptionsJob")
-          .withSubtype(ApplicationStartJob::class.java, "ApplicationStartJob")
-          .withSubtype(SetUserIdJob::class.java, "SetUserIdJob")
-          .withSubtype(StopJob::class.java, "StopJob")
-  val moshi = Moshi.Builder().add(moshiPolymorphicJsonAdapterFactory).build()
-  val converter = MoshiConverter(moshi.adapter(ServerSyncJob::class.java))
+  private val moshi = Moshi.Builder().add(ServerSyncJsonAdapters.polymorphicJsonAdapterFactory).build()
+  private val converter = MoshiConverter(moshi.adapter(ServerSyncJob::class.java))
 
   @Before
   fun before() {
