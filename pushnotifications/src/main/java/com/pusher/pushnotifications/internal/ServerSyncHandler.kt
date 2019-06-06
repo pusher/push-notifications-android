@@ -73,7 +73,7 @@ class ServerSyncHandler private constructor(
           val handlerThread = HandlerThread("ServerSyncHandler-$instanceId")
           handlerThread.start()
 
-          val moshi = Moshi.Builder().add(ServerSyncJob.polymorphicJsonAdapterFactory).build()
+          val moshi = Moshi.Builder().add(ServerSyncJob.jsonAdapterFactory).build()
           val converter = MoshiConverter(moshi.adapter(ServerSyncJob::class.java))
 
           val jobQueue = TapeJobQueue<ServerSyncJob>(File(secureFileDir, "$instanceId.jobqueue"), converter )

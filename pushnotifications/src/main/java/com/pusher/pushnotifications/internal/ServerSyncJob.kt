@@ -9,7 +9,7 @@ sealed class ServerSyncJob: Serializable {
     companion object {
         // the following is required for the Persistent Job Queue to read and write data correctly.
         // if you add another ServerSyncJob, you must also add it below here too!
-        val polymorphicJsonAdapterFactory: PolymorphicJsonAdapterFactory<ServerSyncJob>
+        val jsonAdapterFactory: PolymorphicJsonAdapterFactory<ServerSyncJob>
                 = PolymorphicJsonAdapterFactory.of(ServerSyncJob::class.java, "ServerSyncJob")
                 .withSubtype(StartJob::class.java, "StartJob")
                 .withSubtype(RefreshTokenJob::class.java, "RefreshTokenJob")

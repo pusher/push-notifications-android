@@ -38,7 +38,7 @@ class ServerSyncProcessHandlerTest {
   private val mockServer = MockWebServer().apply { start() }
   private val api = PushNotificationsAPI(instanceId, mockServer.url("/").toString())
   private val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
-  val moshi = Moshi.Builder().add(ServerSyncJob.polymorphicJsonAdapterFactory).build()
+  val moshi = Moshi.Builder().add(ServerSyncJob.jsonAdapterFactory).build()
   val converter = MoshiConverter(moshi.adapter(ServerSyncJob::class.java))
 
   private val jobQueue = {
