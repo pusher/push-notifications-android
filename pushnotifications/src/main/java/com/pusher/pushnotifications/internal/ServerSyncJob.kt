@@ -22,6 +22,9 @@ sealed class ServerSyncJob: Serializable {
     }
 }
 
+// If you add new fields to any of these data classes, make sure they have
+// default values otherwise they can be null when reading the old stored
+// JSON from disk.
 data class StartJob(val fcmToken: String, val knownPreviousClientIds: List<String>): ServerSyncJob()
 data class RefreshTokenJob(val newToken: String): ServerSyncJob()
 data class SubscribeJob(val interest: String): ServerSyncJob()
