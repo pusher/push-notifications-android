@@ -243,21 +243,20 @@ class PersistentJobQueueTest {
 
   }
 
-  //TODO: refactor the logger so we can have a test logger, then we can uncomment and use this test!
-//  @Test
-//  fun `corrupted saved data - existing type no longer exists`() {
-//    val tempFile = File("src/test/resources/com/pusher/pushnotifications/internal/persistentJobQueue-corrupted_existing_type_no_longer_exists.queue")
-//    val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile, converter)
-//
-//    //uncomment the following to write this to the file
-////    queue.push(DummyJob("dummy_data")) // this data class no longer exists!
-////    queue.push(UnsubscribeJob("carrot"))
-////    queue.push(UnsubscribeJob("pear"))
-//
-//    val retrievedElements = queue.asIterable().toList()
-//    assertEquals(2, retrievedElements.size)
-//
-//    assertNull(queue.peek())
-//  }
+  @Test
+  fun `corrupted saved data - existing type no longer exists`() {
+    val tempFile = File("src/test/resources/com/pusher/pushnotifications/internal/persistentJobQueue-corrupted_existing_type_no_longer_exists.queue")
+    val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile, converter)
+
+    //uncomment the following to write this to the file
+//    queue.push(DummyJob("dummy_data")) // this data class no longer exists!
+//    queue.push(UnsubscribeJob("carrot"))
+//    queue.push(UnsubscribeJob("pear"))
+
+    val retrievedElements = queue.asIterable().toList()
+    assertEquals(2, retrievedElements.size)
+
+    assertNull(queue.peek())
+  }
 
 }
