@@ -1,6 +1,8 @@
 package com.pusher.pushnotifications.internal
 
 import com.pusher.pushnotifications.logging.Logger
+import com.squareup.moshi.JsonDataException
+import com.squareup.tape2.ObjectQueue
 import com.squareup.tape2.QueueFile
 import java.io.*
 
@@ -12,67 +14,41 @@ interface PersistentJobQueue<T: Serializable> {
   fun asIterable(): Iterable<T>
 }
 
-class TapeJobQueue<T: Serializable>(file: File): PersistentJobQueue<T> {
-  private val queueFile = QueueFile.Builder(file).build()
+class TapeJobQueue<T: Serializable>(file: File, converter: ObjectQueue.Converter<T>): PersistentJobQueue<T> {
   private val log = Logger.get(this::class)
+  private val noExceptionConverter = object : ObjectQueue.Converter<T?> {
+    override fun from(source: ByteArray): T? {
+      return try {
+        converter.from(source)
+      } catch (ex: JsonDataException) {
+        log.w("Failed to read object data from tape. Continuing without this data.")
+        null
+      }
+    }
 
-  override fun push(job: T) {
-    val byteOutputStream = ByteArrayOutputStream()
-    val objectOutputStream = ObjectOutputStream(byteOutputStream)
-    objectOutputStream.writeObject(job)
-    objectOutputStream.flush()
-    val jobBytes = byteOutputStream.toByteArray()
-
-    synchronized(queueFile) {
-      queueFile.add(jobBytes)
+    override fun toStream(value: T?, sink: OutputStream) {
+      converter.toStream(value!!, sink)
     }
   }
+  private val queue = ObjectQueue.create(QueueFile.Builder(file).build(), noExceptionConverter)
 
-  override fun peek(): T? {
-    val jobBytes = synchronized(queueFile) {
-      queueFile.peek() ?: return null
-    }
-
-    val byteInputStream = ByteArrayInputStream(jobBytes)
-    val objectInputStream = ObjectInputStream(byteInputStream)
-
-     try {
-      @Suppress("unchecked_cast")
-      return objectInputStream.readObject() as T
-    } catch (e: InvalidClassException) {
-       log.w("Failed to read data from tape. Continuing without this data.")
-    }
-
-    return null
+  @Synchronized override fun push(job: T) {
+    queue.add(job)
   }
 
-  override fun pop() {
-    synchronized(queueFile) {
-      queueFile.remove()
-    }
+  @Synchronized override fun peek(): T? {
+    return queue.peek()
   }
 
-  override fun clear() {
-    synchronized(queueFile) {
-      queueFile.clear()
-    }
+  @Synchronized override fun pop() {
+    queue.remove()
   }
 
-  override fun asIterable(): Iterable<T> {
-    return synchronized(queueFile) {
-      queueFile.asIterable().map { jobBytes ->
-        val byteInputStream = ByteArrayInputStream(jobBytes)
-        val objectInputStream = ObjectInputStream(byteInputStream)
+  @Synchronized override fun clear() {
+    queue.clear()
+  }
 
-        try {
-          @Suppress("unchecked_cast")
-          objectInputStream.readObject() as T
-        } catch (e: InvalidClassException) {
-          log.w("Failed to read data from tape. Continuing without this data.")
-          null
-        }
-
-      }.filterNotNull().toList() // forcing the list to be computed here in its entirety
-    }
+  @Synchronized override fun asIterable(): Iterable<T> {
+    return queue.asIterable().filterNotNull()
   }
 }

@@ -6,6 +6,7 @@ import com.pusher.pushnotifications.api.DeviceMetadata
 import com.pusher.pushnotifications.api.PushNotificationsAPI
 import com.pusher.pushnotifications.auth.TokenProvider
 import com.pusher.pushnotifications.internal.*
+import com.squareup.moshi.Moshi
 import junit.framework.Assert.assertTrue
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -37,10 +38,13 @@ class ServerSyncProcessHandlerTest {
   private val mockServer = MockWebServer().apply { start() }
   private val api = PushNotificationsAPI(instanceId, mockServer.url("/").toString())
   private val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
+  val moshi = Moshi.Builder().add(ServerSyncJob.jsonAdapterFactory).build()
+  val converter = MoshiConverter(moshi.adapter(ServerSyncJob::class.java))
+
   private val jobQueue = {
     val tempFile = File.createTempFile("persistentJobQueue-", ".queue")
     tempFile.delete() // QueueFile expects a handle to a non-existent file on first run.
-    TapeJobQueue<ServerSyncJob>(tempFile)
+    TapeJobQueue<ServerSyncJob>(tempFile, converter)
   }()
   private val looper = InstrumentationRegistry.getContext().mainLooper
   private var lastHandleServerSyncEvent: ServerSyncEvent? = null

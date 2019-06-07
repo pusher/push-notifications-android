@@ -5,21 +5,11 @@ import com.pusher.pushnotifications.*
 import com.pusher.pushnotifications.api.*
 import com.pusher.pushnotifications.auth.TokenProvider
 import com.pusher.pushnotifications.logging.Logger
+import com.squareup.moshi.Moshi
 import java.io.File
-import java.io.Serializable
 import java.math.BigInteger
 import java.security.MessageDigest
 import java.util.concurrent.*
-
-sealed class ServerSyncJob: Serializable
-data class StartJob(val fcmToken: String, val knownPreviousClientIds: List<String>): ServerSyncJob()
-data class RefreshTokenJob(val newToken: String): ServerSyncJob()
-data class SubscribeJob(val interest: String): ServerSyncJob()
-data class UnsubscribeJob(val interest: String): ServerSyncJob()
-data class SetSubscriptionsJob(val interests: Set<String>): ServerSyncJob()
-data class ApplicationStartJob(val deviceMetadata: DeviceMetadata): ServerSyncJob()
-data class SetUserIdJob(val userId: String): ServerSyncJob()
-class StopJob: ServerSyncJob()
 
 class ServerSyncHandler private constructor(
     private val api: PushNotificationsAPI,
@@ -83,7 +73,10 @@ class ServerSyncHandler private constructor(
           val handlerThread = HandlerThread("ServerSyncHandler-$instanceId")
           handlerThread.start()
 
-          val jobQueue = TapeJobQueue<ServerSyncJob>(File(secureFileDir, "$instanceId.jobqueue"))
+          val moshi = Moshi.Builder().add(ServerSyncJob.jsonAdapterFactory).build()
+          val converter = MoshiConverter(moshi.adapter(ServerSyncJob::class.java))
+
+          val jobQueue = TapeJobQueue<ServerSyncJob>(File(secureFileDir, "$instanceId.jobqueue"), converter )
           ServerSyncHandler(
               api = api,
               deviceStateStore = deviceStateStore,
