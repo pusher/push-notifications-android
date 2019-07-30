@@ -2,6 +2,7 @@ package com.pusher.pushnotifications.internal
 
 import com.pusher.pushnotifications.logging.Logger
 import com.squareup.moshi.JsonDataException
+import com.squareup.moshi.JsonEncodingException
 import com.squareup.tape2.ObjectQueue
 import com.squareup.tape2.QueueFile
 import java.io.*
@@ -20,6 +21,9 @@ class TapeJobQueue<T: Serializable>(file: File, converter: ObjectQueue.Converter
     override fun from(source: ByteArray): T? {
       return try {
         converter.from(source)
+      } catch (ex: JsonEncodingException) {
+        log.w("Failed to read object data from tape. Continuing without this data.")
+        null
       } catch (ex: JsonDataException) {
         log.w("Failed to read object data from tape. Continuing without this data.")
         null
