@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+- Fix issue #85 JsonEncodingException when loading stored pending operations
+
 ## [1.4.3] - 2019-06-07
 
 ### Changed
