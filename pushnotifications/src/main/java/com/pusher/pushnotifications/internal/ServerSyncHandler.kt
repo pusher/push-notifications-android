@@ -78,7 +78,7 @@ class ServerSyncHandler private constructor(
 
           File(secureFileDir, "beams").mkdirs()
           val file = File(secureFileDir, "beams/$instanceId.jobqueue")
-          val jobQueue = TapeJobQueue<ServerSyncJob>(file, converter )
+          val jobQueue = TapeJobQueue<ServerSyncJob>(file, converter)
           ServerSyncHandler(
               api = api,
               deviceStateStore = deviceStateStore,
