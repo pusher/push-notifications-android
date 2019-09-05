@@ -4,7 +4,8 @@
     <uses-permission android:name="${applicationId}.permission.C2D_MESSAGE"/>
     <uses-permission android:name="android.permission.INTERNET"/>
 
-    <application>
+    <application
+        android:fullBackupContent="@xml/backup_rules">
         <receiver
             android:name="com.pusher.pushnotifications.reporting.FCMMessageReceiver"
             android:permission="com.google.android.c2dm.permission.SEND"

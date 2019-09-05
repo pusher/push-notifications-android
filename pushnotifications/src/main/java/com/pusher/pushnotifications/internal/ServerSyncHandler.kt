@@ -76,7 +76,9 @@ class ServerSyncHandler private constructor(
           val moshi = Moshi.Builder().add(ServerSyncJob.jsonAdapterFactory).build()
           val converter = MoshiConverter(moshi.adapter(ServerSyncJob::class.java))
 
-          val jobQueue = TapeJobQueue<ServerSyncJob>(File(secureFileDir, "$instanceId.jobqueue"), converter )
+          File(secureFileDir, "beams").mkdirs()
+          val file = File(secureFileDir, "beams/$instanceId.jobqueue")
+          val jobQueue = TapeJobQueue<ServerSyncJob>(file, converter)
           ServerSyncHandler(
               api = api,
               deviceStateStore = deviceStateStore,
