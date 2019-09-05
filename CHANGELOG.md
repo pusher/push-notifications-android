@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.4.5] - 2019-09-05
+- Fix issue #86 Prevent Beams files and shared preferences from being auto backed up
+
 ## [1.4.4] - 2019-07-30
 
 ### Fixed
