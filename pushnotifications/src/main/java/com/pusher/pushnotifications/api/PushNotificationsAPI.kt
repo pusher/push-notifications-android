@@ -7,6 +7,7 @@ import com.pusher.pushnotifications.logging.Logger
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.lang.IllegalStateException
 import java.lang.RuntimeException
 
 open class PushNotificationsAPIException: RuntimeException {
@@ -99,6 +100,9 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
     return try {
       gson.fromJson(possiblyJson, NOKResponse::class.java)
     } catch (jsonException: JsonSyntaxException) {
+      log.w("Failed to parse json `$possiblyJson`", jsonException)
+      unknownNOKResponse
+    } catch (jsonException: IllegalStateException) {
       log.w("Failed to parse json `$possiblyJson`", jsonException)
       unknownNOKResponse
     }
