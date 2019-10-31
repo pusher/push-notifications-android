@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+- Better error handling when User already has too many devices
+
 ## [1.4.4] - 2019-07-30
 
 ### Fixed
