@@ -7,6 +7,7 @@ import com.pusher.pushnotifications.logging.Logger
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.lang.IllegalStateException
 import java.lang.RuntimeException
 
 open class PushNotificationsAPIException: RuntimeException {
@@ -15,6 +16,9 @@ open class PushNotificationsAPIException: RuntimeException {
   constructor(message: String, cause: Throwable): super(message, cause)
 }
 
+class PushNotificationsAPIUnprocessableEntity(val reason: String): PushNotificationsAPIException(
+    "The request was deemed to be unprocessable: $reason"
+)
 class PushNotificationsAPIDeviceNotFound: PushNotificationsAPIException("Device not found in the server")
 class PushNotificationsAPIBadRequest: PushNotificationsAPIException("A request to the server has been deemed invalid")
 class PushNotificationsAPIBadJWT(val reason: String): PushNotificationsAPIException(
@@ -50,6 +54,9 @@ sealed class RetryStrategy<T> {
           // not recoverable here
           throw e
         } catch (e: PushNotificationsAPIBadRequest) {
+          // not recoverable
+          throw e
+        } catch (e: PushNotificationsAPIUnprocessableEntity) {
           // not recoverable
           throw e
         } catch (e: PushNotificationsAPIBadJWT) {
@@ -99,6 +106,9 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
     return try {
       gson.fromJson(possiblyJson, NOKResponse::class.java)
     } catch (jsonException: JsonSyntaxException) {
+      log.w("Failed to parse json `$possiblyJson`", jsonException)
+      unknownNOKResponse
+    } catch (jsonException: IllegalStateException) {
       log.w("Failed to parse json `$possiblyJson`", jsonException)
       unknownNOKResponse
     }
@@ -308,6 +318,15 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
         }
 
         throw PushNotificationsAPIBadJWT("Unknown reason")
+      }
+      if (response.code() == 422) {
+        val responseErrorBody = response?.errorBody()
+        if (responseErrorBody != null) {
+          val error = safeExtractJsonError(responseErrorBody.string())
+          throw PushNotificationsAPIUnprocessableEntity("${error?.error}: ${error?.description}")
+        }
+
+        throw PushNotificationsAPIUnprocessableEntity("Unknown reason")
       }
 
       if (response.code() !in 200..299) {
