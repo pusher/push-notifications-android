@@ -4,6 +4,7 @@ import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
 import com.pusher.pushnotifications.api.DeviceMetadata
 import com.pusher.pushnotifications.api.PushNotificationsAPI
+import com.pusher.pushnotifications.api.PushNotificationsAPIUnprocessableEntity
 import com.pusher.pushnotifications.auth.TokenProvider
 import com.pusher.pushnotifications.internal.*
 import com.squareup.moshi.Moshi
@@ -666,7 +667,7 @@ class ServerSyncProcessHandlerTest {
   @Test
   fun setUserIdShouldReturnErrorEventIfTheUserHasTooManyDevicesAlready() {
     val userId = "alice"
-    tokenProvider = ExceptionalTokenProvider()
+    tokenProvider = StubTokenProvider()
 
     assertThat(mockServer.requestCount, `is`(equalTo(0)))
     assertNull(deviceStateStore.userId)
@@ -694,7 +695,7 @@ class ServerSyncProcessHandlerTest {
     assertNotNull(lastHandleServerSyncEvent)
     assertThat((lastHandleServerSyncEvent!! as UserIdSet).userId, `is`(equalTo(userId)))
     assertNotNull((lastHandleServerSyncEvent!! as UserIdSet).pusherCallbackError)
-    assertThat((lastHandleServerSyncEvent!! as UserIdSet).pusherCallbackError!!.cause, `is`(equalTo(ExceptionalTokenProvider.exception)))
+    assertNotNull((lastHandleServerSyncEvent!! as UserIdSet).pusherCallbackError!!.cause is PushNotificationsAPIUnprocessableEntity)
   }
 
   @Test
