@@ -4,6 +4,7 @@ import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
 import com.pusher.pushnotifications.api.DeviceMetadata
 import com.pusher.pushnotifications.api.PushNotificationsAPI
+import com.pusher.pushnotifications.api.PushNotificationsAPIBadRequest
 import com.pusher.pushnotifications.api.PushNotificationsAPIUnprocessableEntity
 import com.pusher.pushnotifications.auth.TokenProvider
 import com.pusher.pushnotifications.internal.*
