@@ -399,6 +399,15 @@ class ServerSyncProcessHandler internal constructor(
                 cause = null // Not forwarding `e` because it is internal
             ))
           )
+    } catch (e: PushNotificationsAPIUnprocessableEntity) {
+      handleServerSyncEvent(
+          UserIdSet(
+              userId = job.userId,
+              pusherCallbackError = PusherCallbackError(
+                message = "Could not set user id: ${e.reason}",
+                cause = e
+            ))
+          )
     } catch (e: PushNotificationsAPIBadRequest) {
       handleServerSyncEvent(
           UserIdSet(

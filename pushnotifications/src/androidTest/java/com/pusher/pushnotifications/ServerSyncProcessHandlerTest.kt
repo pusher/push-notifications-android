@@ -664,6 +664,40 @@ class ServerSyncProcessHandlerTest {
   }
 
   @Test
+  fun setUserIdShouldReturnErrorEventIfTheUserHasTooManyDevicesAlready() {
+    val userId = "alice"
+    tokenProvider = ExceptionalTokenProvider()
+
+    assertThat(mockServer.requestCount, `is`(equalTo(0)))
+    assertNull(deviceStateStore.userId)
+
+    val startJob = ServerSyncHandler.start("token-123", emptyList())
+    jobQueue.push(startJob.obj as ServerSyncJob)
+
+    // expect register device
+    mockServer.enqueue(MockResponse().setBody("""{"id": "d-123", "initialInterestSet": []}"""))
+
+    handler.handleMessage(startJob)
+
+    assertThat(mockServer.requestCount, `is`(equalTo(1)))
+    assertNotNull(deviceStateStore.deviceId)
+    assertNull(deviceStateStore.userId)
+
+    val setUserIdJob = ServerSyncHandler.setUserId(userId)
+    jobQueue.push(setUserIdJob.obj as ServerSyncJob)
+
+    // expect set user id returning a 422 unprocessable entity
+    mockServer.enqueue(MockResponse().setBody("{}").setResponseCode(422))
+
+    handler.handleMessage(setUserIdJob)
+
+    assertNotNull(lastHandleServerSyncEvent)
+    assertThat((lastHandleServerSyncEvent!! as UserIdSet).userId, `is`(equalTo(userId)))
+    assertNotNull((lastHandleServerSyncEvent!! as UserIdSet).pusherCallbackError)
+    assertThat((lastHandleServerSyncEvent!! as UserIdSet).pusherCallbackError!!.cause, `is`(equalTo(ExceptionalTokenProvider.exception)))
+  }
+
+  @Test
   fun setUserIdShouldReturnErrorEventIfTokenProviderTimesOut() {
     val userId = "alice"
     tokenProvider = SlowTokenProvider(sleepSecs = 2)
