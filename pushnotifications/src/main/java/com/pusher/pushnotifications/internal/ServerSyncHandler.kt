@@ -415,7 +415,7 @@ class ServerSyncProcessHandler internal constructor(
           UserIdSet(
             userId = job.userId,
             pusherCallbackError = PusherCallbackError(
-                message = "Something went wrong. Please contact support@pusher.com.",
+                message = "Something went wrong: ${e.reason}. Please contact support@pusher.com.",
                 cause = e
             ))
       )

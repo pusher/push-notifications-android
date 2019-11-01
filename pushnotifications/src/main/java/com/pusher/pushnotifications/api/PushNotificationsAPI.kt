@@ -20,7 +20,7 @@ class PushNotificationsAPIUnprocessableEntity(val reason: String): PushNotificat
     "The request was deemed to be unprocessable: $reason"
 )
 class PushNotificationsAPIDeviceNotFound: PushNotificationsAPIException("Device not found in the server")
-class PushNotificationsAPIBadRequest: PushNotificationsAPIException("A request to the server has been deemed invalid")
+class PushNotificationsAPIBadRequest(val reason: String): PushNotificationsAPIException("A request to the server has been deemed invalid: $reason")
 class PushNotificationsAPIBadJWT(val reason: String): PushNotificationsAPIException(
     "The request was rejected because the JWT was invalid/unauthorized: $reason"
 )
@@ -168,7 +168,8 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
         throw PushNotificationsAPIDeviceNotFound()
       }
       if (response.code() == 400) {
-        throw PushNotificationsAPIBadRequest()
+        val reason = response?.errorBody()?.let { safeExtractJsonError(it.string()).description }
+        throw PushNotificationsAPIBadRequest(reason ?: "Unknown reason")
       }
 
       if (response.code() !in 200..299) {
@@ -195,7 +196,8 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
         throw PushNotificationsAPIDeviceNotFound()
       }
       if (response.code() == 400) {
-        throw PushNotificationsAPIBadRequest()
+        val reason = response?.errorBody()?.let { safeExtractJsonError(it.string()).description }
+        throw PushNotificationsAPIBadRequest(reason ?: "Unknown reason")
       }
 
       if (response.code() !in 200..299) {
@@ -222,7 +224,8 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
         throw PushNotificationsAPIDeviceNotFound()
       }
       if (response.code() == 400) {
-        throw PushNotificationsAPIBadRequest()
+        val reason = response?.errorBody()?.let { safeExtractJsonError(it.string()).description }
+        throw PushNotificationsAPIBadRequest(reason ?: "Unknown reason")
       }
 
       if (response.code() !in 200..299) {
@@ -249,7 +252,8 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
         throw PushNotificationsAPIDeviceNotFound()
       }
       if (response.code() == 400) {
-        throw PushNotificationsAPIBadRequest()
+        val reason = response?.errorBody()?.let { safeExtractJsonError(it.string()).description }
+        throw PushNotificationsAPIBadRequest(reason ?: "Unknown reason")
       }
 
       if (response.code() !in 200..299) {
@@ -280,7 +284,8 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
         throw PushNotificationsAPIDeviceNotFound()
       }
       if (response.code() == 400) {
-        throw PushNotificationsAPIBadRequest()
+        val reason = response?.errorBody()?.let { safeExtractJsonError(it.string()).description }
+        throw PushNotificationsAPIBadRequest(reason ?: "Unknown reason")
       }
 
       if (response.code() !in 200..299) {
@@ -308,7 +313,8 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
         throw PushNotificationsAPIDeviceNotFound()
       }
       if (response.code() == 400) {
-        throw PushNotificationsAPIBadRequest()
+        val reason = response?.errorBody()?.let { safeExtractJsonError(it.string()).description }
+        throw PushNotificationsAPIBadRequest(reason ?: "Unknown reason")
       }
       if (response.code() == 401 || response.code() == 403) {
         val responseErrorBody = response?.errorBody()
