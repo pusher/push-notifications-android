@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.4.6] - 2019-11-01
+
 ### Changed
 - Better error handling when User already has too many devices
 - Better error messages for when server rejects requests
