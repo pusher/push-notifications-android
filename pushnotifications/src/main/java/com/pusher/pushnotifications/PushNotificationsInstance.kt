@@ -121,11 +121,6 @@ class PushNotificationsInstance @JvmOverloads constructor(
     Validations.validateApplicationIcon(context)
     val dds = DeviceStateStore(context)
 
-    if (!dds.instanceIds.contains(instanceId) && dds.instanceIds.size > 0) {
-        throw PusherAlreadyRegisteredException("This device has already been registered to a Pusher " +
-            "Push Notifications application with instance ID: ${dds.instanceIds.first()}. " +
-            "If you would like to register this device to $instanceId please reinstall the application.")
-    }
     dds.instanceIds = dds.instanceIds.apply { add(instanceId) }
   }
 
