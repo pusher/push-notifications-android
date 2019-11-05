@@ -10,6 +10,7 @@ import com.pusher.pushnotifications.api.OperationCallbackNoArgs
 import com.pusher.pushnotifications.reporting.api.*
 
 data class PusherMetadata(
+  val instanceId: String,
   val publishId: String,
   val clickAction: String?,
   @SerializedName("hasDisplayableContent") private val _hasDisplayableContent: Boolean?,
@@ -25,6 +26,7 @@ data class PusherMetadata(
 class ReportingJobService: JobService() {
   companion object {
     private const val BUNDLE_EVENT_TYPE_KEY = "ReportEventType"
+    private const val BUNDLE_INSTANCE_ID_KEY = "InstanceId"
     private const val BUNDLE_DEVICE_ID_KEY = "DeviceId"
     private const val BUNDLE_USER_ID_KEY = "UserId"
     private const val BUNDLE_PUBLISH_ID_KEY = "PublishId"
@@ -38,6 +40,7 @@ class ReportingJobService: JobService() {
       when (reportEvent) {
         is DeliveryEvent -> {
           b.putString(BUNDLE_EVENT_TYPE_KEY, reportEvent.event.toString())
+          b.putString(BUNDLE_INSTANCE_ID_KEY, reportEvent.instanceId)
           b.putString(BUNDLE_DEVICE_ID_KEY, reportEvent.deviceId)
           b.putString(BUNDLE_USER_ID_KEY, reportEvent.userId)
           b.putString(BUNDLE_PUBLISH_ID_KEY, reportEvent.publishId)
@@ -49,6 +52,7 @@ class ReportingJobService: JobService() {
 
         is OpenEvent -> {
           b.putString(BUNDLE_EVENT_TYPE_KEY, reportEvent.event.toString())
+          b.putString(BUNDLE_INSTANCE_ID_KEY, reportEvent.instanceId)
           b.putString(BUNDLE_DEVICE_ID_KEY, reportEvent.deviceId)
           b.putString(BUNDLE_USER_ID_KEY, reportEvent.userId)
           b.putString(BUNDLE_PUBLISH_ID_KEY, reportEvent.publishId)
@@ -64,6 +68,7 @@ class ReportingJobService: JobService() {
       when (event) {
         ReportEventType.Delivery -> {
           return DeliveryEvent(
+            instanceId = bundle.getString(BUNDLE_INSTANCE_ID_KEY),
             deviceId = bundle.getString(BUNDLE_DEVICE_ID_KEY),
             userId = bundle.getString(BUNDLE_USER_ID_KEY),
             publishId = bundle.getString(BUNDLE_PUBLISH_ID_KEY),
@@ -75,6 +80,7 @@ class ReportingJobService: JobService() {
         }
         ReportEventType.Open -> {
           return OpenEvent(
+            instanceId = bundle.getString(BUNDLE_INSTANCE_ID_KEY),
             deviceId = bundle.getString(BUNDLE_DEVICE_ID_KEY),
             userId = bundle.getString(BUNDLE_USER_ID_KEY),
             publishId = bundle.getString(BUNDLE_PUBLISH_ID_KEY),
@@ -92,29 +98,24 @@ class ReportingJobService: JobService() {
       val extras = it.extras
       if (extras != null) {
         val reportEvent = fromBundle(extras)
+        reportEvent.deviceId
 
-        val instanceId = PushNotificationsInstance.getInstanceId(this.applicationContext)
-        if (instanceId != null) {
-          ReportingAPI(instanceId).submit(
-            reportEvent = reportEvent,
-            operationCallback = object: OperationCallbackNoArgs {
-              override fun onSuccess() {
-                log.v("Successfully submitted report.")
-                jobFinished(params, false)
-              }
-
-              override fun onFailure(t: Throwable) {
-                log.w("Failed submitted report.", t)
-                val shouldRetry = t !is UnrecoverableRuntimeException
-
-                jobFinished(params, shouldRetry)
-              }
+        ReportingAPI(reportEvent.instanceId).submit(
+          reportEvent = reportEvent,
+          operationCallback = object: OperationCallbackNoArgs {
+            override fun onSuccess() {
+              log.v("Successfully submitted report.")
+              jobFinished(params, false)
             }
-          )
-        } else {
-          log.w("Incorrect start of service: instance id is missing.")
-          return false
-        }
+
+            override fun onFailure(t: Throwable) {
+              log.w("Failed submitted report.", t)
+              val shouldRetry = t !is UnrecoverableRuntimeException
+
+              jobFinished(params, shouldRetry)
+            }
+          }
+        )
       } else {
         log.w("Incorrect start of service: extras bundle is missing.")
         return false

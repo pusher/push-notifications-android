@@ -61,6 +61,7 @@ class OpenNotificationActivity: Activity() {
                 }
 
                 val reportEvent = OpenEvent(
+                   instanceId = pusherData.instanceId,
                    publishId = pusherData.publishId,
                    deviceId = deviceId,
                    userId = deviceStateStore.userId,

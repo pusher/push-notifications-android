@@ -17,6 +17,7 @@ enum class ReportEventType {
 
 sealed class ReportEvent(
   val event: ReportEventType,
+  val instanceId: String,
   val deviceId: String,
   val userId: String?,
   val publishId: String,
@@ -27,13 +28,15 @@ sealed class ReportEvent(
 )
 
 class OpenEvent (
+  instanceId: String,
   deviceId: String,
   userId: String?,
   publishId: String,
   timestampSecs: Long
-): ReportEvent(ReportEventType.Open, deviceId, userId, publishId, timestampSecs)
+): ReportEvent(ReportEventType.Open, instanceId, deviceId, userId, publishId, timestampSecs)
 
 class DeliveryEvent (
+  instanceId: String,
   deviceId: String,
   userId: String?,
   publishId: String,
@@ -41,4 +44,4 @@ class DeliveryEvent (
   appInBackground: Boolean,
   hasDisplayableContent: Boolean,
   hasData: Boolean
-): ReportEvent(ReportEventType.Delivery, deviceId, userId, publishId, timestampSecs, appInBackground, hasDisplayableContent, hasData)
+): ReportEvent(ReportEventType.Delivery, instanceId, deviceId, userId, publishId, timestampSecs, appInBackground, hasDisplayableContent, hasData)
