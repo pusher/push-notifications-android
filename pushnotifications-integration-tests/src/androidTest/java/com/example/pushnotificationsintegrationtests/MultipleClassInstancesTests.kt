@@ -6,7 +6,7 @@ import android.support.test.runner.AndroidJUnit4
 import com.pusher.pushnotifications.PushNotificationsInstance
 import com.pusher.pushnotifications.auth.TokenProvider
 import com.pusher.pushnotifications.fcm.MessagingService
-import com.pusher.pushnotifications.internal.DeviceStateStore
+import com.pusher.pushnotifications.internal.InstanceDeviceStateStore
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
 import org.awaitility.core.ConditionTimeoutException
@@ -33,14 +33,14 @@ import java.util.concurrent.TimeUnit
  */
 @RunWith(AndroidJUnit4::class)
 class MultipleClassInstancesTests {
-  fun getStoredDeviceId(): String? {
-    val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
-    return deviceStateStore.deviceId
-  }
-
   val context = InstrumentationRegistry.getTargetContext()
   val instanceId = "00000000-1241-08e9-b379-377c32cd1e82"
   val errolClient = ErrolAPI(instanceId, "http://localhost:8080")
+
+  fun getStoredDeviceId(): String? {
+    val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getTargetContext(), instanceId)
+    return deviceStateStore.deviceId
+  }
 
   companion object {
     val secretKey = "a-really-long-secret-key-that-ends-with-hunter2"
@@ -56,7 +56,7 @@ class MultipleClassInstancesTests {
   @Before
   @After
   fun wipeLocalState() {
-    val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
+    val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getTargetContext(), instanceId)
 
     await.atMost(1, TimeUnit.SECONDS) until {
       assertTrue(deviceStateStore.clear())
@@ -138,8 +138,8 @@ class MultipleClassInstancesTests {
 
   @Test
   fun multipleInstantiationsOfPushNotificationsInstanceAreSupported() {
-    val pni1 = PushNotificationsInstance(context, "00000000-1241-08e9-b379-377c32cd1e01")
-    val pni2 = PushNotificationsInstance(context, "00000000-1241-08e9-b379-377c32cd1e01")
+    val pni1 = PushNotificationsInstance(context, instanceId)
+    val pni2 = PushNotificationsInstance(context, instanceId)
     pni1.start()
 
     assertStoredDeviceIdIsNotNull()

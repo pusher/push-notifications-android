@@ -2,10 +2,9 @@ package com.example.pushnotificationsintegrationtests
 
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
-import com.pusher.pushnotifications.PushNotifications
 import com.pusher.pushnotifications.PushNotificationsInstance
 import com.pusher.pushnotifications.fcm.MessagingService
-import com.pusher.pushnotifications.internal.DeviceStateStore
+import com.pusher.pushnotifications.internal.InstanceDeviceStateStore
 import org.awaitility.core.ConditionTimeoutException
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilNotNull
@@ -30,14 +29,14 @@ import java.util.concurrent.TimeUnit
  */
 @RunWith(AndroidJUnit4::class)
 class StopTest {
-  fun getStoredDeviceId(): String? {
-    val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
-    return deviceStateStore.deviceId
-  }
-
   val context = InstrumentationRegistry.getTargetContext()
   val instanceId = "00000000-1241-08e9-b379-377c32cd1e80"
   val errolClient = ErrolAPI(instanceId, "http://localhost:8080")
+
+  fun getStoredDeviceId(): String? {
+    val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getTargetContext(), instanceId)
+    return deviceStateStore.deviceId
+  }
 
   companion object {
     val errol = FakeErrol(8080)
@@ -52,7 +51,7 @@ class StopTest {
   @Before
   @After
   fun wipeLocalState() {
-    val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
+    val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getTargetContext(), instanceId)
 
     await.atMost(1, TimeUnit.SECONDS) until {
       assertTrue(deviceStateStore.clear())

@@ -63,7 +63,7 @@ class PushNotificationsInitProvider: ContentProvider() {
   override fun onCreate(): Boolean {
     val deviceStateStore = DeviceStateStore(context)
 
-    deviceStateStore.instanceId?.let { instanceId ->
+    deviceStateStore.instanceIds.forEach { instanceId ->
       val pni = PushNotificationsInstance(context, instanceId)
       pni.onApplicationStarted()
     }
