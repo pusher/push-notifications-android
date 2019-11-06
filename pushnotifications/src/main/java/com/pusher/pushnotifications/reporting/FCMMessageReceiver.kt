@@ -42,6 +42,7 @@ class FCMMessageReceiver : WakefulBroadcastReceiver() {
         }
 
         val reportEvent = DeliveryEvent(
+          instanceId = pusherData.instanceId,
           publishId = pusherData.publishId,
           deviceId = deviceId,
           userId = deviceStateStore.userId,
