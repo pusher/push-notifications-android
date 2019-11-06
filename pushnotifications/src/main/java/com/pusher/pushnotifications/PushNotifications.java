@@ -1,5 +1,7 @@
 package com.pusher.pushnotifications;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import android.app.Activity;
@@ -13,7 +15,7 @@ import com.pusher.pushnotifications.fcm.MessagingService;
  */
 public class PushNotifications {
     private static PushNotificationsInstance instance;
-    protected static TokenProvider tokenProvider;
+    protected static Map<String, TokenProvider> tokenProvider = new HashMap<>();
 
     /**
      * Starts the PushNotification client and synchronizes the FCM device token with
