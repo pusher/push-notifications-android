@@ -6,12 +6,14 @@ class DeviceStateStore(context: Context) {
   private val preferencesOldInstanceIdKey = "instanceId"
   private val preferencesInstanceIdsKey = "instanceIds"
 
-  private val preferences = context.getSharedPreferences(
+  private val oldPreferences = context.getSharedPreferences(
       "com.pusher.pushnotifications.PushNotificationsInstance", Context.MODE_PRIVATE)
+  private val preferences = context.getSharedPreferences(
+      "com.pusher.pushnotifications.PushNotificationsInstances", Context.MODE_PRIVATE)
 
   init {
     // perform migration of old instance configuration, if needed
-    val existingOldInstanceId = preferences.getString(preferencesOldInstanceIdKey, null)
+    val existingOldInstanceId = oldPreferences.getString(preferencesOldInstanceIdKey, null)
     existingOldInstanceId?.let { instanceId ->
       val oldInstanceDSS = InstanceDeviceStateStore(context, null)
       val newInstanceDSS = InstanceDeviceStateStore(context, instanceId)
@@ -37,6 +39,8 @@ class DeviceStateStore(context: Context) {
     // by the Android SDK
     get() = preferences.getStringSet(preferencesInstanceIdsKey, mutableSetOf<String>()).toMutableSet()
     set(value) = preferences.edit().putStringSet(preferencesInstanceIdsKey, value).apply()
+
+  fun clear() = preferences.edit().clear().commit()
 }
 
 class InstanceDeviceStateStore(context: Context, val instanceId: String?) {
