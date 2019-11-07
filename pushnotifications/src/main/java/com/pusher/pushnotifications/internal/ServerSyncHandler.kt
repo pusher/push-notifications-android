@@ -13,7 +13,7 @@ import java.util.concurrent.*
 
 class ServerSyncHandler private constructor(
     private val api: PushNotificationsAPI,
-    private val deviceStateStore: DeviceStateStore,
+    private val deviceStateStore: InstanceDeviceStateStore,
     private val jobQueue: PersistentJobQueue<ServerSyncJob>,
     private val handleServerSyncEvent: (ServerSyncEvent) -> Unit,
     private val getTokenProvider: () -> TokenProvider?,
@@ -63,7 +63,7 @@ class ServerSyncHandler private constructor(
     internal fun obtain(
         instanceId: String,
         api: PushNotificationsAPI,
-        deviceStateStore: DeviceStateStore,
+        deviceStateStore: InstanceDeviceStateStore,
         secureFileDir: File,
         handleServerSyncEvent: (ServerSyncEvent) -> Unit,
         getTokenProvider: () -> TokenProvider?
@@ -119,7 +119,7 @@ class ServerSyncHandler private constructor(
 
 class ServerSyncProcessHandler internal constructor(
     private val api: PushNotificationsAPI,
-    private val deviceStateStore: DeviceStateStore,
+    private val deviceStateStore: InstanceDeviceStateStore,
     private val jobQueue: PersistentJobQueue<ServerSyncJob>,
     private val handleServerSyncEvent: (ServerSyncEvent) -> Unit,
     private val getTokenProvider: () -> TokenProvider?,

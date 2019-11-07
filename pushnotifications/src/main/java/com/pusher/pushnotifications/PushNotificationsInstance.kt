@@ -92,12 +92,12 @@ internal class ServerSyncEventHandler private constructor(looper: Looper): Handl
  */
 class PushNotificationsInstance @JvmOverloads constructor(
     context: Context,
-    instanceId: String
+    protected val instanceId: String
 ) {
   private val log = Logger.get(this::class)
 
   private val sdkConfig = SDKConfiguration(context)
-  private val deviceStateStore = DeviceStateStore.obtain(instanceId, context)
+  private val deviceStateStore = InstanceDeviceStateStore.obtain(instanceId, context)
   private val oldSDKDeviceStateStore = OldSDKDeviceStateStore(context)
 
   private val serverSyncEventHandler = ServerSyncEventHandler.obtain(instanceId, context.mainLooper)
@@ -119,25 +119,14 @@ class PushNotificationsInstance @JvmOverloads constructor(
 
   init {
     Validations.validateApplicationIcon(context)
-    PushNotificationsInstance.getInstanceId(context)?.let {
-      val isNewInstanceId = it != instanceId
-      if (isNewInstanceId) {
-        throw PusherAlreadyRegisteredException("This device has already been registered to a Pusher " +
-            "Push Notifications application with instance ID: $it. " +
-            "If you would like to register this device to $instanceId please reinstall the application.")
-      }
-    }
-    deviceStateStore.instanceId = instanceId
+    val dds = DeviceStateStore(context)
+
+    dds.instanceIds = dds.instanceIds.apply { add(instanceId) }
   }
 
   companion object {
     private val validInterestRegex = Pattern.compile("^[a-zA-Z0-9_\\-=@,.;]{1,164}$").toRegex()
-
-    fun getInstanceId(context: Context): String? {
-      return DeviceStateStore(context).instanceId
-    }
   }
-  
 
   private fun addInterestToStore(interest: String): Boolean {
     val interests = deviceStateStore.interests
