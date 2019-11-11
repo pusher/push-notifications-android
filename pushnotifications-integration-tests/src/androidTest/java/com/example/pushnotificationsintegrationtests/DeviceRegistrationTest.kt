@@ -163,14 +163,14 @@ class DeviceRegistrationTest {
     val getDeviceResponse = errolClient.getDevice(storedDeviceId!!)
     assertNotNull(getDeviceResponse)
 
-    val oldToken = errol.storage.devices[storedDeviceId]?.token
+    val oldToken = errol.getInstanceStorage(instanceId).devices[storedDeviceId]?.token
     assertThat(oldToken, `is`(not(equalTo(""))))
 
     FirebaseInstanceId.getInstance().deleteInstanceId()
 
     await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) until {
       // The server should have the new token now
-      val newToken = errol.storage.devices[storedDeviceId]?.token
+      val newToken = errol.getInstanceStorage(instanceId).devices[storedDeviceId]?.token
       newToken == oldToken && newToken != ""
     }
   }

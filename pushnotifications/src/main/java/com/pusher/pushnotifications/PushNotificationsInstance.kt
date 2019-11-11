@@ -112,7 +112,7 @@ class PushNotificationsInstance @JvmOverloads constructor(
           serverSyncEventHandler.sendMessage(Message.obtain().apply { obj = msg })
         },
         getTokenProvider = {
-          PushNotifications.tokenProvider
+          PushNotifications.tokenProvider[instanceId]
         }
     )
   }()
@@ -365,7 +365,7 @@ class PushNotificationsInstance @JvmOverloads constructor(
     if (tokenProvider == null) { // this can happen when using Java
       throw IllegalStateException("Token provider can't be null")
     }
-    PushNotifications.tokenProvider = tokenProvider
+    PushNotifications.tokenProvider[instanceId] = tokenProvider
 
     if (!startHasBeenCalledThisSession) {
       throw IllegalStateException("Start method must be called before setUserId")
