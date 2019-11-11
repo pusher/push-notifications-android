@@ -41,6 +41,7 @@ data class SetSubscriptionsRequest(
 class FakeErrol(port: Int, private val clusterKey: String = ""): NanoHTTPDRouter(port) {
   private val storage = mutableMapOf<String, FakeErrolStorage>()
   private val instanceIdKey = "instanceId"
+  private val deviceIdKey = "deviceId"
 
   fun getInstanceStorage(instanceId: String): FakeErrolStorage {
     return storage.getOrPut(instanceId, { FakeErrolStorage() })
@@ -51,7 +52,7 @@ class FakeErrol(port: Int, private val clusterKey: String = ""): NanoHTTPDRouter
   }
 
   override fun setupRoutes() {
-    post("/instances/{instanceId}/devices/fcm") {
+    post("/instances/{$instanceIdKey}/devices/fcm") {
       entity(RegisterDeviceRequest::class) { registerDeviceRequest ->
         val device = FakeErrolDevice.New(registerDeviceRequest.token, mutableSetOf())
         getInstanceStorage(params[instanceIdKey]!!).devices[device.id] = device
@@ -61,12 +62,12 @@ class FakeErrol(port: Int, private val clusterKey: String = ""): NanoHTTPDRouter
       }
     }
 
-    put("/instances/{instanceId}/devices/fcm/{deviceId}/token") {
-      val device = getInstanceStorage(params[instanceIdKey]!!).devices[params["deviceId"]]
+    put("/instances/{$instanceIdKey}/devices/fcm/{$deviceIdKey}/token") {
+      val device = getInstanceStorage(params[instanceIdKey]!!).devices[params[deviceIdKey]]
       if (device != null) {
         entity(RegisterDeviceRequest::class) { registerDeviceRequest ->
           val device = FakeErrolDevice.New(registerDeviceRequest.token, mutableSetOf())
-          getInstanceStorage(params[instanceIdKey]!!).devices[params["deviceId"]!!] = device.copy(token = registerDeviceRequest.token)
+          getInstanceStorage(params[instanceIdKey]!!).devices[params[deviceIdKey]!!] = device.copy(token = registerDeviceRequest.token)
 
           complete(Response.Status.OK)
         }
@@ -75,8 +76,8 @@ class FakeErrol(port: Int, private val clusterKey: String = ""): NanoHTTPDRouter
       }
     }
 
-    get("/instances/{instanceId}/devices/fcm/{deviceId}") {
-      val device = getInstanceStorage(params[instanceIdKey]!!).devices[params["deviceId"]]
+    get("/instances/{$instanceIdKey}/devices/fcm/{$deviceIdKey}") {
+      val device = getInstanceStorage(params[instanceIdKey]!!).devices[params[deviceIdKey]]
       if (device != null) {
         complete(Response.Status.OK, GetDeviceResponse(id = device.id, userId = device.userId, deviceMetadata = DeviceMetadata("", "")))
       } else {
@@ -84,18 +85,18 @@ class FakeErrol(port: Int, private val clusterKey: String = ""): NanoHTTPDRouter
       }
     }
 
-    delete("/instances/{instanceId}/devices/fcm/{deviceId}") {
-      val device = getInstanceStorage(params[instanceIdKey]!!).devices[params["deviceId"]]
+    delete("/instances/{$instanceIdKey}/devices/fcm/{$deviceIdKey}") {
+      val device = getInstanceStorage(params[instanceIdKey]!!).devices[params[deviceIdKey]]
       if (device != null) {
-        getInstanceStorage(params[instanceIdKey]!!).devices -= params["deviceId"]!!
+        getInstanceStorage(params[instanceIdKey]!!).devices -= params[deviceIdKey]!!
         complete(Response.Status.OK)
       } else {
         complete(Response.Status.OK)
       }
     }
 
-    put("/instances/{instanceId}/devices/fcm/{deviceId}/user", fun NanoHTTPDRouter.Request.(): NanoHTTPD.Response {
-      val device = getInstanceStorage(params[instanceIdKey]!!).devices[params["deviceId"]]
+    put("/instances/{$instanceIdKey}/devices/fcm/{$deviceIdKey}/user", fun NanoHTTPDRouter.Request.(): NanoHTTPD.Response {
+      val device = getInstanceStorage(params[instanceIdKey]!!).devices[params[deviceIdKey]]
       if (device == null) {
         return complete(Response.Status.NOT_FOUND)
       }
@@ -110,15 +111,15 @@ class FakeErrol(port: Int, private val clusterKey: String = ""): NanoHTTPDRouter
         val claims = Jwts.parser()
             .setSigningKey(Base64.getEncoder().encode(clusterKey.toByteArray()))
             .parseClaimsJws(jwt)
-        getInstanceStorage(params[instanceIdKey]!!).devices[params["deviceId"]!!] = device.copy(userId = claims.body.subject)
+        getInstanceStorage(params[instanceIdKey]!!).devices[params[deviceIdKey]!!] = device.copy(userId = claims.body.subject)
         complete(Response.Status.OK)
       } catch (e: Exception) {
         complete(Response.Status.BAD_REQUEST)
       }
     })
 
-    get("/instances/{instanceId}/devices/fcm/{deviceId}/interests") {
-      val device = getInstanceStorage(params[instanceIdKey]!!).devices[params["deviceId"]]
+    get("/instances/{$instanceIdKey}/devices/fcm/{$deviceIdKey}/interests") {
+      val device = getInstanceStorage(params[instanceIdKey]!!).devices[params[deviceIdKey]]
       if (device != null) {
         complete(Response.Status.OK, GetInterestsResponse(interests = device.interests))
       } else {
@@ -126,8 +127,8 @@ class FakeErrol(port: Int, private val clusterKey: String = ""): NanoHTTPDRouter
       }
     }
 
-    post("/instances/{instanceId}/devices/fcm/{deviceId}/interests/{interest}") {
-      val device = getInstanceStorage(params[instanceIdKey]!!).devices[params["deviceId"]]
+    post("/instances/{$instanceIdKey}/devices/fcm/{$deviceIdKey}/interests/{interest}") {
+      val device = getInstanceStorage(params[instanceIdKey]!!).devices[params[deviceIdKey]]
       if (device != null) {
         device.interests.add(params["interest"]!!)
         complete(Response.Status.OK)
@@ -136,8 +137,8 @@ class FakeErrol(port: Int, private val clusterKey: String = ""): NanoHTTPDRouter
       }
     }
 
-    delete("/instances/{instanceId}/devices/fcm/{deviceId}/interests/{interest}") {
-      val device = getInstanceStorage(params[instanceIdKey]!!).devices[params["deviceId"]]
+    delete("/instances/{$instanceIdKey}/devices/fcm/{$deviceIdKey}/interests/{interest}") {
+      val device = getInstanceStorage(params[instanceIdKey]!!).devices[params[deviceIdKey]]
       if (device != null) {
         device.interests.remove(params["interest"]!!)
         complete(Response.Status.OK)
@@ -146,9 +147,9 @@ class FakeErrol(port: Int, private val clusterKey: String = ""): NanoHTTPDRouter
       }
     }
 
-    put("/instances/{instanceId}/devices/fcm/{deviceId}/interests") {
+    put("/instances/{$instanceIdKey}/devices/fcm/{$deviceIdKey}/interests") {
       entity(SetSubscriptionsRequest::class) { setSubscriptions ->
-        val device = getInstanceStorage(params[instanceIdKey]!!).devices[params["deviceId"]]
+        val device = getInstanceStorage(params[instanceIdKey]!!).devices[params[deviceIdKey]]
         if (device != null) {
           device.interests.clear()
           device.interests.addAll(setSubscriptions.interests)
@@ -160,7 +161,7 @@ class FakeErrol(port: Int, private val clusterKey: String = ""): NanoHTTPDRouter
       }
     }
 
-    put("/instances/{instanceId}/devices/fcm/{deviceId}/metadata") {
+    put("/instances/{$instanceIdKey}/devices/fcm/{$deviceIdKey}/metadata") {
       complete(Response.Status.OK)
     }
   }
