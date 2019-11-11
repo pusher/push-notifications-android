@@ -24,8 +24,14 @@ public class PushNotifications {
      * is deemed better for your project.
      */
     public static PushNotificationsInstance start(Context context, String instanceId) {
-        instance = new PushNotificationsInstance(context, instanceId);
-        instance.start();
+        if (instance == null) {
+            instance = new PushNotificationsInstance(context, instanceId);
+            instance.start();
+        } else if (!instance.getInstanceId().equals(instanceId)) {
+            throw new IllegalStateException("PushNotifications.start has been called before with a different instanceId! (before: "
+                    + instance.getInstanceId() + ", now: " + instanceId + ")");
+        }
+
         return instance;
     }
 
