@@ -38,11 +38,12 @@ import java.util.concurrent.TimeUnit
  */
 @RunWith(AndroidJUnit4::class)
 class MultiInstanceSupportTest {
-  val context = InstrumentationRegistry.getTargetContext()
-  val instanceId1 = "00000000-1241-08e9-b379-377c32cd1e80"
-  val instanceId2 = "00000000-1241-08e9-b379-377c32cd1e82"
-  val errolClient1 = ErrolAPI(instanceId1, "http://localhost:8080")
-  val errolClient2 = ErrolAPI(instanceId2, "http://localhost:8080")
+  private val context = InstrumentationRegistry.getTargetContext()
+  private val instanceId1 = "00000000-1241-08e9-b379-377c32cd1e80"
+  private val instanceId2 = "00000000-1241-08e9-b379-377c32cd1e82"
+  private val errolClient1 = ErrolAPI(instanceId1, "http://localhost:8080")
+  private val errolClient2 = ErrolAPI(instanceId2, "http://localhost:8080")
+
 
   fun getStoredDeviceId(instanceId: String): String? {
     val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getTargetContext(), instanceId)
@@ -50,7 +51,8 @@ class MultiInstanceSupportTest {
   }
 
   companion object {
-    val errol = FakeErrol(8080, "really-long-cluster-secret-key")
+    const val clusterSecretKey = "really-long-cluster-secret-key"
+    private val errol = FakeErrol(8080, clusterSecretKey)
 
     @AfterClass
     @JvmStatic
@@ -140,10 +142,10 @@ class MultiInstanceSupportTest {
 
     // check the server no longer has device 1
     await.atMost(3, TimeUnit.SECONDS) untilNull {
-      errolClient1.getDevice(storedDeviceId1!!)
+      errolClient1.getDevice(storedDeviceId1)
     }
     // but device 2 is still there
-    assertNotNull(errolClient2.getDevice(storedDeviceId2!!))
+    assertNotNull(errolClient2.getDevice(storedDeviceId2))
   }
 
   @Test
@@ -200,8 +202,8 @@ class MultiInstanceSupportTest {
   @Test
   fun setUserIdShouldNotAffectTheOther() {
     // Create token provider
-    val aliceJWT = makeJWT(instanceId1, "really-long-cluster-secret-key", "alice")
-    val bobJWT = makeJWT(instanceId2, "really-long-cluster-secret-key", "bob")
+    val aliceJWT = makeJWT(instanceId1, clusterSecretKey, "alice")
+    val bobJWT = makeJWT(instanceId2, clusterSecretKey, "bob")
     val tokenProvider1 = StubTokenProvider(aliceJWT)
     val tokenProvider2 = StubTokenProvider(bobJWT)
 
