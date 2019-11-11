@@ -31,9 +31,9 @@ public class PushNotifications {
             String errorMessage =
                     "PushNotifications.start has been called before with a different instanceId! (before: "
                             + instance.getInstanceId() + ", now: " + instanceId + ").\n"
-                            + "If you want to use multiple instanceIds use `PushNotificationsInstance` class directly "
+                            + "If you want to use multiple instanceIds use the `PushNotificationsInstance` class directly "
                             + "e.g. `val pushNotifications1 = PushNotificationsInstance(context, instanceId)`\n"
-                            + "`pushNotifications1.start()";
+                            + "`pushNotifications1.start()`";
             throw new IllegalStateException(errorMessage);
         }
 
