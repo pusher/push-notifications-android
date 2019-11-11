@@ -263,7 +263,7 @@ class MultiInstanceSupportTest {
   }
 
   @Test
-  fun setOnDeviceInterestsChangedListenerNotAffectTheOther() {
+  fun setOnDeviceInterestsChangedListenerDoesNotAffectTheOther() {
     // Start both instances
     val pni1 = PushNotificationsInstance(context, instanceId1)
     pni1.addDeviceInterest("hello")
@@ -300,7 +300,6 @@ class MultiInstanceSupportTest {
       }
     })
 
-    // this will cause it to receive the initial interest set of {"hello"}
     pni1.setDeviceInterests(setOf("potatoes"))
     assertThat(setOnSubscriptionsChangedListenerCalledCount1, `is`(equalTo(1)))
     assertThat(setOnSubscriptionsChangedListenerCalledCount2, `is`(equalTo(0)))
