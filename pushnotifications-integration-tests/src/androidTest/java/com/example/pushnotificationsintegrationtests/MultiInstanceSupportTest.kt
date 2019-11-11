@@ -302,18 +302,18 @@ class MultiInstanceSupportTest {
       }
     })
 
-    pni1.setDeviceInterests(setOf("potatoes"))
+    pni1.setDeviceInterests(setOf("potato"))
     assertThat(setOnSubscriptionsChangedListenerCalledCount1, `is`(equalTo(1)))
     assertThat(setOnSubscriptionsChangedListenerCalledCount2, `is`(equalTo(0)))
 
-    assertThat(lastSetOnSubscriptionsChangedListenerCalledWithInterests1, `is`(equalTo(setOf("potatoes"))))
+    assertThat(lastSetOnSubscriptionsChangedListenerCalledWithInterests1, `is`(equalTo(setOf("potato"))))
     assertNull(lastSetOnSubscriptionsChangedListenerCalledWithInterests2)
 
     pni2.setDeviceInterests(setOf("pasta"))
     assertThat(setOnSubscriptionsChangedListenerCalledCount1, `is`(equalTo(1)))
     assertThat(setOnSubscriptionsChangedListenerCalledCount2, `is`(equalTo(1)))
 
-    assertThat(lastSetOnSubscriptionsChangedListenerCalledWithInterests1, `is`(equalTo(setOf("potatoes"))))
+    assertThat(lastSetOnSubscriptionsChangedListenerCalledWithInterests1, `is`(equalTo(setOf("potato"))))
     assertThat(lastSetOnSubscriptionsChangedListenerCalledWithInterests2, `is`(equalTo(setOf("pasta"))))
   }
 
