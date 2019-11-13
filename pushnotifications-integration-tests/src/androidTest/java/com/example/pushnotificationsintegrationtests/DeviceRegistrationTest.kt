@@ -3,11 +3,10 @@ package com.example.pushnotificationsintegrationtests
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
 import com.google.firebase.iid.FirebaseInstanceId
-import com.pusher.pushnotifications.PushNotifications
 import com.pusher.pushnotifications.PushNotificationsInstance
 import com.pusher.pushnotifications.SubscriptionsChangedListener
 import com.pusher.pushnotifications.fcm.MessagingService
-import com.pusher.pushnotifications.internal.DeviceStateStore
+import com.pusher.pushnotifications.internal.InstanceDeviceStateStore
 import org.awaitility.core.ConditionTimeoutException
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilNotNull
@@ -32,14 +31,15 @@ const val DEVICE_REGISTRATION_WAIT_SECS: Long = 15 // We need to wait for FCM to
  */
 @RunWith(AndroidJUnit4::class)
 class DeviceRegistrationTest {
-  fun getStoredDeviceId(): String? {
-    val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
-    return deviceStateStore.deviceId
-  }
-
   val context = InstrumentationRegistry.getTargetContext()
   val instanceId = "00000000-1241-08e9-b379-377c32cd1e83"
   val errolClient = ErrolAPI(instanceId, "http://localhost:8080")
+
+  fun getStoredDeviceId(): String? {
+    val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getTargetContext(), instanceId)
+    return deviceStateStore.deviceId
+  }
+
   companion object {
     val errol = FakeErrol(8080)
 
@@ -53,7 +53,7 @@ class DeviceRegistrationTest {
   @Before
   @After
   fun wipeLocalState() {
-    val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
+    val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getTargetContext(), instanceId)
 
     await.atMost(1, TimeUnit.SECONDS) until {
       assertTrue(deviceStateStore.clear())
@@ -163,14 +163,14 @@ class DeviceRegistrationTest {
     val getDeviceResponse = errolClient.getDevice(storedDeviceId!!)
     assertNotNull(getDeviceResponse)
 
-    val oldToken = errol.storage.devices[storedDeviceId]?.token
+    val oldToken = errol.getInstanceStorage(instanceId).devices[storedDeviceId]?.token
     assertThat(oldToken, `is`(not(equalTo(""))))
 
     FirebaseInstanceId.getInstance().deleteInstanceId()
 
     await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) until {
       // The server should have the new token now
-      val newToken = errol.storage.devices[storedDeviceId]?.token
+      val newToken = errol.getInstanceStorage(instanceId).devices[storedDeviceId]?.token
       newToken == oldToken && newToken != ""
     }
   }

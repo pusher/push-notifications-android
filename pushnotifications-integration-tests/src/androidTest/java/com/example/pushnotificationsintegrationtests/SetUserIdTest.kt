@@ -5,7 +5,7 @@ import android.support.test.runner.AndroidJUnit4
 import com.pusher.pushnotifications.*
 import com.pusher.pushnotifications.auth.TokenProvider
 import com.pusher.pushnotifications.fcm.MessagingService
-import com.pusher.pushnotifications.internal.DeviceStateStore
+import com.pusher.pushnotifications.internal.InstanceDeviceStateStore
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
 import org.awaitility.core.ConditionTimeoutException
@@ -31,15 +31,15 @@ import java.util.concurrent.TimeUnit
  */
 @RunWith(AndroidJUnit4::class)
 class SetUserIdTest {
-  fun getStoredDeviceId(): String? {
-    val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
-    return deviceStateStore.deviceId
-  }
-
   val context = InstrumentationRegistry.getTargetContext()
   val instanceId = "00000000-1241-08e9-b379-377c32cd1e84"
   val userId = "alice"
   val errolClient = ErrolAPI(instanceId, "http://localhost:8080")
+
+  fun getStoredDeviceId(): String? {
+    val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getTargetContext(), instanceId)
+    return deviceStateStore.deviceId
+  }
 
   companion object {
     val secretKey = "a-really-long-secret-key-that-ends-with-hunter2"
@@ -56,7 +56,7 @@ class SetUserIdTest {
   @Before
   @After
   fun wipeLocalState() {
-    val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
+    val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getTargetContext(), instanceId)
 
     await.atMost(1, TimeUnit.SECONDS) until {
       assertTrue(deviceStateStore.clear())
@@ -89,7 +89,7 @@ class SetUserIdTest {
     val tokenProvider = StubTokenProvider(jwt)
 
     // Start the SDK
-    val pni = PushNotificationsInstance(context, "00000000-1241-08e9-b379-377c32cd1e00")
+    val pni = PushNotificationsInstance(context, instanceId)
     pni.start()
 
     // A device ID should have been stored

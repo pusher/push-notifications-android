@@ -7,6 +7,7 @@ import com.firebase.jobdispatcher.*
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.pusher.pushnotifications.internal.DeviceStateStore
+import com.pusher.pushnotifications.internal.InstanceDeviceStateStore
 import com.pusher.pushnotifications.logging.Logger
 import com.pusher.pushnotifications.reporting.api.OpenEvent
 
@@ -48,11 +49,11 @@ class OpenNotificationActivity: Activity() {
 
         intent?.getStringExtra("pusher")?.let { pusherDataJson ->
             try {
-                val deviceStateStore = DeviceStateStore(applicationContext)
                 val gson = Gson()
                 val pusherData = gson.fromJson(pusherDataJson, PusherMetadata::class.java)
                 log.i("Got a valid pusher message.")
 
+                val deviceStateStore = InstanceDeviceStateStore(applicationContext, pusherData.instanceId)
                 val deviceId = deviceStateStore.deviceId
                 if (deviceId == null) {
                     log.e("Failed to get device ID (device ID not stored) - Skipping open tracking.")
@@ -61,6 +62,7 @@ class OpenNotificationActivity: Activity() {
                 }
 
                 val reportEvent = OpenEvent(
+                   instanceId = pusherData.instanceId,
                    publishId = pusherData.publishId,
                    deviceId = deviceId,
                    userId = deviceStateStore.userId,

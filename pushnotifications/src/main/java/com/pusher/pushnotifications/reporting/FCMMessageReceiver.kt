@@ -10,6 +10,7 @@ import com.pusher.pushnotifications.featureflags.FeatureFlag
 import com.pusher.pushnotifications.featureflags.FeatureFlagManager
 import com.pusher.pushnotifications.internal.AppActivityLifecycleCallbacks
 import com.pusher.pushnotifications.internal.DeviceStateStore
+import com.pusher.pushnotifications.internal.InstanceDeviceStateStore
 import com.pusher.pushnotifications.logging.Logger
 import com.pusher.pushnotifications.reporting.api.DeliveryEvent
 
@@ -33,7 +34,7 @@ class FCMMessageReceiver : WakefulBroadcastReceiver() {
           return
         }
 
-        val deviceStateStore = DeviceStateStore(context)
+        val deviceStateStore = InstanceDeviceStateStore(context, pusherData.instanceId)
 
         val deviceId = deviceStateStore.deviceId
         if (deviceId == null) {
@@ -42,6 +43,7 @@ class FCMMessageReceiver : WakefulBroadcastReceiver() {
         }
 
         val reportEvent = DeliveryEvent(
+          instanceId = pusherData.instanceId,
           publishId = pusherData.publishId,
           deviceId = deviceId,
           userId = deviceStateStore.userId,

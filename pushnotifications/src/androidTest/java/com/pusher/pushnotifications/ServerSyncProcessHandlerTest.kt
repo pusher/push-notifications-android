@@ -27,19 +27,20 @@ import java.lang.RuntimeException
 
 @RunWith(AndroidJUnit4::class)
 class ServerSyncProcessHandlerTest {
+  val instanceId = "000000-c1de-09b9-a8f6-2a22dbdd062a"
+
   @Before
   @After
   fun cleanup() {
-    val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
+    val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getTargetContext(), instanceId)
     Assert.assertTrue(deviceStateStore.clear())
     Assert.assertNull(deviceStateStore.deviceId)
     Assert.assertThat(deviceStateStore.interests.size, `is`(equalTo(0)))
   }
 
-  val instanceId = "000000-c1de-09b9-a8f6-2a22dbdd062a"
   private val mockServer = MockWebServer().apply { start() }
   private val api = PushNotificationsAPI(instanceId, mockServer.url("/").toString())
-  private val deviceStateStore = DeviceStateStore(InstrumentationRegistry.getTargetContext())
+  private val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getTargetContext(), instanceId)
   val moshi = Moshi.Builder().add(ServerSyncJob.jsonAdapterFactory).build()
   val converter = MoshiConverter(moshi.adapter(ServerSyncJob::class.java))
 

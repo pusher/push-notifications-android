@@ -2,6 +2,7 @@ package com.example.pushnotificationsintegrationtests
 
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
+import com.pusher.pushnotifications.PushNotifications
 import com.pusher.pushnotifications.PushNotificationsInstance
 import com.pusher.pushnotifications.fcm.MessagingService
 import com.pusher.pushnotifications.internal.InstanceDeviceStateStore
@@ -20,7 +21,9 @@ import org.junit.runner.RunWith
 import org.junit.Assert.*
 import org.junit.Before
 import java.io.File
+import java.lang.IllegalStateException
 import java.util.concurrent.TimeUnit
+import kotlin.test.asserter
 
 /**
  * Instrumented test, which will execute on an Android device.
@@ -28,9 +31,10 @@ import java.util.concurrent.TimeUnit
  * See [testing documentation](http://d.android.com/tools/testing).
  */
 @RunWith(AndroidJUnit4::class)
-class StopTest {
+class StartTest {
   val context = InstrumentationRegistry.getTargetContext()
   val instanceId = "00000000-1241-08e9-b379-377c32cd1e80"
+  val instanceId2 = "00000000-1241-08e9-b379-377c32cd1e81"
   val errolClient = ErrolAPI(instanceId, "http://localhost:8080")
 
   fun getStoredDeviceId(): String? {
@@ -78,10 +82,28 @@ class StopTest {
   }
 
   @Test
-  fun stopShouldDeleteADeviceInTheServer() {
+  fun startShouldRegisterToBeams() {
     // Start the SDK
-    val pni = PushNotificationsInstance(context, instanceId)
-    pni.start()
+    PushNotifications.start(context, instanceId)
+
+    // A device ID should have been stored
+    assertStoredDeviceIdIsNotNull()
+    val storedDeviceId = getStoredDeviceId()
+
+    // and the stored id should match the server one
+    assertNotNull(errolClient.getDevice(storedDeviceId!!))
+  }
+
+  @Test(expected = IllegalStateException::class)
+  fun startMultipleInstancesWithSingletonThrowsException() {
+    PushNotifications.start(context, instanceId)
+    PushNotifications.start(context, instanceId2)
+  }
+
+  @Test
+  fun startMultipleTimesWithSameInstanceShouldBeIdempotent() {
+    // Start the SDK
+    PushNotifications.start(context, instanceId)
 
     // A device ID should have been stored
     assertStoredDeviceIdIsNotNull()
@@ -90,62 +112,13 @@ class StopTest {
     // and the stored id should match the server one
     assertNotNull(errolClient.getDevice(storedDeviceId!!))
 
-    pni.stop()
-
-    await.atMost(3, TimeUnit.SECONDS) untilNull {
-      // and now the server should not have this device anymore
-      errolClient.getDevice(storedDeviceId!!)
-    }
-  }
-
-  @Test
-  fun stopShouldDeleteLocalInterests() {
-    // Start the SDK
-    val pni = PushNotificationsInstance(context, instanceId)
-    pni.addDeviceInterest("potato")
-    pni.start()
-
-    // A device ID should have been stored
-    assertStoredDeviceIdIsNotNull()
-    val storedDeviceId = getStoredDeviceId()
-
-    // and the stored id should match the server one
-    val getDeviceResponse = errolClient.getDevice(storedDeviceId!!)
-    assertNotNull(getDeviceResponse)
-
-    pni.stop()
-    assertThat(pni.getDeviceInterests(), `is`(emptySet()))
-  }
-
-  @Test
-  fun afterStoppingStartShouldBePossible() {
-    // Start the SDK
-    val pni = PushNotificationsInstance(context, instanceId)
-    pni.start()
-
-    // A device ID should have been stored
-    assertStoredDeviceIdIsNotNull()
-    val storedDeviceId = getStoredDeviceId()
-    assertNotNull(storedDeviceId)
-
-    // and the stored id should match the server one
-    assertNotNull(errolClient.getDevice(storedDeviceId!!))
-
-    pni.stop()
-
-    await.atMost(3, TimeUnit.SECONDS) untilNull {
-      // and now the server should not have this device anymore
-      errolClient.getDevice(storedDeviceId!!)
-    }
-
-    pni.start()
+    // start the SDK again with the same instanceId
+    PushNotifications.start(context, instanceId)
 
     assertStoredDeviceIdIsNotNull()
+    val storedDeviceId2 = getStoredDeviceId()
 
-    // A device ID should have been stored
-    assertStoredDeviceIdIsNotNull()
-    val newStoredDeviceId = getStoredDeviceId()
-    assertNotNull(errolClient.getDevice(newStoredDeviceId!!))
-    assertThat(newStoredDeviceId, `is`(not(equalTo(storedDeviceId))))
+    // check we have the same deviceId
+    assertEquals(storedDeviceId, storedDeviceId2)
   }
 }
