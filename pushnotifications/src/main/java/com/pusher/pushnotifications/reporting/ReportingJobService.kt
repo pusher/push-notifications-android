@@ -63,15 +63,16 @@ class ReportingJobService: JobService() {
       return b
     }
 
-    fun fromBundle(bundle: Bundle): ReportEvent {
-      val event = ReportEventType.valueOf(bundle.getString(BUNDLE_EVENT_TYPE_KEY))
-      when (event) {
+    fun fromBundle(bundle: Bundle): ReportEvent? {
+      val eventType = bundle.getString(BUNDLE_EVENT_TYPE_KEY) ?: return null
+
+      when (ReportEventType.valueOf(eventType)) {
         ReportEventType.Delivery -> {
           return DeliveryEvent(
-            instanceId = bundle.getString(BUNDLE_INSTANCE_ID_KEY),
-            deviceId = bundle.getString(BUNDLE_DEVICE_ID_KEY),
+            instanceId = bundle.getString(BUNDLE_INSTANCE_ID_KEY) ?: return null,
+            deviceId = bundle.getString(BUNDLE_DEVICE_ID_KEY) ?: return null,
             userId = bundle.getString(BUNDLE_USER_ID_KEY),
-            publishId = bundle.getString(BUNDLE_PUBLISH_ID_KEY),
+            publishId = bundle.getString(BUNDLE_PUBLISH_ID_KEY) ?: return null,
             timestampSecs = bundle.getLong(BUNDLE_TIMESTAMP_KEY),
             appInBackground = bundle.getBoolean(BUNDLE_APP_IN_BACKGROUND_KEY),
             hasDisplayableContent = bundle.getBoolean(BUNDLE_HAS_DISPLAYABLE_CONTENT_KEY),
@@ -80,10 +81,10 @@ class ReportingJobService: JobService() {
         }
         ReportEventType.Open -> {
           return OpenEvent(
-            instanceId = bundle.getString(BUNDLE_INSTANCE_ID_KEY),
-            deviceId = bundle.getString(BUNDLE_DEVICE_ID_KEY),
+            instanceId = bundle.getString(BUNDLE_INSTANCE_ID_KEY) ?: return null,
+            deviceId = bundle.getString(BUNDLE_DEVICE_ID_KEY) ?: return null,
             userId = bundle.getString(BUNDLE_USER_ID_KEY),
-            publishId = bundle.getString(BUNDLE_PUBLISH_ID_KEY),
+            publishId = bundle.getString(BUNDLE_PUBLISH_ID_KEY) ?: return null,
             timestampSecs = bundle.getLong(BUNDLE_TIMESTAMP_KEY)
           )
         }
@@ -98,24 +99,29 @@ class ReportingJobService: JobService() {
       val extras = it.extras
       if (extras != null) {
         val reportEvent = fromBundle(extras)
-        reportEvent.deviceId
+        if (reportEvent != null) {
+          reportEvent.deviceId
 
-        ReportingAPI(reportEvent.instanceId).submit(
-          reportEvent = reportEvent,
-          operationCallback = object: OperationCallbackNoArgs {
-            override fun onSuccess() {
-              log.v("Successfully submitted report.")
-              jobFinished(params, false)
-            }
+          ReportingAPI(reportEvent.instanceId).submit(
+              reportEvent = reportEvent,
+              operationCallback = object : OperationCallbackNoArgs {
+                override fun onSuccess() {
+                  log.v("Successfully submitted report.")
+                  jobFinished(params, false)
+                }
 
-            override fun onFailure(t: Throwable) {
-              log.w("Failed submitted report.", t)
-              val shouldRetry = t !is UnrecoverableRuntimeException
+                override fun onFailure(t: Throwable) {
+                  log.w("Failed submitted report.", t)
+                  val shouldRetry = t !is UnrecoverableRuntimeException
 
-              jobFinished(params, shouldRetry)
-            }
-          }
-        )
+                  jobFinished(params, shouldRetry)
+                }
+              }
+          )
+        } else {
+          log.w("Incorrect start of service: extras bundle is partially corrupted.")
+          return false
+        }
       } else {
         log.w("Incorrect start of service: extras bundle is missing.")
         return false
