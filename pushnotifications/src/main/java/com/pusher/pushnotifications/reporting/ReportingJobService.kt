@@ -106,7 +106,7 @@ class ReportingJobService: JobService() {
               reportEvent = reportEvent,
               operationCallback = object : OperationCallbackNoArgs {
                 override fun onSuccess() {
-                  log.v("Successfully submitted report.")
+                  log.i("Successfully submitted report.")
                   jobFinished(params, false)
                 }
 
