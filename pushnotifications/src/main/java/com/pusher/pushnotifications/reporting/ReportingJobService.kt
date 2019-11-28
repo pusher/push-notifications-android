@@ -108,37 +108,43 @@ open class ReportingJobService: JobService() {
   override fun onStartJob(params: JobParameters?): Boolean {
     log.i("Received reporting job.")
 
-    params?.let {
-      val extras = it.extras
-      if (extras != null) {
-        val reportEvent = fromBundle(extras)
-        if (reportEvent != null) {
-          reportEvent.deviceId
+    try {
+      params?.let {
+        val extras = it.extras
+        if (extras != null) {
+          val reportEvent = fromBundle(extras)
+          if (reportEvent != null) {
+            reportEvent.deviceId
 
-          ReportingAPI(reportEvent.instanceId, SDKConfiguration(applicationContext).overrideHostURL).submit(
-              reportEvent = reportEvent,
-              operationCallback = object : OperationCallbackNoArgs {
-                override fun onSuccess() {
-                  log.i("Successfully submitted report.")
-                  jobFinished(params, false)
+            ReportingAPI(reportEvent.instanceId, SDKConfiguration(applicationContext).overrideHostURL).submit(
+                reportEvent = reportEvent,
+                operationCallback = object : OperationCallbackNoArgs {
+                  override fun onSuccess() {
+                    log.i("Successfully submitted report.")
+                    jobFinished(params, false)
+                  }
+
+                  override fun onFailure(t: Throwable) {
+                    log.w("Failed submitted report.", t)
+                    val shouldRetry = t !is UnrecoverableRuntimeException
+
+                    jobFinished(params, shouldRetry)
+                  }
                 }
-
-                override fun onFailure(t: Throwable) {
-                  log.w("Failed submitted report.", t)
-                  val shouldRetry = t !is UnrecoverableRuntimeException
-
-                  jobFinished(params, shouldRetry)
-                }
-              }
-          )
+            )
+          } else {
+            log.w("Incorrect start of service: extras bundle is partially corrupted.")
+            return false
+          }
         } else {
-          log.w("Incorrect start of service: extras bundle is partially corrupted.")
+          log.w("Incorrect start of service: extras bundle is missing.")
           return false
         }
-      } else {
-        log.w("Incorrect start of service: extras bundle is missing.")
-        return false
       }
+    } catch (e: Exception) {
+      log.w("Something went wrong when trying to send a notification report: $e")
+      // TODO: Add client-side reporting to better track these situations
+      return false
     }
 
     return true // A background job was started

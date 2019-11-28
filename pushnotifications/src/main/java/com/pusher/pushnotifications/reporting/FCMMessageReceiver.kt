@@ -66,8 +66,9 @@ class FCMMessageReceiver : WakefulBroadcastReceiver() {
         dispatcher.mustSchedule(job)
         log.i("Notification reporting successfully scheduled.")
 
-      } catch (_: JsonSyntaxException) {
-        // TODO: Add client-side reporting
+      } catch (e: Exception) {
+        log.w("Something went wrong when trying to schedule a notification report: $e")
+        // TODO: Add client-side reporting to better track these situations
       }
     }
   }
