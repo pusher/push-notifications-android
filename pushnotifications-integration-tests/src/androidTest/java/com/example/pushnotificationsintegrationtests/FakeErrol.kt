@@ -38,11 +38,28 @@ data class SetSubscriptionsRequest(
     val interests: Set<String>
 )
 
+data class ReportEvent(
+    val event: String,
+    val instanceId: String,
+    val deviceId: String,
+    val userId: String?,
+    val publishId: String,
+    val timestampSecs: Long,
+    val appInBackground: Boolean? = null,
+    val hasDisplayableContent: Boolean? = null,
+    val hasData: Boolean? = null
+)
+
 class FakeErrol(port: Int, private val clusterKey: String = ""): NanoHTTPDRouter(port) {
   private val storage = mutableMapOf<String, FakeErrolStorage>()
+  private val eventsStorage = mutableMapOf<String, MutableList<ReportEvent>>()
 
   fun getInstanceStorage(instanceId: String): FakeErrolStorage {
     return storage.getOrPut(instanceId, { FakeErrolStorage() })
+  }
+
+  fun getInstanceEventsStorage(instanceId: String): MutableList<ReportEvent> {
+    return eventsStorage.getOrPut(instanceId, { mutableListOf() })
   }
 
   init {
@@ -161,6 +178,14 @@ class FakeErrol(port: Int, private val clusterKey: String = ""): NanoHTTPDRouter
 
     put("/instances/{instanceId}/devices/fcm/{deviceId}/metadata") {
       complete(Response.Status.OK)
+    }
+
+    post("/instances/{instanceId}/events") {
+      entity(ReportEvent::class) { reportEvent ->
+        getInstanceEventsStorage(params["instanceId"]!!).add(reportEvent)
+
+        complete(Response.Status.OK)
+      }
     }
   }
 }
