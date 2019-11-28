@@ -64,15 +64,20 @@ open class ReportingJobService: JobService() {
     }
 
     fun fromBundle(bundle: Bundle): ReportEvent? {
-      val eventType = bundle.getString(BUNDLE_EVENT_TYPE_KEY) ?: return null
-
+      val eventType = bundle.getString(BUNDLE_EVENT_TYPE_KEY)
       when (ReportEventType.valueOf(eventType)) {
         ReportEventType.Delivery -> {
+          // returning `null` if the instance id is missing because it's possible that
+          // we are processing a bundle that was created with an old SDK version that
+          // didn't had this key. Our migration strategy is to drop the reporting
+          // as it's (a) a rare one-time transition and (b) it's a best effort feature.
+          val instanceId = bundle.getString(BUNDLE_INSTANCE_ID_KEY) ?: return null
+
           return DeliveryEvent(
-            instanceId = bundle.getString(BUNDLE_INSTANCE_ID_KEY) ?: return null,
-            deviceId = bundle.getString(BUNDLE_DEVICE_ID_KEY) ?: return null,
+            instanceId = instanceId,
+            deviceId = bundle.getString(BUNDLE_DEVICE_ID_KEY),
             userId = bundle.getString(BUNDLE_USER_ID_KEY),
-            publishId = bundle.getString(BUNDLE_PUBLISH_ID_KEY) ?: return null,
+            publishId = bundle.getString(BUNDLE_PUBLISH_ID_KEY),
             timestampSecs = bundle.getLong(BUNDLE_TIMESTAMP_KEY),
             appInBackground = bundle.getBoolean(BUNDLE_APP_IN_BACKGROUND_KEY),
             hasDisplayableContent = bundle.getBoolean(BUNDLE_HAS_DISPLAYABLE_CONTENT_KEY),
@@ -80,11 +85,17 @@ open class ReportingJobService: JobService() {
           )
         }
         ReportEventType.Open -> {
+          // returning `null` if the instance id is missing because it's possible that
+          // we are processing a bundle that was created with an old SDK version that
+          // didn't had this key. Our migration strategy is to drop the reporting
+          // as it's (a) a rare one-time transition and (b) it's a best effort feature.
+          val instanceId = bundle.getString(BUNDLE_INSTANCE_ID_KEY) ?: return null
+
           return OpenEvent(
-            instanceId = bundle.getString(BUNDLE_INSTANCE_ID_KEY) ?: return null,
-            deviceId = bundle.getString(BUNDLE_DEVICE_ID_KEY) ?: return null,
+            instanceId = instanceId,
+            deviceId = bundle.getString(BUNDLE_DEVICE_ID_KEY),
             userId = bundle.getString(BUNDLE_USER_ID_KEY),
-            publishId = bundle.getString(BUNDLE_PUBLISH_ID_KEY) ?: return null,
+            publishId = bundle.getString(BUNDLE_PUBLISH_ID_KEY),
             timestampSecs = bundle.getLong(BUNDLE_TIMESTAMP_KEY)
           )
         }
