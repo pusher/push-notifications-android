@@ -23,7 +23,7 @@ data class PusherMetadata(
     get() = _hasData ?: false
 }
 
-class ReportingJobService: JobService() {
+open class ReportingJobService: JobService() {
   companion object {
     private const val BUNDLE_EVENT_TYPE_KEY = "ReportEventType"
     private const val BUNDLE_INSTANCE_ID_KEY = "InstanceId"
