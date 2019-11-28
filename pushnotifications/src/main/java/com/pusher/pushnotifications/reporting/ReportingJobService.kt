@@ -95,6 +95,8 @@ class ReportingJobService: JobService() {
   private val log = Logger.get(this::class)
 
   override fun onStartJob(params: JobParameters?): Boolean {
+    log.i("Received reporting job.")
+
     params?.let {
       val extras = it.extras
       if (extras != null) {
