@@ -12,8 +12,9 @@ import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-class ReportingAPI(private val instanceId: String) {
-  private val baseUrl = "https://$instanceId.pushnotifications.pusher.com/reporting_api/v2/"
+class ReportingAPI(private val instanceId: String, overrideHostURL: String?) {
+  private val baseUrl =
+      overrideHostURL ?: "https://$instanceId.pushnotifications.pusher.com/reporting_api/v2/"
 
   private val gson = Gson()
 

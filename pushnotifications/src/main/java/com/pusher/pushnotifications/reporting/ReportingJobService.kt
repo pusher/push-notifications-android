@@ -5,8 +5,8 @@ import com.firebase.jobdispatcher.JobParameters
 import com.firebase.jobdispatcher.JobService
 import com.google.gson.annotations.SerializedName
 import com.pusher.pushnotifications.logging.Logger
-import com.pusher.pushnotifications.PushNotificationsInstance
 import com.pusher.pushnotifications.api.OperationCallbackNoArgs
+import com.pusher.pushnotifications.internal.SDKConfiguration
 import com.pusher.pushnotifications.reporting.api.*
 
 data class PusherMetadata(
@@ -104,7 +104,7 @@ class ReportingJobService: JobService() {
         if (reportEvent != null) {
           reportEvent.deviceId
 
-          ReportingAPI(reportEvent.instanceId).submit(
+          ReportingAPI(reportEvent.instanceId, SDKConfiguration(applicationContext).overrideHostURL).submit(
               reportEvent = reportEvent,
               operationCallback = object : OperationCallbackNoArgs {
                 override fun onSuccess() {
