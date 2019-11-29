@@ -106,6 +106,9 @@ class ReportingTest {
     i.`package` = targetCtx.packageName
 
     val bundle = Bundle()
+    // grabbing all the fields from an actual push notification which will include
+    // undocumented and Google FCM specific keys. These are left here to ensure that
+    // our tests are more realistic and our reporting isn't affected by their presence
     bundle.putString("google.delivered_priority", "high")
     bundle.putLong("google.sent_time", 1574938426317)
     bundle.putLong("google.ttl", 2419200)
@@ -161,6 +164,7 @@ class ReportingTest {
 
     class ReportingJobServiceWithContext : ReportingJobService() {
       init {
+        // Android Studio might render the following function as red, but it works.
         attachBaseContext(context)
       }
     }
@@ -177,7 +181,7 @@ class ReportingTest {
   }
 
   @Test
-  fun aNotificationSentWithOldSDKVersionShouldNotBeReported() {
+  fun migrationWithJobScheduledWithMissingInstanceIdDoesNotCrashButLosesTheReport() {
     // Start the SDK
     val pni = PushNotificationsInstance(context, instanceId)
     pni.start()

@@ -23,6 +23,7 @@ data class PusherMetadata(
     get() = _hasData ?: false
 }
 
+// Marking it as `open` to facilitate testing, but it's not meant to be extended otherwise
 open class ReportingJobService: JobService() {
   companion object {
     private const val BUNDLE_EVENT_TYPE_KEY = "ReportEventType"
