@@ -24,13 +24,13 @@ import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 class ReportingTest {
-  val context = InstrumentationRegistry.getTargetContext()
   val instanceId = "00000000-1241-08e9-b379-377c32cd1e84"
+  val publishId = "pubid-e3c82c34-667b-4969-9509-ff59dfbe328a"
   val errolClient = ErrolAPI(instanceId, "http://localhost:8080")
-  val targetCtx: Context = InstrumentationRegistry.getTargetContext()
+  val context: Context = InstrumentationRegistry.getTargetContext()
 
   fun getStoredDeviceId(): String? {
-    val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getTargetContext(), instanceId)
+    val deviceStateStore = InstanceDeviceStateStore(context, instanceId)
     return deviceStateStore.deviceId
   }
 
@@ -49,7 +49,7 @@ class ReportingTest {
   @Before
   @After
   fun wipeLocalState() {
-    val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getTargetContext(), instanceId)
+    val deviceStateStore = InstanceDeviceStateStore(context, instanceId)
 
     await.atMost(1, TimeUnit.SECONDS) until {
       assertTrue(deviceStateStore.clear())
@@ -98,7 +98,7 @@ class ReportingTest {
     // send a notification
     val i = Intent()
     i.action = "com.google.android.c2dm.intent.RECEIVE"
-    i.`package` = targetCtx.packageName
+    i.`package` = context.packageName
 
     val bundle = Bundle()
     // grabbing all the fields from an actual push notification which will include
@@ -109,14 +109,14 @@ class ReportingTest {
     bundle.putLong("google.ttl", 2419200)
     bundle.putString("google.original_priority", "high")
     bundle.putString("gcm.notification.e", "1")
-    bundle.putString("pusher", """{"instanceId":"$instanceId","hasDisplayableContent":true,"publishId":"pubid-e3c82c34-667b-4969-9509-ff59dfbe328a"}""")
+    bundle.putString("pusher", """{"instanceId":"$instanceId","hasDisplayableContent":true,"publishId":"$publishId"}""")
     i.replaceExtras(bundle)
 
-    targetCtx.sendBroadcast(i)
+    context.sendBroadcast(i)
 
     await.atMost(90, TimeUnit.MINUTES) until {
       errol.getInstanceEventsStorage(instanceId).any { event ->
-        event.publishId == "pubid-e3c82c34-667b-4969-9509-ff59dfbe328a"
+        event.publishId == publishId
       }
     }
   }
@@ -136,7 +136,7 @@ class ReportingTest {
 
     val reportEvent = DeliveryEvent(
         instanceId = instanceId,
-        publishId = "pubid-e3c82c34-667b-4969-9509-ff59dfbe328a",
+        publishId = publishId,
         deviceId = storedDeviceId,
         userId = "alice",
         timestampSecs = Math.round(System.currentTimeMillis() / 1000.0),
@@ -151,7 +151,7 @@ class ReportingTest {
         FirebaseJobDispatcher(GooglePlayDriver(context)).newJobBuilder()
             .setService(ReportingJobService::class.java)
             .setConstraints(Constraint.ON_ANY_NETWORK)
-            .setTag("pusher.delivered.publishId=pubid-e3c82c34-667b-4969-9509-ff59dfbe328a")
+            .setTag("pusher.delivered.publishId=$publishId")
             .setRetryStrategy(RetryStrategy.DEFAULT_EXPONENTIAL)
             .setLifetime(Lifetime.UNTIL_NEXT_BOOT)
             .setExtras(bundledEvent)
@@ -170,7 +170,7 @@ class ReportingTest {
 
     await.atMost(5, TimeUnit.SECONDS) until {
       errol.getInstanceEventsStorage(instanceId).any { event ->
-        event.publishId == "pubid-e3c82c34-667b-4969-9509-ff59dfbe328a"
+        event.publishId == publishId
       }
     }
   }
@@ -207,7 +207,7 @@ class ReportingTest {
         FirebaseJobDispatcher(GooglePlayDriver(context)).newJobBuilder()
             .setService(ReportingJobService::class.java)
             .setConstraints(Constraint.ON_ANY_NETWORK)
-            .setTag("pusher.delivered.publishId=pubid-e3c82c34-667b-4969-9509-ff59dfbe328a")
+            .setTag("pusher.delivered.publishId=$publishId")
             .setRetryStrategy(RetryStrategy.DEFAULT_EXPONENTIAL)
             .setLifetime(Lifetime.UNTIL_NEXT_BOOT)
             .setExtras(bundledEvent)
@@ -215,6 +215,7 @@ class ReportingTest {
 
     class ReportingJobServiceWithContext : ReportingJobService() {
       init {
+        // Android Studio might render the following function as red, but it works.
         attachBaseContext(context)
       }
     }
