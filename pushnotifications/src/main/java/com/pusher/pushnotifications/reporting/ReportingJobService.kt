@@ -80,23 +80,23 @@ class ReportingJobService: JobService() {
       when (event) {
         ReportEventType.Delivery -> {
           return DeliveryEvent(
-            instanceId = bundle.getString(BUNDLE_INSTANCE_ID_KEY),
-            deviceId = instanceId,
-            userId = bundle.getString(BUNDLE_USER_ID_KEY),
-            publishId = bundle.getString(BUNDLE_PUBLISH_ID_KEY),
-            timestampSecs = bundle.getLong(BUNDLE_TIMESTAMP_KEY),
-            appInBackground = bundle.getBoolean(BUNDLE_APP_IN_BACKGROUND_KEY),
-            hasDisplayableContent = bundle.getBoolean(BUNDLE_HAS_DISPLAYABLE_CONTENT_KEY),
-            hasData = bundle.getBoolean(BUNDLE_HAS_DATA_KEY)
+                  instanceId = instanceId,
+                  deviceId = bundle.getString(BUNDLE_DEVICE_ID_KEY),
+                  userId = bundle.getString(BUNDLE_USER_ID_KEY),
+                  publishId = bundle.getString(BUNDLE_PUBLISH_ID_KEY),
+                  timestampSecs = bundle.getLong(BUNDLE_TIMESTAMP_KEY),
+                  appInBackground = bundle.getBoolean(BUNDLE_APP_IN_BACKGROUND_KEY),
+                  hasDisplayableContent = bundle.getBoolean(BUNDLE_HAS_DISPLAYABLE_CONTENT_KEY),
+                  hasData = bundle.getBoolean(BUNDLE_HAS_DATA_KEY)
           )
         }
         ReportEventType.Open -> {
           return OpenEvent(
-            instanceId = bundle.getString(BUNDLE_INSTANCE_ID_KEY),
-            deviceId = instanceId,
-            userId = bundle.getString(BUNDLE_USER_ID_KEY),
-            publishId = bundle.getString(BUNDLE_PUBLISH_ID_KEY),
-            timestampSecs = bundle.getLong(BUNDLE_TIMESTAMP_KEY)
+                  instanceId = instanceId,
+                  deviceId = bundle.getString(BUNDLE_DEVICE_ID_KEY),
+                  userId = bundle.getString(BUNDLE_USER_ID_KEY),
+                  publishId = bundle.getString(BUNDLE_PUBLISH_ID_KEY),
+                  timestampSecs = bundle.getLong(BUNDLE_TIMESTAMP_KEY)
           )
         }
       }
