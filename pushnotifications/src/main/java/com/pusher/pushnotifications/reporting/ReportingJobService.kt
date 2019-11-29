@@ -4,9 +4,8 @@ import android.os.Bundle
 import com.firebase.jobdispatcher.JobParameters
 import com.firebase.jobdispatcher.JobService
 import com.google.gson.annotations.SerializedName
-import com.pusher.pushnotifications.logging.Logger
-import com.pusher.pushnotifications.PushNotificationsInstance
 import com.pusher.pushnotifications.api.OperationCallbackNoArgs
+import com.pusher.pushnotifications.logging.Logger
 import com.pusher.pushnotifications.reporting.api.*
 
 data class PusherMetadata(
@@ -63,13 +62,26 @@ class ReportingJobService: JobService() {
       return b
     }
 
-    fun fromBundle(bundle: Bundle): ReportEvent {
+    private class MissingInstanceIdException : RuntimeException()
+
+    private fun fromBundle(bundle: Bundle): ReportEvent {
+      val instanceId : String? = bundle.getString(BUNDLE_INSTANCE_ID_KEY)
+      @Suppress("FoldInitializerAndIfToElvis")
+      if (instanceId == null) {
+        // It's possible that we are processing a bundle that was created with an old SDK
+        // version that didn't had this key. Our migration strategy is to drop the reporting
+        // as it's (a) a rare one-time transition and (b) it's a best effort feature.
+        // Throwing a specific exception (to not compromise the code design -- nullable return
+        // type) which will be caught on calling this private fun.
+        throw MissingInstanceIdException()
+      }
+
       val event = ReportEventType.valueOf(bundle.getString(BUNDLE_EVENT_TYPE_KEY))
       when (event) {
         ReportEventType.Delivery -> {
           return DeliveryEvent(
             instanceId = bundle.getString(BUNDLE_INSTANCE_ID_KEY),
-            deviceId = bundle.getString(BUNDLE_DEVICE_ID_KEY),
+            deviceId = instanceId,
             userId = bundle.getString(BUNDLE_USER_ID_KEY),
             publishId = bundle.getString(BUNDLE_PUBLISH_ID_KEY),
             timestampSecs = bundle.getLong(BUNDLE_TIMESTAMP_KEY),
@@ -81,7 +93,7 @@ class ReportingJobService: JobService() {
         ReportEventType.Open -> {
           return OpenEvent(
             instanceId = bundle.getString(BUNDLE_INSTANCE_ID_KEY),
-            deviceId = bundle.getString(BUNDLE_DEVICE_ID_KEY),
+            deviceId = instanceId,
             userId = bundle.getString(BUNDLE_USER_ID_KEY),
             publishId = bundle.getString(BUNDLE_PUBLISH_ID_KEY),
             timestampSecs = bundle.getLong(BUNDLE_TIMESTAMP_KEY)
@@ -96,26 +108,32 @@ class ReportingJobService: JobService() {
   override fun onStartJob(params: JobParameters?): Boolean {
     params?.let {
       val extras = it.extras
+
       if (extras != null) {
-        val reportEvent = fromBundle(extras)
-        reportEvent.deviceId
+        try {
+          val reportEvent = fromBundle(extras)
+          reportEvent.deviceId
 
-        ReportingAPI(reportEvent.instanceId).submit(
-          reportEvent = reportEvent,
-          operationCallback = object: OperationCallbackNoArgs {
-            override fun onSuccess() {
-              log.v("Successfully submitted report.")
-              jobFinished(params, false)
+          ReportingAPI(reportEvent.instanceId).submit(
+            reportEvent = reportEvent,
+            operationCallback = object: OperationCallbackNoArgs {
+              override fun onSuccess() {
+                log.v("Successfully submitted report.")
+                jobFinished(params, false)
+              }
+
+              override fun onFailure(t: Throwable) {
+                log.w("Failed submitted report.", t)
+                val shouldRetry = t !is UnrecoverableRuntimeException
+
+                jobFinished(params, shouldRetry)
+              }
             }
-
-            override fun onFailure(t: Throwable) {
-              log.w("Failed submitted report.", t)
-              val shouldRetry = t !is UnrecoverableRuntimeException
-
-              jobFinished(params, shouldRetry)
-            }
-          }
-        )
+          )
+        } catch (e : MissingInstanceIdException) {
+          log.w("Missing instance id, can't report.")
+          return false
+        }
       } else {
         log.w("Incorrect start of service: extras bundle is missing.")
         return false
