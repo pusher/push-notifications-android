@@ -82,6 +82,11 @@ class StartTest {
   }
 
   @Test
+  fun dummyTestToBreakCI() {
+    assertTrue(false)
+  }
+
+  @Test
   fun startShouldRegisterToBeams() {
     // Start the SDK
     PushNotifications.start(context, instanceId)
