@@ -20,6 +20,8 @@ class DeviceStateStoreTest {
   fun before() {
     `when`(context.getSharedPreferences("com.pusher.pushnotifications.PushNotificationsInstance", Context.MODE_PRIVATE))
         .thenReturn(sharedPrefs)
+    `when`(context.getSharedPreferences("com.pusher.pushnotifications.PushNotificationsInstances", Context.MODE_PRIVATE))
+            .thenReturn(sharedPrefs)
 
     this.testDeviceStateStore = DeviceStateStore(context)
   }
