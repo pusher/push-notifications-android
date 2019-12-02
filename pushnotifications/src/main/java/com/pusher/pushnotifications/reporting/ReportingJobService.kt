@@ -64,6 +64,7 @@ class ReportingJobService: JobService() {
 
     private class MissingInstanceIdException : RuntimeException()
 
+    @Throws(MissingInstanceIdException::class)
     private fun fromBundle(bundle: Bundle): ReportEvent {
       val instanceId : String? = bundle.getString(BUNDLE_INSTANCE_ID_KEY)
       @Suppress("FoldInitializerAndIfToElvis")
