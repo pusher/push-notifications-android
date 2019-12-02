@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.5.1] - 2019-12-02
+
+### Fixed
+- Fix an issue if the instanceId isn't present when reporting a push notification event
+
 ## [1.5.0] - 2019-11-13
 
 ### Added
