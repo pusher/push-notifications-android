@@ -6,6 +6,8 @@ import com.pusher.pushnotifications.api.*
 import com.pusher.pushnotifications.auth.TokenProvider
 import com.pusher.pushnotifications.logging.Logger
 import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import dev.zacsweers.moshisealed.reflect.MoshiSealedJsonAdapterFactory
 import java.io.File
 import java.math.BigInteger
 import java.security.MessageDigest
@@ -73,7 +75,10 @@ class ServerSyncHandler private constructor(
           val handlerThread = HandlerThread("ServerSyncHandler-$instanceId")
           handlerThread.start()
 
-          val moshi = Moshi.Builder().add(ServerSyncJob.jsonAdapterFactory).build()
+          val moshi = Moshi.Builder()
+                  .add(MoshiSealedJsonAdapterFactory())
+                  .add(KotlinJsonAdapterFactory())
+                  .build()
           val converter = MoshiConverter(moshi.adapter(ServerSyncJob::class.java))
 
           File(secureFileDir, "beams").mkdirs()

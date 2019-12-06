@@ -32,8 +32,10 @@ dependencies {
     implementation 'com.squareup.retrofit2:converter-gson:2.3.0'
     implementation 'com.squareup.retrofit2:retrofit:2.5.0'
     implementation 'com.squareup.tape2:tape:2.0.0-beta1'
-    implementation 'com.squareup.moshi:moshi:1.8.0'
-    implementation 'com.squareup.moshi:moshi-adapters:1.8.0'
+    implementation 'com.squareup.moshi:moshi-kotlin:1.9.2'
+    implementation 'com.squareup.moshi:moshi-adapters:1.9.2'
+    implementation "dev.zacsweers.moshisealed:moshi-sealed-reflect:0.1.0"
+    implementation "dev.zacsweers.moshisealed:moshi-sealed-annotations:0.1.0"
 
     testImplementation 'junit:junit:4.12'
     testImplementation "org.mockito:mockito-core:2.13.0"
