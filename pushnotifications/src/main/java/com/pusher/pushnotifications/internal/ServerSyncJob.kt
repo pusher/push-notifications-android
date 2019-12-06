@@ -2,7 +2,6 @@ package com.pusher.pushnotifications.internal
 
 import com.pusher.pushnotifications.api.DeviceMetadata
 import com.squareup.moshi.JsonClass
-import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import dev.zacsweers.moshisealed.annotations.TypeLabel
 import java.io.Serializable
 

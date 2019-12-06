@@ -2,6 +2,8 @@ package com.pusher.pushnotifications.internal
 
 import com.pusher.pushnotifications.api.DeviceMetadata
 import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import dev.zacsweers.moshisealed.reflect.MoshiSealedJsonAdapterFactory
 import junit.framework.Assert.*
 import org.junit.Before
 import org.junit.Test
@@ -9,7 +11,9 @@ import java.io.File
 
 class PersistentJobQueueTest {
   lateinit var tempFile: File
-  private val moshi = Moshi.Builder().add(ServerSyncJob.jsonAdapterFactory).build()
+  private val moshi = Moshi.Builder()
+          .add(MoshiSealedJsonAdapterFactory())
+          .add(KotlinJsonAdapterFactory()).build()
   private val converter = MoshiConverter(moshi.adapter(ServerSyncJob::class.java))
 
   @Before
