@@ -214,8 +214,8 @@ class PersistentJobQueueTest {
 
 
   @Test
-  fun `corrupted saved data - existing type object has field removed`() {
-    val tempFile = File("src/test/resources/com/pusher/pushnotifications/internal/persistentJobQueue-corrupted_existing_object_field_removed.queue")
+  fun `corrupted saved data - existing type object has field added`() {
+    val tempFile = File("src/test/resources/com/pusher/pushnotifications/internal/persistentJobQueue-corrupted_existing_object_field_added.queue")
     val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile, converter)
 
     //uncomment the following to write this to the file
@@ -224,14 +224,14 @@ class PersistentJobQueueTest {
 //    queue.push(UnsubscribeJob("pear"))
 
     val retrievedElements = queue.asIterable().toList()
-    assertEquals(3, retrievedElements.size)
+    assertEquals(2, retrievedElements.size)
 
-    assertNotNull(queue.peek())
+    assertEquals((retrievedElements.first() as UnsubscribeJob).interest, "carrot")
   }
 
   @Test
-  fun `corrupted saved data - existing type object has field added`() {
-    val tempFile = File("src/test/resources/com/pusher/pushnotifications/internal/persistentJobQueue-corrupted_existing_object_field_added.queue")
+  fun `corrupted saved data - existing type object has field removed`() {
+    val tempFile = File("src/test/resources/com/pusher/pushnotifications/internal/persistentJobQueue-corrupted_existing_object_field_removed.queue")
     val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile, converter)
 
     //uncomment the following to write this to the file
@@ -242,8 +242,8 @@ class PersistentJobQueueTest {
     val retrievedElements = queue.asIterable().toList()
     assertEquals(3, retrievedElements.size)
 
-    assertNotNull(queue.peek())
-    assertNull((queue.peek() as StartJob).knownPreviousClientIds)
+    assertNotNull(retrievedElements.first())
+    assertEquals((retrievedElements.first() as SubscribeJob).interest, "potato")
 
   }
 
