@@ -8,9 +8,9 @@ import java.io.Serializable
 @JsonClass(generateAdapter = true, generator = "sealed:ServerSyncJob")
 sealed class ServerSyncJob: Serializable
 
-// If you add new fields to any of these data classes, make sure they have
-// default values otherwise they can be null when reading the old stored
-// JSON from disk.
+// If you add new fields to any of these data classes, any older records on peoples devices may not
+// be read and ignored as they do not match the current expected class.
+// Please see the PersistentJobQueueTests to see the expected behaviour.
 @TypeLabel("StartJob")
 data class StartJob(val fcmToken: String, val knownPreviousClientIds: List<String>): ServerSyncJob()
 
