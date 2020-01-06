@@ -43,8 +43,7 @@ dependencies {
 
     implementation 'com.google.firebase:firebase-core:16.0.9'
     implementation 'com.google.firebase:firebase-messaging:18.0.0'
-
-    implementation 'com.squareup.moshi:moshi-kotlin:1.9.2'
+    
 }
 
 apply plugin: 'com.google.gms.google-services'
