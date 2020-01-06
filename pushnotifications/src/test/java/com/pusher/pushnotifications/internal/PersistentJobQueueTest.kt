@@ -218,15 +218,17 @@ class PersistentJobQueueTest {
     val tempFile = File("src/test/resources/com/pusher/pushnotifications/internal/persistentJobQueue-corrupted_existing_object_field_added.queue")
     val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile, converter)
 
-    //uncomment the following to write this to the file
+      // uncomment the following to write this to the file
 //    queue.push(SubscribeJob("potato", 5)) //added an interest level of type int field
 //    queue.push(UnsubscribeJob("carrot"))
 //    queue.push(UnsubscribeJob("pear"))
 
-    val retrievedElements = queue.asIterable().toList()
-    assertEquals(2, retrievedElements.size)
+      val retrievedElements = queue.asIterable().toList()
+      assertEquals(3, retrievedElements.size)
 
-    assertEquals((retrievedElements.first() as UnsubscribeJob).interest, "carrot")
+      assertEquals((retrievedElements.first() as SubscribeJob).interest, "potato")
+      assertEquals((retrievedElements[1] as UnsubscribeJob).interest, "carrot")
+      assertEquals((retrievedElements[2] as UnsubscribeJob).interest, "pear")
   }
 
   @Test
@@ -234,16 +236,18 @@ class PersistentJobQueueTest {
     val tempFile = File("src/test/resources/com/pusher/pushnotifications/internal/persistentJobQueue-corrupted_existing_object_field_removed.queue")
     val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile, converter)
 
-    //uncomment the following to write this to the file
+    // uncomment the following to write this to the file
 //    queue.push(StartJob("fcm_token")) //removed the knownPreviousClientIds field
 //    queue.push(UnsubscribeJob("carrot"))
 //    queue.push(UnsubscribeJob("pear"))
 
     val retrievedElements = queue.asIterable().toList()
-    assertEquals(3, retrievedElements.size)
+    assertEquals(2, retrievedElements.size)
 
-    assertNotNull(retrievedElements.first())
-    assertEquals((retrievedElements.first() as SubscribeJob).interest, "potato")
+    // queue element 0 could not be parsed (missing the knownPreviousClientids so the whole record gets ignored
+
+    assertEquals((retrievedElements[0] as UnsubscribeJob).interest, "carrot")
+    assertEquals((retrievedElements[1] as UnsubscribeJob).interest, "pear")
 
   }
 
@@ -252,15 +256,16 @@ class PersistentJobQueueTest {
     val tempFile = File("src/test/resources/com/pusher/pushnotifications/internal/persistentJobQueue-corrupted_existing_type_no_longer_exists.queue")
     val queue: PersistentJobQueue<ServerSyncJob> = TapeJobQueue(tempFile, converter)
 
-    //uncomment the following to write this to the file
+    // uncomment the following to write this to the file
 //    queue.push(DummyJob("dummy_data")) // this data class no longer exists!
 //    queue.push(UnsubscribeJob("carrot"))
 //    queue.push(UnsubscribeJob("pear"))
 
     val retrievedElements = queue.asIterable().toList()
-    assertEquals(2, retrievedElements.size)
+    assertEquals(3, retrievedElements.size)
 
-    assertNull(queue.peek())
+    assertEquals((retrievedElements[1] as UnsubscribeJob).interest, "carrot")
+    assertEquals((retrievedElements[2] as UnsubscribeJob).interest, "pear")
   }
 
 }
