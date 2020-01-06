@@ -262,10 +262,12 @@ class PersistentJobQueueTest {
 //    queue.push(UnsubscribeJob("pear"))
 
     val retrievedElements = queue.asIterable().toList()
-    assertEquals(3, retrievedElements.size)
+    assertEquals(2, retrievedElements.size)
 
-    assertEquals((retrievedElements[1] as UnsubscribeJob).interest, "carrot")
-    assertEquals((retrievedElements[2] as UnsubscribeJob).interest, "pear")
+    // queue element 0 could not be parsed (missing the knownPreviousClientids so the whole record gets ignored
+
+    assertEquals((retrievedElements[0] as UnsubscribeJob).interest, "carrot")
+    assertEquals((retrievedElements[1] as UnsubscribeJob).interest, "pear")
   }
 
 }
