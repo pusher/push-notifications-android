@@ -4,11 +4,12 @@ import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
 import com.pusher.pushnotifications.api.DeviceMetadata
 import com.pusher.pushnotifications.api.PushNotificationsAPI
-import com.pusher.pushnotifications.api.PushNotificationsAPIBadRequest
 import com.pusher.pushnotifications.api.PushNotificationsAPIUnprocessableEntity
 import com.pusher.pushnotifications.auth.TokenProvider
 import com.pusher.pushnotifications.internal.*
 import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import dev.zacsweers.moshisealed.reflect.MoshiSealedJsonAdapterFactory
 import junit.framework.Assert.assertTrue
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -41,7 +42,9 @@ class ServerSyncProcessHandlerTest {
   private val mockServer = MockWebServer().apply { start() }
   private val api = PushNotificationsAPI(instanceId, mockServer.url("/").toString())
   private val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getTargetContext(), instanceId)
-  val moshi = Moshi.Builder().add(ServerSyncJob.jsonAdapterFactory).build()
+  val moshi = Moshi.Builder()
+          .add(MoshiSealedJsonAdapterFactory())
+          .add(KotlinJsonAdapterFactory()).build()
   val converter = MoshiConverter(moshi.adapter(ServerSyncJob::class.java))
 
   private val jobQueue = {
