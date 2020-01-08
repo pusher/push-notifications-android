@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.6.0] - 2020-01-08
+
+### Fixed
+- Fix #100 by updating our [moshi dependency](https://github.com/square/moshi) to 1.9. If you use moshi you will also need to upgrade to 1.9 before updating beams.
+
 ## [1.5.1] - 2019-12-02
 
 ### Fixed
