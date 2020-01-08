@@ -5,7 +5,7 @@ import com.squareup.moshi.JsonClass
 import dev.zacsweers.moshisealed.annotations.TypeLabel
 import java.io.Serializable
 
-@JsonClass(generateAdapter = true, generator = "sealed:ServerSyncJob")
+@JsonClass(generateAdapter = false, generator = "sealed:ServerSyncJob")
 sealed class ServerSyncJob: Serializable
 
 // If you add new fields to any of these data classes, any older records on peoples devices may not
