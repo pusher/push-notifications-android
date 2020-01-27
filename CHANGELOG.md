@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+Don't crash on initialisation if the application manifest contains no metadata whatsoever.
+
 ## [1.6.0] - 2020-01-08
 
 ### Fixed
