@@ -32,3 +32,6 @@
 -keep class com.pusher.pushnotifications.** {
   *;
 }
+
+## Moshi reflect (https://github.com/square/moshi/issues/345#issuecomment-325413124)
+-keep class kotlin.Metadata { *; }
