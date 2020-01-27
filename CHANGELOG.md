@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.6.2] - 2020-01-27
+
+### Fixed
+- Make sure proguard does not interfere with offline job persistence
+
 ## [1.6.1] - 2020-01-27
 
 ### Fixed
