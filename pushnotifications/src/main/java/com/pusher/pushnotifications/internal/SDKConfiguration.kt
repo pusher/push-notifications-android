@@ -8,8 +8,8 @@ class SDKConfiguration(context: Context) {
 
   private val metadataBundle =
       context.packageManager.getApplicationInfo(context.packageName, PackageManager.GET_META_DATA)
-          .metaData!!
+          .metaData
 
   val overrideHostURL: String?
-    get() = metadataBundle.getString(metadataOverrideHostURL, null)
+    get() = metadataBundle?.getString(metadataOverrideHostURL, null)
 }
