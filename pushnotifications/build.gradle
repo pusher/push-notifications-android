@@ -1,6 +1,7 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply from: 'maven-push.gradle'
+apply plugin: 'jacoco-android'
 
 android {
     compileSdkVersion 28
@@ -58,4 +59,14 @@ dependencies {
 
 repositories {
     mavenCentral()
+}
+
+jacoco {
+    toolVersion = "0.8.4"
+}
+
+jacocoAndroidUnitTestReport {
+    xml.enabled = true
+    html.enabled = false
+    csv.enabled = false
 }
