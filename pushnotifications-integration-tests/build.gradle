@@ -1,6 +1,7 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
+apply plugin: 'jacoco-android'
 
 android {
     compileSdkVersion 27
@@ -61,3 +62,13 @@ dependencies {
 }
 
 apply plugin: 'com.google.gms.google-services'
+
+jacoco {
+    toolVersion = "0.8.4"
+}
+
+jacocoAndroidUnitTestReport {
+    xml.enabled = true
+    html.enabled = false
+    csv.enabled = false
+}
