@@ -2,7 +2,7 @@ package com.pusher.pushnotifications.reporting
 
 import android.content.Context
 import android.content.Intent
-import android.support.v4.content.WakefulBroadcastReceiver
+import androidx.legacy.content.WakefulBroadcastReceiver
 import com.firebase.jobdispatcher.*
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
