@@ -47,19 +47,17 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     testImplementation "org.mockito:mockito-core:2.13.0"
     androidTestImplementation 'com.squareup.okhttp3:mockwebserver:3.12.0'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${versions.kotlin}"
 
-//    compileOnly "com.google.android.gms:play-services-gcm:16.1.0"
-//    compileOnly "com.google.firebase:firebase-core:16.0.9"
     compileOnly "com.google.firebase:firebase-messaging"
-    implementation "com.google.firebase:firebase-iid"
+    compileOnly "com.google.firebase:firebase-iid"
 
     implementation 'com.firebase:firebase-jobdispatcher:0.8.5'
 
-    implementation 'androidx.lifecycle:lifecycle-extensions:2.0.0'
-    implementation 'androidx.annotation:annotation:1.1.0'
+    implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
+    implementation 'androidx.annotation:annotation:1.2.0'
 
     lintChecks project(':pushnotifications-lint')
 }
