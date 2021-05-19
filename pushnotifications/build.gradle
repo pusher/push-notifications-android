@@ -32,8 +32,6 @@ android {
 }
 
 dependencies {
-    implementation platform('com.google.firebase:firebase-bom:28.0.1')
-
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     implementation 'com.squareup.retrofit2:converter-gson:2.3.0'
@@ -51,8 +49,8 @@ dependencies {
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${versions.kotlin}"
 
-    compileOnly "com.google.firebase:firebase-messaging"
-    compileOnly "com.google.firebase:firebase-iid"
+    compileOnly "com.google.firebase:firebase-messaging:22.0.0"
+    compileOnly "com.google.firebase:firebase-iid:21.1.0"
 
     implementation 'com.firebase:firebase-jobdispatcher:0.8.5'
 
