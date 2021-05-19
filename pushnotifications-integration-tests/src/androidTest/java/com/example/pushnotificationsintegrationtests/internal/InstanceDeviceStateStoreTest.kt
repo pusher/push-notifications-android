@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit
  */
 @RunWith(AndroidJUnit4::class)
 class InstanceDeviceStateStoreTest {
-  val context = InstrumentationRegistry.getTargetContext()
+  val context = InstrumentationRegistry.getInstrumentation().targetContext
   val instanceId1 = "00000000-1241-08e9-b379-377c32cd1e80"
   val instanceId2 = "00000000-1241-08e9-b379-377c32cd1e81"
 
