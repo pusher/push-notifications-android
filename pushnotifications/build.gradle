@@ -24,9 +24,16 @@ android {
     defaultConfig {
         consumerProguardFiles 'proguard-rules.pro'
     }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
 }
 
 dependencies {
+    implementation platform('com.google.firebase:firebase-bom:28.0.1')
+
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     implementation 'com.squareup.retrofit2:converter-gson:2.3.0'
@@ -44,9 +51,10 @@ dependencies {
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${versions.kotlin}"
 
-    compileOnly "com.google.android.gms:play-services-gcm:16.1.0"
-    compileOnly "com.google.firebase:firebase-messaging:22.0.0"
-    compileOnly "com.google.firebase:firebase-iid:21.1.0"
+//    compileOnly "com.google.android.gms:play-services-gcm:16.1.0"
+//    compileOnly "com.google.firebase:firebase-core:16.0.9"
+    compileOnly "com.google.firebase:firebase-messaging"
+    implementation "com.google.firebase:firebase-iid"
 
     implementation 'com.firebase:firebase-jobdispatcher:0.8.5'
 

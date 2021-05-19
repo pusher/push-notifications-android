@@ -3,17 +3,22 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion 28
 
     defaultConfig {
         applicationId "com.example.pushnotificationsintegrationtests"
         minSdkVersion 26
-        targetSdkVersion 27
+        targetSdkVersion 28
         versionCode 1
         versionName "1.0"
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
 
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 
     buildTypes {
@@ -26,6 +31,8 @@ android {
 
 
 dependencies {
+    implementation platform('com.google.firebase:firebase-bom:28.0.1')
+
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${versions.kotlin}"
     implementation 'androidx.appcompat:appcompat:1.0.0'
@@ -46,9 +53,10 @@ dependencies {
 
     androidTestImplementation 'org.nanohttpd:nanohttpd:2.2.0'
 
-    implementation "com.google.android.gms:play-services-gcm:15.0.1"
-    implementation "com.google.firebase:firebase-core:16.0.1"
-    implementation "com.google.firebase:firebase-messaging:17.1.0"
+//    implementation "com.google.android.gms:play-services-gcm:15.0.1"
+//    implementation "com.google.firebase:firebase-core:16.0.1"
+    implementation "com.google.firebase:firebase-messaging"
+    implementation "com.google.firebase:firebase-iid"
 
     androidTestImplementation 'org.awaitility:awaitility:3.1.5'
     androidTestImplementation 'org.awaitility:awaitility-kotlin:3.1.5'
