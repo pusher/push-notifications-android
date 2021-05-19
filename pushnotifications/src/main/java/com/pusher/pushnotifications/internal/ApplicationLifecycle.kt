@@ -3,7 +3,7 @@ package com.pusher.pushnotifications.internal
 import java.lang.ref.WeakReference
 import android.app.Activity
 import android.app.Application
-import android.arch.lifecycle.*
+import androidx.lifecycle.*
 import android.content.ContentProvider
 import android.content.ContentValues
 import android.database.Cursor
