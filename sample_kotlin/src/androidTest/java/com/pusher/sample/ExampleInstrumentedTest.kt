@@ -18,7 +18,7 @@ class ExampleInstrumentedTest {
     @Test
     fun useAppContext() {
         // Context of the app under test.
-        val appContext = androidx.test.platform.app.InstrumentationRegistry.getTargetContext()
+        val appContext = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
         assertEquals("com.pusher.push_notifications_android", appContext.packageName)
     }
 }
