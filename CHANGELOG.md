@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [1.7-alpha] - 2021-05-20
+## [1.7.0-alpha] - 2021-05-20
 - Migrate to AndroidX
 - Update Firebase dependencies
 
