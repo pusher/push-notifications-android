@@ -14,7 +14,6 @@ import com.google.gson.annotations.SerializedName
 import com.pusher.pushnotifications.api.OperationCallbackNoArgs
 import com.pusher.pushnotifications.logging.Logger
 import com.pusher.pushnotifications.reporting.api.*
-import kotlinx.coroutines.CoroutineScope
 
 data class PusherMetadata(
         val instanceId: String,
@@ -42,32 +41,29 @@ class ReportingWorker(appContext: Context, params: WorkerParameters) : Listenabl
     private const val BUNDLE_HAS_DISPLAYABLE_CONTENT_KEY = "HasDisplayableContent"
     private const val BUNDLE_HAS_DATA_KEY = "HasData"
 
-    fun toBundle(reportEvent: ReportEvent): Bundle {
-      val b = Bundle()
+    fun toBundle(reportEvent: ReportEvent) = Bundle().apply {
       when (reportEvent) {
         is DeliveryEvent -> {
-          b.putString(BUNDLE_EVENT_TYPE_KEY, reportEvent.event.toString())
-          b.putString(BUNDLE_INSTANCE_ID_KEY, reportEvent.instanceId)
-          b.putString(BUNDLE_DEVICE_ID_KEY, reportEvent.deviceId)
-          b.putString(BUNDLE_USER_ID_KEY, reportEvent.userId)
-          b.putString(BUNDLE_PUBLISH_ID_KEY, reportEvent.publishId)
-          b.putLong(BUNDLE_TIMESTAMP_KEY, reportEvent.timestampSecs)
-          b.putBoolean(BUNDLE_APP_IN_BACKGROUND_KEY, reportEvent.appInBackground!!)
-          b.putBoolean(BUNDLE_HAS_DISPLAYABLE_CONTENT_KEY, reportEvent.hasDisplayableContent!!)
-          b.putBoolean(BUNDLE_HAS_DATA_KEY, reportEvent.hasData!!)
+          putString(BUNDLE_EVENT_TYPE_KEY, reportEvent.event.toString())
+          putString(BUNDLE_INSTANCE_ID_KEY, reportEvent.instanceId)
+          putString(BUNDLE_DEVICE_ID_KEY, reportEvent.deviceId)
+          putString(BUNDLE_USER_ID_KEY, reportEvent.userId)
+          putString(BUNDLE_PUBLISH_ID_KEY, reportEvent.publishId)
+          putLong(BUNDLE_TIMESTAMP_KEY, reportEvent.timestampSecs)
+          putBoolean(BUNDLE_APP_IN_BACKGROUND_KEY, reportEvent.appInBackground!!)
+          putBoolean(BUNDLE_HAS_DISPLAYABLE_CONTENT_KEY, reportEvent.hasDisplayableContent!!)
+          putBoolean(BUNDLE_HAS_DATA_KEY, reportEvent.hasData!!)
         }
 
         is OpenEvent -> {
-          b.putString(BUNDLE_EVENT_TYPE_KEY, reportEvent.event.toString())
-          b.putString(BUNDLE_INSTANCE_ID_KEY, reportEvent.instanceId)
-          b.putString(BUNDLE_DEVICE_ID_KEY, reportEvent.deviceId)
-          b.putString(BUNDLE_USER_ID_KEY, reportEvent.userId)
-          b.putString(BUNDLE_PUBLISH_ID_KEY, reportEvent.publishId)
-          b.putLong(BUNDLE_TIMESTAMP_KEY, reportEvent.timestampSecs)
+          putString(BUNDLE_EVENT_TYPE_KEY, reportEvent.event.toString())
+          putString(BUNDLE_INSTANCE_ID_KEY, reportEvent.instanceId)
+          putString(BUNDLE_DEVICE_ID_KEY, reportEvent.deviceId)
+          putString(BUNDLE_USER_ID_KEY, reportEvent.userId)
+          putString(BUNDLE_PUBLISH_ID_KEY, reportEvent.publishId)
+          putLong(BUNDLE_TIMESTAMP_KEY, reportEvent.timestampSecs)
         }
       }
-
-      return b
     }
 
     private class MissingInstanceIdException : RuntimeException()
@@ -89,9 +85,9 @@ class ReportingWorker(appContext: Context, params: WorkerParameters) : Listenabl
       val event = data.getString(BUNDLE_EVENT_TYPE_KEY)?.let { ReportEventType.valueOf(it) }
               ?: throw MissingEventTypeException()
 
-      when (event) {
+      return when (event) {
         ReportEventType.Delivery -> {
-          return DeliveryEvent(
+          DeliveryEvent(
                   instanceId = instanceId,
                   deviceId = data.getString(BUNDLE_DEVICE_ID_KEY) ?: "",
                   userId = data.getString(BUNDLE_USER_ID_KEY),
@@ -103,7 +99,7 @@ class ReportingWorker(appContext: Context, params: WorkerParameters) : Listenabl
           )
         }
         ReportEventType.Open -> {
-          return OpenEvent(
+          OpenEvent(
                   instanceId = instanceId,
                   deviceId = data.getString(BUNDLE_DEVICE_ID_KEY) ?: "",
                   userId = data.getString(BUNDLE_USER_ID_KEY),
@@ -114,32 +110,30 @@ class ReportingWorker(appContext: Context, params: WorkerParameters) : Listenabl
       }
     }
 
-    fun toInputData(reportEvent: ReportEvent): Data {
-      val d = Data.Builder()
+    fun toInputData(reportEvent: ReportEvent): Data = Data.Builder().apply {
       when (reportEvent) {
         is DeliveryEvent -> {
-          d.putString(BUNDLE_EVENT_TYPE_KEY, reportEvent.event.toString())
-                  .putString(BUNDLE_INSTANCE_ID_KEY, reportEvent.instanceId)
-                  .putString(BUNDLE_DEVICE_ID_KEY, reportEvent.deviceId)
-                  .putString(BUNDLE_USER_ID_KEY, reportEvent.userId)
-                  .putString(BUNDLE_PUBLISH_ID_KEY, reportEvent.publishId)
-                  .putLong(BUNDLE_TIMESTAMP_KEY, reportEvent.timestampSecs)
-                  .putBoolean(BUNDLE_APP_IN_BACKGROUND_KEY, reportEvent.appInBackground!!)
-                  .putBoolean(BUNDLE_HAS_DISPLAYABLE_CONTENT_KEY, reportEvent.hasDisplayableContent!!)
-                  .putBoolean(BUNDLE_HAS_DATA_KEY, reportEvent.hasData!!)
+          putString(BUNDLE_EVENT_TYPE_KEY, reportEvent.event.toString())
+            .putString(BUNDLE_INSTANCE_ID_KEY, reportEvent.instanceId)
+            .putString(BUNDLE_DEVICE_ID_KEY, reportEvent.deviceId)
+            .putString(BUNDLE_USER_ID_KEY, reportEvent.userId)
+            .putString(BUNDLE_PUBLISH_ID_KEY, reportEvent.publishId)
+            .putLong(BUNDLE_TIMESTAMP_KEY, reportEvent.timestampSecs)
+            .putBoolean(BUNDLE_APP_IN_BACKGROUND_KEY, reportEvent.appInBackground!!)
+            .putBoolean(BUNDLE_HAS_DISPLAYABLE_CONTENT_KEY, reportEvent.hasDisplayableContent!!)
+            .putBoolean(BUNDLE_HAS_DATA_KEY, reportEvent.hasData!!)
         }
 
         is OpenEvent -> {
-          d.putString(BUNDLE_EVENT_TYPE_KEY, reportEvent.event.toString())
-                  .putString(BUNDLE_INSTANCE_ID_KEY, reportEvent.instanceId)
-                  .putString(BUNDLE_DEVICE_ID_KEY, reportEvent.deviceId)
-                  .putString(BUNDLE_USER_ID_KEY, reportEvent.userId)
-                  .putString(BUNDLE_PUBLISH_ID_KEY, reportEvent.publishId)
-                  .putLong(BUNDLE_TIMESTAMP_KEY, reportEvent.timestampSecs)
+          putString(BUNDLE_EVENT_TYPE_KEY, reportEvent.event.toString())
+            .putString(BUNDLE_INSTANCE_ID_KEY, reportEvent.instanceId)
+            .putString(BUNDLE_DEVICE_ID_KEY, reportEvent.deviceId)
+            .putString(BUNDLE_USER_ID_KEY, reportEvent.userId)
+            .putString(BUNDLE_PUBLISH_ID_KEY, reportEvent.publishId)
+            .putLong(BUNDLE_TIMESTAMP_KEY, reportEvent.timestampSecs)
         }
       }
-      return d.build()
-    }
+    }.build()
   }
 
   private val log = Logger.get(this::class)
@@ -184,9 +178,6 @@ class ReportingWorker(appContext: Context, params: WorkerParameters) : Listenabl
 
   }
 
-  override fun onStopped() {
-    super.onStopped()
-  }
 }
 
 class ReportingJobService : JobService() {
