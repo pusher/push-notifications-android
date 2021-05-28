@@ -56,17 +56,6 @@ class FCMMessageReceiver : androidx.legacy.content.WakefulBroadcastReceiver() {
                 hasData = pusherData.hasData
         )
 
-//        val dispatcher = FirebaseJobDispatcher(GooglePlayDriver(context))
-//        val job = dispatcher.newJobBuilder()
-//                .setService(ReportingJobService::class.java)
-//                .setTag("pusher.delivered.publishId=${pusherData.publishId}")
-//                .setConstraints(Constraint.ON_ANY_NETWORK)
-//                .setRetryStrategy(RetryStrategy.DEFAULT_EXPONENTIAL)
-//                .setLifetime(Lifetime.UNTIL_NEXT_BOOT)
-//                .setExtras(ReportingJobService.toBundle(reportEvent))
-//                .build()
-
-//        dispatcher.mustSchedule(job)
         val reportWorker = OneTimeWorkRequest.Builder(ReportingWorker::class.java)
                 .setConstraints(Constraints.Builder()
                         .setRequiredNetworkType(NetworkType.CONNECTED)
