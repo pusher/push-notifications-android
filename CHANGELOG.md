@@ -6,12 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [1.7.0-alpha.1] - 2021-06-01
-- Introduce Android WorkManager in place of Firebase JobDispatcher
-
-## [1.7.0-alpha] - 2021-05-20
+## [1.7.0] - 2021-06-07
 - Migrate to AndroidX
 - Update Firebase dependencies
+- Introduce Android WorkManager in place of Firebase JobDispatcher
 
 ## [1.6.2] - 2020-01-27
 
