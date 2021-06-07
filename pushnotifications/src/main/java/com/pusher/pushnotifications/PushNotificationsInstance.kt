@@ -361,7 +361,7 @@ class PushNotificationsInstance @JvmOverloads constructor(
    * @param callback callback used to indicate whether the user association process has succeeded
    */
   @JvmOverloads
-  fun setUserId(userId: String, tokenProvider: TokenProvider, callback: BeamsCallback<Void, PusherCallbackError> = NoopBeamsCallback()) {
+  fun setUserId(userId: String, tokenProvider: TokenProvider?, callback: BeamsCallback<Void, PusherCallbackError> = NoopBeamsCallback()) {
     if (tokenProvider == null) { // this can happen when using Java
       throw IllegalStateException("Token provider can't be null")
     }

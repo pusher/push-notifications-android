@@ -104,6 +104,11 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
   // Handles the JsonSyntaxException properly
   private fun safeExtractJsonError(possiblyJson: String): NOKResponse {
     return try {
+      // This if check is added to make it work as old Kotlin version.
+      // Need to be revisited in future
+      if (possiblyJson.trim() == ""){
+        throw IllegalStateException("Empty json string")
+      }
       gson.fromJson(possiblyJson, NOKResponse::class.java)
     } catch (jsonException: JsonSyntaxException) {
       log.w("Failed to parse json `$possiblyJson`", jsonException)

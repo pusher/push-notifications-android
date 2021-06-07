@@ -1,7 +1,7 @@
 package com.example.pushnotificationsintegrationtests
 
-import android.support.test.InstrumentationRegistry
-import android.support.test.runner.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.pusher.pushnotifications.PushNotifications
 import com.pusher.pushnotifications.PushNotificationsInstance
 import com.pusher.pushnotifications.fcm.MessagingService
@@ -32,13 +32,13 @@ import kotlin.test.asserter
  */
 @RunWith(AndroidJUnit4::class)
 class StartTest {
-  val context = InstrumentationRegistry.getTargetContext()
+  val context = InstrumentationRegistry.getInstrumentation().targetContext
   val instanceId = "00000000-1241-08e9-b379-377c32cd1e80"
   val instanceId2 = "00000000-1241-08e9-b379-377c32cd1e81"
   val errolClient = ErrolAPI(instanceId, "http://localhost:8080")
 
   fun getStoredDeviceId(): String? {
-    val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getTargetContext(), instanceId)
+    val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getInstrumentation().targetContext, instanceId)
     return deviceStateStore.deviceId
   }
 
@@ -55,7 +55,7 @@ class StartTest {
   @Before
   @After
   fun wipeLocalState() {
-    val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getTargetContext(), instanceId)
+    val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getInstrumentation().targetContext, instanceId)
 
     await.atMost(1, TimeUnit.SECONDS) until {
       assertTrue(deviceStateStore.clear())

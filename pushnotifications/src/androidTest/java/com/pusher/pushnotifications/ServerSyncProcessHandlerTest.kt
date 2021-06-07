@@ -1,7 +1,7 @@
 package com.pusher.pushnotifications
 
-import android.support.test.InstrumentationRegistry
-import android.support.test.runner.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.pusher.pushnotifications.api.DeviceMetadata
 import com.pusher.pushnotifications.api.PushNotificationsAPI
 import com.pusher.pushnotifications.api.PushNotificationsAPIUnprocessableEntity
@@ -33,7 +33,7 @@ class ServerSyncProcessHandlerTest {
   @Before
   @After
   fun cleanup() {
-    val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getTargetContext(), instanceId)
+    val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getInstrumentation().targetContext, instanceId)
     Assert.assertTrue(deviceStateStore.clear())
     Assert.assertNull(deviceStateStore.deviceId)
     Assert.assertThat(deviceStateStore.interests.size, `is`(equalTo(0)))
@@ -41,7 +41,7 @@ class ServerSyncProcessHandlerTest {
 
   private val mockServer = MockWebServer().apply { start() }
   private val api = PushNotificationsAPI(instanceId, mockServer.url("/").toString())
-  private val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getTargetContext(), instanceId)
+  private val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getInstrumentation().targetContext, instanceId)
   val moshi = Moshi.Builder()
           .add(MoshiSealedJsonAdapterFactory())
           .add(KotlinJsonAdapterFactory()).build()
@@ -52,7 +52,7 @@ class ServerSyncProcessHandlerTest {
     tempFile.delete() // QueueFile expects a handle to a non-existent file on first run.
     TapeJobQueue<ServerSyncJob>(tempFile, converter)
   }()
-  private val looper = InstrumentationRegistry.getContext().mainLooper
+  private val looper = InstrumentationRegistry.getInstrumentation().targetContext.mainLooper
   private var lastHandleServerSyncEvent: ServerSyncEvent? = null
   private var tokenProvider: TokenProvider? = null
   private val handler = ServerSyncProcessHandler(

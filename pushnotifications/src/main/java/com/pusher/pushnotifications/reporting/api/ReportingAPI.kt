@@ -1,10 +1,8 @@
 package com.pusher.pushnotifications.reporting.api
 
 import com.google.gson.Gson
-import com.pusher.pushnotifications.api.PusherLibraryHeaderInterceptor
-import com.pusher.pushnotifications.api.OperationCallback
 import com.pusher.pushnotifications.api.OperationCallbackNoArgs
-import com.pusher.pushnotifications.reporting.ReportingJobService
+import com.pusher.pushnotifications.api.PusherLibraryHeaderInterceptor
 import okhttp3.OkHttpClient
 import retrofit2.Call
 import retrofit2.Callback

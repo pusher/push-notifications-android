@@ -93,10 +93,10 @@ abstract class MessagingService: Service() {
           { token: String -> this.onNewToken(token) }
       )
 
-  override fun onBind(i: Intent?): IBinder = underlyingService.onBind(i)
+  override fun onBind(i: Intent?): IBinder = underlyingService.onBind(i!!)
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int =
-      underlyingService.onStartCommand(intent, flags, startId)
+      underlyingService.onStartCommand(intent!!, flags, startId)
 
   abstract fun onMessageReceived(remoteMessage: RemoteMessage)
 
