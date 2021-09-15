@@ -17,7 +17,8 @@
         </receiver>
 
         <service
-            android:name="com.pusher.pushnotifications.fcm.EmptyMessagingService">
+            android:name="com.pusher.pushnotifications.fcm.EmptyMessagingService"
+            android:exported="false">
             <intent-filter android:priority="1">
                 <action android:name="com.google.firebase.MESSAGING_EVENT"/>
             </intent-filter>
@@ -29,7 +30,9 @@
             android:exported="false"
             android:initOrder="99" />
 
-        <activity android:name="com.pusher.pushnotifications.reporting.OpenNotificationActivity">
+        <activity 
+            android:name="com.pusher.pushnotifications.reporting.OpenNotificationActivity"
+            android:exported="false" >
             <intent-filter>
                 <action android:name="com.pusher.pushnotifications.OPEN_TRACKING" />
                 <category android:name="android.intent.category.DEFAULT" />
