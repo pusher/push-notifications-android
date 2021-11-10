@@ -141,17 +141,17 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
         // not throwing a `PushNotificationsAPIBadRequest` here so that it still retries this request.
         // it would make the code that calls this more complex to handle it.
         // this really shouldn't happen anyway
-        log.e("Critical error when registering a new device (error body: ${response?.errorBody()})")
+        log.e("Critical error when registering a new device (error body: ${response.errorBody()})")
       }
 
-      val responseBody = response?.body()
+      val responseBody = response.body()
       if (responseBody != null && response.code() in 200..299) {
         return RegisterDeviceResult(
             deviceId = responseBody.id,
             initialInterests = responseBody.initialInterestSet)
       }
 
-      val responseErrorBody = response?.errorBody()
+      val responseErrorBody = response.errorBody()
       if (responseErrorBody != null) {
         val error = safeExtractJsonError(responseErrorBody.string())
         log.w("Failed to register device: $error")
@@ -173,12 +173,12 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
         throw PushNotificationsAPIDeviceNotFound()
       }
       if (response.code() == 400) {
-        val reason = response?.errorBody()?.let { safeExtractJsonError(it.string()).description }
+        val reason = response.errorBody()?.let { safeExtractJsonError(it.string()).description }
         throw PushNotificationsAPIBadRequest(reason ?: "Unknown reason")
       }
 
       if (response.code() !in 200..299) {
-        val responseErrorBody = response?.errorBody()
+        val responseErrorBody = response.errorBody()
         if (responseErrorBody != null) {
           val error = safeExtractJsonError(responseErrorBody.string())
           log.w("Failed to subscribe to interest: $error")
@@ -201,12 +201,12 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
         throw PushNotificationsAPIDeviceNotFound()
       }
       if (response.code() == 400) {
-        val reason = response?.errorBody()?.let { safeExtractJsonError(it.string()).description }
+        val reason = response.errorBody()?.let { safeExtractJsonError(it.string()).description }
         throw PushNotificationsAPIBadRequest(reason ?: "Unknown reason")
       }
 
       if (response.code() !in 200..299) {
-        val responseErrorBody = response?.errorBody()
+        val responseErrorBody = response.errorBody()
         if (responseErrorBody != null) {
           val error = safeExtractJsonError(responseErrorBody.string())
           log.w("Failed to unsubscribe from interest: $error")
@@ -229,12 +229,12 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
         throw PushNotificationsAPIDeviceNotFound()
       }
       if (response.code() == 400) {
-        val reason = response?.errorBody()?.let { safeExtractJsonError(it.string()).description }
+        val reason = response.errorBody()?.let { safeExtractJsonError(it.string()).description }
         throw PushNotificationsAPIBadRequest(reason ?: "Unknown reason")
       }
 
       if (response.code() !in 200..299) {
-        val responseErrorBody = response?.errorBody()
+        val responseErrorBody = response.errorBody()
         if (responseErrorBody != null) {
           val error = safeExtractJsonError(responseErrorBody.string())
           log.w("Failed to set subscriptions: $error")
@@ -257,12 +257,12 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
         throw PushNotificationsAPIDeviceNotFound()
       }
       if (response.code() == 400) {
-        val reason = response?.errorBody()?.let { safeExtractJsonError(it.string()).description }
+        val reason = response.errorBody()?.let { safeExtractJsonError(it.string()).description }
         throw PushNotificationsAPIBadRequest(reason ?: "Unknown reason")
       }
 
       if (response.code() !in 200..299) {
-        val responseErrorBody = response?.errorBody()
+        val responseErrorBody = response.errorBody()
         if (responseErrorBody != null) {
           val error = safeExtractJsonError(responseErrorBody.string())
           log.w("Failed to refresh FCM token: $error")
@@ -289,12 +289,12 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
         throw PushNotificationsAPIDeviceNotFound()
       }
       if (response.code() == 400) {
-        val reason = response?.errorBody()?.let { safeExtractJsonError(it.string()).description }
+        val reason = response.errorBody()?.let { safeExtractJsonError(it.string()).description }
         throw PushNotificationsAPIBadRequest(reason ?: "Unknown reason")
       }
 
       if (response.code() !in 200..299) {
-        val responseErrorBody = response?.errorBody()
+        val responseErrorBody = response.errorBody()
         if (responseErrorBody != null) {
           val error = safeExtractJsonError(responseErrorBody.string())
           log.w("Failed to set device metadata: $error")
@@ -318,30 +318,30 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
         throw PushNotificationsAPIDeviceNotFound()
       }
       if (response.code() == 400) {
-        val reason = response?.errorBody()?.let { safeExtractJsonError(it.string()).description }
+        val reason = response.errorBody()?.let { safeExtractJsonError(it.string()).description }
         throw PushNotificationsAPIBadRequest(reason ?: "Unknown reason")
       }
       if (response.code() == 401 || response.code() == 403) {
-        val responseErrorBody = response?.errorBody()
+        val responseErrorBody = response.errorBody()
         if (responseErrorBody != null) {
           val error = safeExtractJsonError(responseErrorBody.string())
-          throw PushNotificationsAPIBadJWT("${error?.error}: ${error?.description}")
+          throw PushNotificationsAPIBadJWT("${error.error}: ${error.description}")
         }
 
         throw PushNotificationsAPIBadJWT("Unknown reason")
       }
       if (response.code() == 422) {
-        val responseErrorBody = response?.errorBody()
+        val responseErrorBody = response.errorBody()
         if (responseErrorBody != null) {
           val error = safeExtractJsonError(responseErrorBody.string())
-          throw PushNotificationsAPIUnprocessableEntity("${error?.error}: ${error?.description}")
+          throw PushNotificationsAPIUnprocessableEntity("${error.error}: ${error.description}")
         }
 
         throw PushNotificationsAPIUnprocessableEntity("Unknown reason")
       }
 
       if (response.code() !in 200..299) {
-        val responseErrorBody = response?.errorBody()
+        val responseErrorBody = response.errorBody()
         if (responseErrorBody != null) {
           val error = safeExtractJsonError(responseErrorBody.string())
           log.w("Failed to set user id: $error")
@@ -369,11 +369,11 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
         // not throwing a `PushNotificationsAPIBadRequest` here so that it still retries this request.
         // it would make the code that calls this more complex to handle it.
         // this really shouldn't happen anyway
-        log.e("Critical error when deleting a device (error body: ${response?.errorBody()})")
+        log.e("Critical error when deleting a device (error body: ${response.errorBody()})")
       }
 
       if (response.code() !in 200..299) {
-        val responseErrorBody = response?.errorBody()
+        val responseErrorBody = response.errorBody()
         if (responseErrorBody != null) {
           val error = safeExtractJsonError(responseErrorBody.string())
           log.w("Failed to delete device: $error")

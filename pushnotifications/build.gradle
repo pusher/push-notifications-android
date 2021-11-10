@@ -3,11 +3,11 @@ apply plugin: 'kotlin-android'
 apply from: 'maven-push.gradle'
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 31
 
     defaultConfig {
         minSdkVersion 16
-        targetSdkVersion 28
+        targetSdkVersion 29
         versionCode 1
         versionName "1.7.0"
 
@@ -15,9 +15,13 @@ android {
     }
 
     buildTypes {
+        debug{
+            buildConfigField "String", "VERSION_NAME", "\"${defaultConfig.versionName}\""
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            buildConfigField "String", "VERSION_NAME", "\"${defaultConfig.versionName}\""
         }
     }
 
