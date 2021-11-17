@@ -34,7 +34,7 @@ dependencies {
     // Add these lines
     implementation 'com.google.firebase:firebase-core:16.0.9'
     implementation 'com.google.firebase:firebase-messaging:18.0.0'
-    implementation 'com.pusher:push-notifications-android:1.7.0'
+    implementation 'com.pusher:push-notifications-android:1.8.0'
 }
 
 // Add this line to the end of the file
@@ -49,7 +49,7 @@ dependencies {
     // Add these lines
     implementation 'com.google.firebase:firebase-messaging:22.0.0'
     implementation "com.google.firebase:firebase-iid:21.1.0"
-    implementation 'com.pusher:push-notifications-android:1.7.0'
+    implementation 'com.pusher:push-notifications-android:1.8.0'
 }
 
 // Add this line to the end of the file

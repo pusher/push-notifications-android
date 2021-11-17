@@ -37,7 +37,7 @@ class DeviceStateStore(context: Context) {
   var instanceIds: MutableSet<String>
     // We need to clone the set we get from shared preferences because mutating it is not permitted
     // by the Android SDK
-    get() = preferences.getStringSet(preferencesInstanceIdsKey, mutableSetOf<String>()).toMutableSet()
+    get() = preferences.getStringSet(preferencesInstanceIdsKey, mutableSetOf<String>())!!.toMutableSet()
     set(value) = preferences.edit().putStringSet(preferencesInstanceIdsKey, value).apply()
 
   fun clear() = preferences.edit().clear().commit()
@@ -100,7 +100,7 @@ class InstanceDeviceStateStore(context: Context, val instanceId: String?) {
   var interests: MutableSet<String>
     // We need to clone the set we get from shared preferences because mutating it is not permitted
     // by the Android SDK
-    get() = preferences.getStringSet(preferencesInterestsKey, mutableSetOf<String>()).toMutableSet()
+    get() = preferences.getStringSet(preferencesInterestsKey, mutableSetOf<String>())!!.toMutableSet()
     set(value) = preferences.edit().putStringSet(preferencesInterestsKey, value).apply()
 
   var serverConfirmedInterestsHash: String?
