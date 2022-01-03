@@ -65,6 +65,8 @@ class InstanceDeviceStateStore(context: Context, val instanceId: String?) {
   private val serverConfirmedInterestsHashKey = "serverConfirmedInterestsHash"
   private val startJobHasBeenEnqueuedKey = "startJobHasBeenEnqueued"
   private val setUserIdHasBeenCalledWithKey = "setUserIdHasBeenCalledWith"
+  private val startHasBeenCalledThisSessionKey = "startHasBeenCalledThisSession"
+
 
   private fun sharedPreferencesName(instanceId: String?): String {
     return if (instanceId == null) {
@@ -114,6 +116,10 @@ class InstanceDeviceStateStore(context: Context, val instanceId: String?) {
   var setUserIdHasBeenCalledWith: String?
     get() = preferences.getString(setUserIdHasBeenCalledWithKey, null)
     set(value) = preferences.edit().putString(setUserIdHasBeenCalledWithKey, value).apply()
+
+  var startHasBeenCalledThisSession: Boolean
+    get() = preferences.getBoolean(startHasBeenCalledThisSessionKey, false)
+    set(value) = preferences.edit().putBoolean(startHasBeenCalledThisSessionKey, value).apply()
 
   fun clear() = preferences.edit().clear().commit()
 }

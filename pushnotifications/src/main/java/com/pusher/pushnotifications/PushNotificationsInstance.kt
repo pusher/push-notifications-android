@@ -156,20 +156,30 @@ class PushNotificationsInstance @JvmOverloads constructor(
     return false // nothing changed
   }
 
-  private var startHasBeenCalledThisSession = false
   /**
    * Starts the PushNotification client and synchronizes the FCM device token with
    * the Pusher services.
    */
   fun start(): PushNotificationsInstance {
-    startHasBeenCalledThisSession = true
+    synchronized(deviceStateStore) {
+      deviceStateStore.startHasBeenCalledThisSession = true
+    }
+
+
     val handleFcmToken = { fcmToken: String ->
       synchronized(deviceStateStore) {
-        if (deviceStateStore.startJobHasBeenEnqueued) {
-          serverSyncHandler.sendMessage(ServerSyncHandler.refreshToken(fcmToken))
-        } else {
-          serverSyncHandler.sendMessage(ServerSyncHandler.start(fcmToken, oldSDKDeviceStateStore.clientIds()))
-          deviceStateStore.startJobHasBeenEnqueued = true
+        if (deviceStateStore.startHasBeenCalledThisSession) {
+          if (deviceStateStore.startJobHasBeenEnqueued) {
+            serverSyncHandler.sendMessage(ServerSyncHandler.refreshToken(fcmToken))
+          } else {
+            serverSyncHandler.sendMessage(
+              ServerSyncHandler.start(
+                fcmToken,
+                oldSDKDeviceStateStore.clientIds()
+              )
+            )
+            deviceStateStore.startJobHasBeenEnqueued = true
+          }
         }
       }
 
@@ -177,6 +187,7 @@ class PushNotificationsInstance @JvmOverloads constructor(
     }
 
     MessagingService.onRefreshToken = handleFcmToken
+    FirebaseInstanceId.getInstance().id
     FirebaseInstanceId.getInstance().instanceId.addOnCompleteListener { task ->
       if (!task.isSuccessful) {
         log.w("Failed to get the token from FCM", task.exception)
@@ -367,11 +378,12 @@ class PushNotificationsInstance @JvmOverloads constructor(
     }
     PushNotifications.tokenProvider[instanceId] = tokenProvider
 
-    if (!startHasBeenCalledThisSession) {
-      throw IllegalStateException("Start method must be called before setUserId")
-    }
 
     synchronized(deviceStateStore) {
+      if (!deviceStateStore.startHasBeenCalledThisSession) {
+        throw IllegalStateException("Start method must be called before setUserId")
+      }
+
       if (
           deviceStateStore.setUserIdHasBeenCalledWith != null &&
           deviceStateStore.setUserIdHasBeenCalledWith != userId
@@ -400,7 +412,7 @@ class PushNotificationsInstance @JvmOverloads constructor(
       deviceStateStore.interests = mutableSetOf()
       deviceStateStore.startJobHasBeenEnqueued = false
       deviceStateStore.setUserIdHasBeenCalledWith = null
-      startHasBeenCalledThisSession = false
+      deviceStateStore.startHasBeenCalledThisSession = false
       serverSyncHandler.sendMessage(ServerSyncHandler.stop())
 
       if (hadAnyInterests) {
