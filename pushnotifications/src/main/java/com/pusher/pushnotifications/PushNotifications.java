@@ -39,6 +39,7 @@ public class PushNotifications {
             throw new IllegalStateException(errorMessage);
         }
 
+        instance.start();
         return instance;
     }
 
