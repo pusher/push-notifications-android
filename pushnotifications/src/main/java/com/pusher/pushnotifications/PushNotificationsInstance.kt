@@ -166,16 +166,16 @@ class PushNotificationsInstance @JvmOverloads constructor(
     val handleFcmToken = { fcmToken: String ->
       synchronized(deviceStateStore) {
         if (startHasBeenCalledThisSession) {
-        if (deviceStateStore.startJobHasBeenEnqueued) {
-          serverSyncHandler.sendMessage(ServerSyncHandler.refreshToken(fcmToken))
-        } else {
+          if (deviceStateStore.startJobHasBeenEnqueued) {
+            serverSyncHandler.sendMessage(ServerSyncHandler.refreshToken(fcmToken))
+          } else {
             serverSyncHandler.sendMessage(
               ServerSyncHandler.start(
                 fcmToken,
                 oldSDKDeviceStateStore.clientIds()
               )
             )
-          deviceStateStore.startJobHasBeenEnqueued = true
+            deviceStateStore.startJobHasBeenEnqueued = true
           }
         }
       }
