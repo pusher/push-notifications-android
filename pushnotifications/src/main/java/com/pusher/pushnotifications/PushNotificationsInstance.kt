@@ -3,7 +3,7 @@ package com.pusher.pushnotifications
 import java.util.regex.Pattern
 import android.content.Context
 import android.os.*
-import com.google.firebase.iid.FirebaseInstanceId
+import com.google.firebase.installations.FirebaseInstallations
 import com.pusher.pushnotifications.api.DeviceMetadata
 import com.pusher.pushnotifications.api.PushNotificationsAPI
 import com.pusher.pushnotifications.auth.TokenProvider
@@ -184,7 +184,7 @@ class PushNotificationsInstance @JvmOverloads constructor(
     }
 
     MessagingService.onRefreshToken = handleFcmToken
-    FirebaseInstanceId.getInstance().instanceId.addOnCompleteListener { task ->
+    FirebaseInstallations.getInstance().getToken(false).addOnCompleteListener { task ->
       if (!task.isSuccessful) {
         log.w("Failed to get the token from FCM", task.exception)
       } else {
