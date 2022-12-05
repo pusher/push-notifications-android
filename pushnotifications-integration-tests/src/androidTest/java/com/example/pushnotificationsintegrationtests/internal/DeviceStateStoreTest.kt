@@ -1,8 +1,8 @@
 package com.example.pushnotificationsintegrationtests.internal
 
 import android.content.Context
-import android.support.test.InstrumentationRegistry
-import android.support.test.runner.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.pusher.pushnotifications.internal.DeviceStateStore
 import com.pusher.pushnotifications.internal.InstanceDeviceStateStore
 import org.awaitility.kotlin.await
@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit
  */
 @RunWith(AndroidJUnit4::class)
 class DeviceStateStoreTest {
-  val context: Context = InstrumentationRegistry.getTargetContext()
+  val context: Context = InstrumentationRegistry.getInstrumentation().targetContext
   val instanceId1 = "00000000-1241-08e9-b379-377c32cd1e80"
   val instanceId2 = "00000000-1241-08e9-b379-377c32cd1e81"
 

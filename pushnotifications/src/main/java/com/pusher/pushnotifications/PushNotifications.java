@@ -28,7 +28,6 @@ public class PushNotifications {
     public static PushNotificationsInstance start(Context context, String instanceId) {
         if (instance == null) {
             instance = new PushNotificationsInstance(context, instanceId);
-            instance.start();
         } else if (!instance.getInstanceId().equals(instanceId)) {
             String errorMessage =
                     "PushNotifications.start has been called before with a different instanceId! (before: "
@@ -39,6 +38,7 @@ public class PushNotifications {
             throw new IllegalStateException(errorMessage);
         }
 
+        instance.start();
         return instance;
     }
 

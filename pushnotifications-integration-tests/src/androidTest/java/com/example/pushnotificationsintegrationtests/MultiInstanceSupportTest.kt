@@ -1,7 +1,7 @@
 package com.example.pushnotificationsintegrationtests
 
-import android.support.test.InstrumentationRegistry
-import android.support.test.runner.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.pusher.pushnotifications.BeamsCallback
 import com.pusher.pushnotifications.PushNotificationsInstance
 import com.pusher.pushnotifications.PusherCallbackError
@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit
  */
 @RunWith(AndroidJUnit4::class)
 class MultiInstanceSupportTest {
-  private val context = InstrumentationRegistry.getTargetContext()
+  private val context = InstrumentationRegistry.getInstrumentation().targetContext
   private val instanceId1 = "00000000-1241-08e9-b379-377c32cd1e80"
   private val instanceId2 = "00000000-1241-08e9-b379-377c32cd1e82"
   private val errolClient1 = ErrolAPI(instanceId1, "http://localhost:8080")
@@ -46,7 +46,7 @@ class MultiInstanceSupportTest {
 
 
   fun getStoredDeviceId(instanceId: String): String? {
-    val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getTargetContext(), instanceId)
+    val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getInstrumentation().targetContext, instanceId)
     return deviceStateStore.deviceId
   }
 
@@ -65,7 +65,7 @@ class MultiInstanceSupportTest {
   @After
   fun wipeLocalState() {
     fun wipe(instanceId: String) {
-      val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getTargetContext(), instanceId)
+      val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getInstrumentation().targetContext, instanceId)
 
       await.atMost(1, TimeUnit.SECONDS) until {
         assertTrue(deviceStateStore.clear())

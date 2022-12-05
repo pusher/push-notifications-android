@@ -3,7 +3,7 @@ package com.pusher.pushnotifications.internal
 import java.lang.ref.WeakReference
 import android.app.Activity
 import android.app.Application
-import android.arch.lifecycle.*
+import androidx.lifecycle.*
 import android.content.ContentProvider
 import android.content.ContentValues
 import android.database.Cursor
@@ -53,7 +53,7 @@ class AppActivityLifecycleCallbacks: Application.ActivityLifecycleCallbacks {
     }
   }
 
-  override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle?) {
+  override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
   }
 }
 
@@ -61,14 +61,14 @@ class PushNotificationsInitProvider: ContentProvider() {
   private val log = Logger.get(this::class)
 
   override fun onCreate(): Boolean {
-    val deviceStateStore = DeviceStateStore(context)
+    val deviceStateStore = context?.let { DeviceStateStore(it) }
 
-    deviceStateStore.instanceIds.forEach { instanceId ->
-      val pni = PushNotificationsInstance(context, instanceId)
-      pni.onApplicationStarted()
+    deviceStateStore?.instanceIds?.forEach { instanceId ->
+      val pni = context?.let { PushNotificationsInstance(it, instanceId) }
+      pni?.onApplicationStarted()
     }
 
-    (context.applicationContext as? Application).apply {
+    (context?.applicationContext as? Application).apply {
       when(this) {
         is Application -> registerActivityLifecycleCallbacks(AppActivityLifecycleCallbacks())
         else -> log.w("Failed to register activity lifecycle callbacks. Notification delivery events might be incorrect.")
@@ -78,9 +78,9 @@ class PushNotificationsInitProvider: ContentProvider() {
     return false
   }
 
-  override fun query(uri: Uri?, projection: Array<out String>?, selection: String?, selectionArgs: Array<out String>?, sortOrder: String?): Cursor? = null
-  override fun insert(uri: Uri?, values: ContentValues?): Uri? = null
-  override fun update(uri: Uri?, values: ContentValues?, selection: String?, selectionArgs: Array<out String>?): Int = 0
-  override fun delete(uri: Uri?, selection: String?, selectionArgs: Array<out String>?): Int = 0
-  override fun getType(uri: Uri?): String? = null
+  override fun query(uri: Uri, projection: Array<out String>?, selection: String?, selectionArgs: Array<out String>?, sortOrder: String?): Cursor? = null
+  override fun insert(uri: Uri, values: ContentValues?): Uri? = null
+  override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<out String>?): Int = 0
+  override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?): Int = 0
+  override fun getType(uri: Uri): String? = null
 }

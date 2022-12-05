@@ -1,7 +1,7 @@
 package com.example.pushnotificationsintegrationtests
 
-import android.support.test.InstrumentationRegistry
-import android.support.test.runner.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.firebase.iid.FirebaseInstanceId
 import com.pusher.pushnotifications.PushNotificationsInstance
 import com.pusher.pushnotifications.SubscriptionsChangedListener
@@ -31,12 +31,12 @@ const val DEVICE_REGISTRATION_WAIT_SECS: Long = 15 // We need to wait for FCM to
  */
 @RunWith(AndroidJUnit4::class)
 class DeviceRegistrationTest {
-  val context = InstrumentationRegistry.getTargetContext()
+  val context = InstrumentationRegistry.getInstrumentation().targetContext
   val instanceId = "00000000-1241-08e9-b379-377c32cd1e83"
   val errolClient = ErrolAPI(instanceId, "http://localhost:8080")
 
   fun getStoredDeviceId(): String? {
-    val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getTargetContext(), instanceId)
+    val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getInstrumentation().targetContext, instanceId)
     return deviceStateStore.deviceId
   }
 
@@ -53,7 +53,7 @@ class DeviceRegistrationTest {
   @Before
   @After
   fun wipeLocalState() {
-    val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getTargetContext(), instanceId)
+    val deviceStateStore = InstanceDeviceStateStore(InstrumentationRegistry.getInstrumentation().targetContext, instanceId)
 
     await.atMost(1, TimeUnit.SECONDS) until {
       assertTrue(deviceStateStore.clear())
@@ -283,7 +283,7 @@ class DeviceRegistrationTest {
 
     // We want to run these callbacks from the UI thread as it's more likely to be useful
     // for the customers. Although, we are not going to make any promises at this point
-    val mainThread = InstrumentationRegistry.getTargetContext().mainLooper.thread
+    val mainThread = InstrumentationRegistry.getInstrumentation().targetContext.mainLooper.thread
     assertThat(lastSetOnSubscriptionsChangedListenerCalledThread, `is`(equalTo(mainThread)))
   }
 }
