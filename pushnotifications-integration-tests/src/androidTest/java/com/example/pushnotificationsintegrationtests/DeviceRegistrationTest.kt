@@ -2,7 +2,7 @@ package com.example.pushnotificationsintegrationtests
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.google.firebase.iid.FirebaseInstanceId
+import com.google.firebase.installations.FirebaseInstallations
 import com.pusher.pushnotifications.PushNotificationsInstance
 import com.pusher.pushnotifications.SubscriptionsChangedListener
 import com.pusher.pushnotifications.fcm.MessagingService
@@ -166,7 +166,7 @@ class DeviceRegistrationTest {
     val oldToken = errol.getInstanceStorage(instanceId).devices[storedDeviceId]?.token
     assertThat(oldToken, `is`(not(equalTo(""))))
 
-    FirebaseInstanceId.getInstance().deleteInstanceId()
+    FirebaseInstallations.getInstance().delete()
 
     await.atMost(DEVICE_REGISTRATION_WAIT_SECS, TimeUnit.SECONDS) until {
       // The server should have the new token now
