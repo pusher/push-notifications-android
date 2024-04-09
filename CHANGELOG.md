@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [2.0.0-rc1] - 2024-04-09
+- Update Firebase libraries
+
+### Changed
+- Revert firebase-iid dependency removal
+
 ## [1.9.2] - 2023-02-22
 
 ### Changed
