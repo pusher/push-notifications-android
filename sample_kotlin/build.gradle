@@ -46,9 +46,7 @@ dependencies {
 
     implementation 'com.pusher:pusher-websocket-android:0.6.0'
 
-    implementation 'com.google.firebase:firebase-core:16.0.9'
-    implementation 'com.google.firebase:firebase-messaging:18.0.0'
-    
+    implementation 'com.google.firebase:firebase-messaging:22.0.0'
 }
 
 apply plugin: 'com.google.gms.google-services'

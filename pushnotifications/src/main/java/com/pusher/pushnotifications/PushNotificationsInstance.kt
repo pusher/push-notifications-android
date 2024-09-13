@@ -7,6 +7,7 @@ import com.google.firebase.installations.FirebaseInstallations
 import com.google.firebase.messaging.FirebaseMessaging
 import com.pusher.pushnotifications.api.DeviceMetadata
 import com.pusher.pushnotifications.api.PushNotificationsAPI
+import com.pusher.pushnotifications.api.PushNotificationsAPIInvalidToken
 import com.pusher.pushnotifications.auth.TokenProvider
 import com.pusher.pushnotifications.fcm.MessagingService
 import com.pusher.pushnotifications.internal.*
@@ -37,6 +38,7 @@ data class PusherCallbackError(val message: String, val cause: Throwable?)
 internal sealed class ServerSyncEvent
 internal data class InterestsChangedEvent(val interests: Set<String>): ServerSyncEvent()
 internal data class UserIdSet(val userId: String, val pusherCallbackError: PusherCallbackError?): ServerSyncEvent()
+internal data class InvalidTokenEvent(val invalid: Boolean): ServerSyncEvent()
 
 internal class ServerSyncEventHandler private constructor(looper: Looper): Handler(looper) {
   var onSubscriptionsChangedListener: SubscriptionsChangedListener? = null
@@ -111,6 +113,17 @@ class PushNotificationsInstance @JvmOverloads constructor(
         secureFileDir = context.filesDir,
         handleServerSyncEvent = { msg ->
           serverSyncEventHandler.sendMessage(Message.obtain().apply { obj = msg })
+          if (msg is InvalidTokenEvent) {
+            // requeue start job
+            startHasBeenCalledThisSession = true
+            deviceStateStore.startJobHasBeenEnqueued = false
+            start()
+            for (i in deviceStateStore.interests) {
+              // this forces device interests to be re-registered
+              // the set of queued interests will be cleared by the registration process
+              forceSubscribe(i)
+            }
+          }
         },
         getTokenProvider = {
           PushNotifications.tokenProvider[instanceId]
@@ -185,15 +198,23 @@ class PushNotificationsInstance @JvmOverloads constructor(
     }
 
     MessagingService.onRefreshToken = handleFcmToken
-    FirebaseInstallations.getInstance().getToken(true).addOnCompleteListener { task ->
+
+    FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
       if (!task.isSuccessful) {
         log.w("Failed to get the token from FCM", task.exception)
       } else {
-        task.result?.let { handleFcmToken(it.token) }
+
+        // Get new FCM registration token
+        val token = task.result
+        handleFcmToken(token)
       }
     }
 
     return this
+  }
+
+  private fun forceSubscribe(interest: String) {
+    serverSyncHandler.sendMessage(ServerSyncHandler.subscribe(interest))
   }
 
   /**
