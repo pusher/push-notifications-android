@@ -20,6 +20,7 @@ class PushNotificationsAPIUnprocessableEntity(val reason: String): PushNotificat
     "The request was deemed to be unprocessable: $reason"
 )
 class PushNotificationsAPIDeviceNotFound: PushNotificationsAPIException("Device not found in the server")
+class PushNotificationsAPIInvalidToken: PushNotificationsAPIException("Invalid token")
 class PushNotificationsAPIBadRequest(val reason: String): PushNotificationsAPIException("A request to the server has been deemed invalid: $reason")
 class PushNotificationsAPIBadJWT(val reason: String): PushNotificationsAPIException(
     "The request was rejected because the JWT was invalid/unauthorized: $reason"
@@ -61,6 +62,10 @@ sealed class RetryStrategy<T> {
           throw e
         } catch (e: PushNotificationsAPIBadJWT) {
           // not recoverable - will need a new JWT
+          throw e
+        } catch (e: PushNotificationsAPIInvalidToken) {
+          // not recoverable - the device token has been rejected by the platform
+          // probably requires a library upgrade
           throw e
         } catch (e: Exception) {
         }
@@ -154,8 +159,13 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
       val responseErrorBody = response.errorBody()
       if (responseErrorBody != null) {
         val error = safeExtractJsonError(responseErrorBody.string())
+
         log.w("Failed to register device: $error")
-        throw PushNotificationsAPIException(error)
+        if (error.error == "InvalidToken") {
+          throw PushNotificationsAPIInvalidToken()
+        } else {
+          throw PushNotificationsAPIException(error)
+        }
       }
 
       throw PushNotificationsAPIException("Unknown API error")

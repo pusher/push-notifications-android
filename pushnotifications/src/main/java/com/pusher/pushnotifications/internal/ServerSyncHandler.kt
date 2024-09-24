@@ -198,76 +198,93 @@ class ServerSyncProcessHandler internal constructor(
 
   private fun processStartJob(startJob: StartJob) {
     // Register device with Errol
-    val registrationResponse =
-        api.registerFCM(
-            token = startJob.fcmToken,
-            knownPreviousClientIds = startJob.knownPreviousClientIds,
-            retryStrategy = RetryStrategy.WithInfiniteExpBackOff())
+    try {
+        val registrationResponse =
+            api.registerFCM(
+                token = startJob.fcmToken,
+                knownPreviousClientIds = startJob.knownPreviousClientIds,
+                retryStrategy = RetryStrategy.WithInfiniteExpBackOff()
+            )
 
-    val outstandingJobs = mutableListOf<ServerSyncJob>()
-    synchronized(deviceStateStore) {
-      // Replay sub/unsub/setsub operations in job queue over initial interest set
-      val interests = registrationResponse.initialInterests.toMutableSet()
-      for (j in jobQueue.asIterable()) {
-        if (j is StartJob) {
-          break
+
+        val outstandingJobs = mutableListOf<ServerSyncJob>()
+        synchronized(deviceStateStore) {
+            // Replay sub/unsub/setsub operations in job queue over initial interest set
+            val interests = registrationResponse.initialInterests.toMutableSet()
+            for (j in jobQueue.asIterable()) {
+                if (j is StartJob) {
+                    break
+                }
+                when (j) {
+                    is SubscribeJob -> {
+                        interests += j.interest
+                    }
+
+                    is UnsubscribeJob -> {
+                        interests -= j.interest
+                    }
+
+                    is SetSubscriptionsJob -> {
+                        interests.clear()
+                        interests.addAll(j.interests)
+                    }
+
+                    is StopJob -> {
+                        outstandingJobs.clear()
+                        // Any subscriptions changes done at this point are just discarded,
+                        // and we need to assume the initial interest set as the starting point again
+                        interests.clear()
+                        interests.addAll(registrationResponse.initialInterests)
+                    }
+
+                    is SetUserIdJob -> {
+                        outstandingJobs.add(j)
+                    }
+
+                    is ApplicationStartJob -> {
+                        // ignoring it as we are already going to sync the state anyway
+                    }
+
+                    is RefreshTokenJob -> {
+                        outstandingJobs.add(j)
+                    }
+
+                    else -> {
+                        throw IllegalStateException("Job $j unexpected during SDK start")
+                    }
+                }
+            }
+
+            log.d("device store interests: ${deviceStateStore.interests}")
+            log.d("registration interests: ${interests}")
+            val localInterestWillChange = deviceStateStore.interests != interests
+
+            // Replace interests with the result
+            if (localInterestWillChange) {
+                deviceStateStore.interests = interests
+                handleServerSyncEvent(InterestsChangedEvent(interests))
+            }
         }
-        when (j) {
-          is SubscribeJob -> {
-            interests += j.interest
-          }
-          is UnsubscribeJob -> {
-            interests -= j.interest
-          }
-          is SetSubscriptionsJob -> {
-            interests.clear()
-            interests.addAll(j.interests)
-          }
-          is StopJob -> {
-            outstandingJobs.clear()
-            // Any subscriptions changes done at this point are just discarded,
-            // and we need to assume the initial interest set as the starting point again
-            interests.clear()
-            interests.addAll(registrationResponse.initialInterests)
-          }
-          is SetUserIdJob -> {
-            outstandingJobs.add(j)
-          }
-          is ApplicationStartJob -> {
-            // ignoring it as we are already going to sync the state anyway
-          }
-          is RefreshTokenJob -> {
-            outstandingJobs.add(j)
-          }
-          else -> {
-            throw IllegalStateException("Job $j unexpected during SDK start")
-          }
+
+        deviceStateStore.deviceId = registrationResponse.deviceId
+        deviceStateStore.FCMToken = startJob.fcmToken
+
+        val remoteInterestsWillChange =
+            deviceStateStore.interests != registrationResponse.initialInterests
+        if (remoteInterestsWillChange) {
+            api.setSubscriptions( // TODO: We don't really handle if we get a 400 or 404
+                deviceId = registrationResponse.deviceId,
+                interests = deviceStateStore.interests,
+                retryStrategy = RetryStrategy.WithInfiniteExpBackOff()
+            )
         }
-      }
 
-      val localInterestWillChange = deviceStateStore.interests != interests
-
-      // Replace interests with the result
-      if (localInterestWillChange) {
-        deviceStateStore.interests = interests
-        handleServerSyncEvent(InterestsChangedEvent(interests))
-      }
-    }
-
-    deviceStateStore.deviceId = registrationResponse.deviceId
-    deviceStateStore.FCMToken = startJob.fcmToken
-
-    val remoteInterestsWillChange = deviceStateStore.interests != registrationResponse.initialInterests
-    if (remoteInterestsWillChange) {
-      api.setSubscriptions( // TODO: We don't really handle if we get a 400 or 404
-          deviceId = registrationResponse.deviceId,
-          interests = deviceStateStore.interests,
-          retryStrategy = RetryStrategy.WithInfiniteExpBackOff())
-    }
-
-    log.d("Number of outstanding jobs: ${outstandingJobs.size}")
-    outstandingJobs.forEach { j ->
-      processJob(j)
+        log.d("Number of outstanding jobs: ${outstandingJobs.size}")
+        outstandingJobs.forEach { j ->
+            processJob(j)
+        }
+    } catch (e: PushNotificationsAPIInvalidToken) {
+        handleServerSyncEvent(InvalidTokenEvent(true))
     }
   }
 
