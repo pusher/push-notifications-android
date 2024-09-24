@@ -10,6 +10,7 @@ import org.mockito.Mockito
 import org.mockito.Mockito.`when`
 import org.junit.Before
 import org.mockito.Mockito.doNothing
+import org.hamcrest.MatcherAssert.assertThat
 
 class InstanceDeviceStateStoreTest {
   private val context: Context = Mockito.mock(Context::class.java)
@@ -31,7 +32,7 @@ class InstanceDeviceStateStoreTest {
         .thenReturn("i-123")
 
     Assert.assertNull(testInstanceDeviceStateStore.deviceId)
-    Assert.assertThat(testInstanceDeviceStateStore.deviceId, `is`(equalTo("i-123")))
+    assertThat(testInstanceDeviceStateStore.deviceId, `is`(equalTo("i-123")))
   }
 
   @Test
@@ -51,7 +52,7 @@ class InstanceDeviceStateStoreTest {
         .thenReturn("i-123")
 
     Assert.assertNull(testInstanceDeviceStateStore.FCMToken)
-    Assert.assertThat(testInstanceDeviceStateStore.FCMToken, `is`(equalTo("i-123")))
+    assertThat(testInstanceDeviceStateStore.FCMToken, `is`(equalTo("i-123")))
   }
 
   @Test
@@ -71,7 +72,7 @@ class InstanceDeviceStateStoreTest {
         .thenReturn("i-123")
 
     Assert.assertNull(testInstanceDeviceStateStore.osVersion)
-    Assert.assertThat(testInstanceDeviceStateStore.osVersion, `is`(equalTo("i-123")))
+    assertThat(testInstanceDeviceStateStore.osVersion, `is`(equalTo("i-123")))
   }
 
   @Test
@@ -91,7 +92,7 @@ class InstanceDeviceStateStoreTest {
         .thenReturn("i-123")
 
     Assert.assertNull(testInstanceDeviceStateStore.sdkVersion)
-    Assert.assertThat(testInstanceDeviceStateStore.sdkVersion, `is`(equalTo("i-123")))
+    assertThat(testInstanceDeviceStateStore.sdkVersion, `is`(equalTo("i-123")))
   }
 
   @Test
@@ -110,8 +111,8 @@ class InstanceDeviceStateStoreTest {
         .thenReturn(mutableSetOf<String>())
         .thenReturn(mutableSetOf("hello"))
 
-    Assert.assertThat(testInstanceDeviceStateStore.interests, `is`(emptySet<String>()))
-    Assert.assertThat(testInstanceDeviceStateStore.interests, `is`(equalTo(mutableSetOf("hello"))))
+    assertThat(testInstanceDeviceStateStore.interests, `is`(emptySet<String>()))
+    assertThat(testInstanceDeviceStateStore.interests, `is`(equalTo(mutableSetOf("hello"))))
   }
 
   @Test
