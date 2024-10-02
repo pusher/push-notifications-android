@@ -6,10 +6,10 @@ android {
     compileSdkVersion 31
 
     defaultConfig {
-        minSdkVersion 16
+        minSdkVersion 24
         targetSdkVersion 31
         versionCode 1
-        versionName "1.9.2"
+        versionName "1.10.0"
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
@@ -62,10 +62,11 @@ dependencies {
     lintChecks project(':pushnotifications-lint')
 
     testImplementation 'junit:junit:4.12'
+    testImplementation 'org.hamcrest:hamcrest:2.2'
     testImplementation 'androidx.test:core:1.5.0'
     testImplementation 'androidx.test.ext:junit:1.1.5'
     testImplementation 'androidx.test.ext:truth:1.5.0'
-    testImplementation "org.mockito:mockito-core:2.13.0"
+    testImplementation "org.mockito:mockito-core:3.6.28"
 
     androidTestImplementation 'androidx.test:core:1.5.0'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'

@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.10.0] - 2024-09-24
+
+### Changed
+- Removed firebase-installations dependency in favour of firebase-messaging
+
 ## [1.9.2] - 2023-02-22
 
 ### Changed
