@@ -15,11 +15,6 @@ class ReportingAPI(private val instanceId: String) {
 
   private val gson = Gson()
 
-  private val client =
-    OkHttpClient.Builder()
-      .addInterceptor(PusherLibraryHeaderInterceptor())
-      .build()
-
   private val service =
     Retrofit.Builder()
       .baseUrl(baseUrl)
@@ -51,5 +46,13 @@ class ReportingAPI(private val instanceId: String) {
       instanceId = instanceId,
       reportingRequest = reportEvent
     ).enqueue(callback)
+  }
+
+
+  companion object {
+    val client: OkHttpClient =
+      OkHttpClient.Builder()
+        .addInterceptor(PusherLibraryHeaderInterceptor())
+        .build()
   }
 }
