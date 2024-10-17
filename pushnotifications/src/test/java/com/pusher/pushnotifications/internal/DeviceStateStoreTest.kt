@@ -4,12 +4,12 @@ import android.content.Context
 import android.content.SharedPreferences
 import org.hamcrest.CoreMatchers.`is`
 import org.hamcrest.CoreMatchers.equalTo
-import org.junit.Assert
 import org.junit.Test
 import org.mockito.Mockito
 import org.mockito.Mockito.`when`
 import org.junit.Before
 import org.mockito.Mockito.doNothing
+import org.hamcrest.MatcherAssert.assertThat
 
 class DeviceStateStoreTest {
   private val context: Context = Mockito.mock(Context::class.java)
@@ -32,8 +32,8 @@ class DeviceStateStoreTest {
         .thenReturn(mutableSetOf<String>())
         .thenReturn(mutableSetOf("i-123"))
 
-    Assert.assertThat(testDeviceStateStore.instanceIds, `is`(emptySet<String>()))
-    Assert.assertThat(testDeviceStateStore.instanceIds, `is`(equalTo(mutableSetOf("i-123"))))
+    assertThat(testDeviceStateStore.instanceIds, `is`(emptySet<String>()))
+    assertThat(testDeviceStateStore.instanceIds, `is`(equalTo(mutableSetOf("i-123"))))
   }
 
   @Test
