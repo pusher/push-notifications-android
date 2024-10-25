@@ -151,6 +151,9 @@ class PushNotificationsAPI(private val instanceId: String, overrideHostURL: Stri
 
       val responseBody = response.body()
       if (responseBody != null && response.code() in 200..299) {
+        if (responseBody.initialInterestSet==null || responseBody.id==null){
+          throw PushNotificationsAPIException("device id or initial interests is null")
+        }
         return RegisterDeviceResult(
             deviceId = responseBody.id,
             initialInterests = responseBody.initialInterestSet)
